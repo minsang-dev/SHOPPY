@@ -1,9 +1,10 @@
 ---
-category: "\U0001F41B Bug Report Template"
-about: 버그 리포트 이슈 템플릿
+name: "\U0001F41B-bug-report-template"
+about: 버그 이슈 템플릿
 title: ''
 labels: ''
-assignees: ''
+assignees: minsang-dev
+
 ---
 
 ## 어떤 버그인가요?
