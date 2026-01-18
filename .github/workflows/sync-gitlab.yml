@@ -1,0 +1,54 @@
+name: Sync to SSAFY GitLab (Monorepo)
+
+on:
+  push:
+    branches: [ "main", "develop" ] # 동기화할 브랜치
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current (GitHub) repo
+        uses: actions/checkout@v3
+        with:
+          path: source-repo
+
+      - name: Sync to GitLab
+        env:
+          GITLAB_USERNAME: ${{ secrets.GITLAB_USERNAME }} 
+          GITLAB_PASSWORD: ${{ secrets.GITLAB_PASSWORD }} 
+          GITLAB_REPO_URL: "lab.ssafy.com/s14-webmobile1-sub1/S14P11C209.git" 
+          TARGET_FOLDER: "RTC_FE" 
+          
+        run: |
+          # 1. GitLab 레포지토리 Clone (인증 정보 포함)
+          git clone https://$GITLAB_USERNAME:$GITLAB_PASSWORD@$GITLAB_REPO_URL target-repo
+          
+          # 2. GitLab 레포지토리로 이동
+          cd target-repo
+          
+          # 3. Git 설정
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          
+          # 4. 기존 폴더가 있다면 삭제하고 새로 생성 (깨끗하게 덮어쓰기 위함)
+          rm -rf $TARGET_FOLDER
+          mkdir -p $TARGET_FOLDER
+          
+          # 5. GitHub에서 받은 최신 코드를 GitLab 폴더로 복사
+          # source-repo의 내용을 target-repo/CONY-BE 안으로 복사
+          # .git 폴더 제외하고 복사
+          cp -r ../source-repo/* $TARGET_FOLDER/
+          
+          # 6. 변경사항 확인 및 Push
+          git add .
+          
+          # 변경사항이 있을 때만 커밋 (에러 방지)
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Sync $TARGET_FOLDER from GitHub [$(date)]"
+            # 충돌 방지를 위해 pull 후 push
+            git pull --rebase origin master 
+            git push origin master
+          fi
