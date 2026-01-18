@@ -1,9 +1,10 @@
 ---
-category: "✅ Etc Template"
+name: "✅-etc-template"
 about: 기타 자유양식 템플릿
 title: ''
 labels: ''
 assignees: ''
+
 ---
 
 ## (제목)
