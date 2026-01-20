@@ -1,5 +1,5 @@
 import React from 'react';
-import Button from '../Button/Button';
+import Button from '../DesktopButton/Button';
 // import laptopImage from '../../assets/mainPage/shoppingMall_main_laptop.png';
 import './HeroSection.css';
 
