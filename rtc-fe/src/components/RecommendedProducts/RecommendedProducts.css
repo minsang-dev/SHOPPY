@@ -1,0 +1,40 @@
+.recommended-products {
+  width: 100%;
+  padding: 4rem 2rem;
+  background-color: #ffffff;
+}
+
+.recommended-products-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.recommended-products-title {
+  text-align: left;
+  font-size: 3rem;
+  font-weight: 700;
+  color: #000000;
+  margin: 0 0 2rem 0;
+}
+
+.recommended-products-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 968px) {
+  .recommended-products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 568px) {
+  .recommended-products {
+    padding: 2rem 1rem;
+  }
+  
+  .recommended-products-grid {
+    grid-template-columns: 1fr;
+  }
+}
