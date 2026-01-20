@@ -3,3 +3,7 @@ spring:
     name: shoppy
   profiles:
     active: local
+
+server:
+  servlet:
+    context-path: /api
