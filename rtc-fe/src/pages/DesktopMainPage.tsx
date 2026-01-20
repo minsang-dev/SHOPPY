@@ -1,8 +1,8 @@
 import React from 'react';
-import Header from '../components/Header/Header';
-import HeroSection from '../components/HeroSection/HeroSection';
-import RecommendedProducts from '../components/RecommendedProducts/RecommendedProducts';
-import './mainPage.css';
+import Header from '../components/DesktopHeader/Header';
+import HeroSection from '../components/DesktopHeroSection/HeroSection';
+import RecommendedProducts from '../components/DesktopRecommendedProducts/RecommendedProducts';
+import './DesktopmainPage.css';
 
 const MainPage: React.FC = () => {
   return (
