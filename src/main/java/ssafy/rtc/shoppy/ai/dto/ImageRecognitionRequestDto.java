@@ -17,3 +17,4 @@ public class ImageRecognitionRequestDto {
     private String imageBase64;
     private String prompt;
 }
+        
