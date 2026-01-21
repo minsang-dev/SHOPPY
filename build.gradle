@@ -30,6 +30,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
+	implementation 'io.openvidu:openvidu-java-client:2.32.1'
 	implementation 'org.apache.commons:commons-lang3:3.18.0'
 	implementation 'com.google.cloud:google-cloud-vision:3.7.0'
 	compileOnly 'org.projectlombok:lombok'
