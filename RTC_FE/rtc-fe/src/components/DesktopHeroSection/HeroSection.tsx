@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '../DesktopButton/Button';
 // import laptopImage from '../../assets/mainPage/shoppingMall_main_laptop.png';
 import './HeroSection.css';
@@ -8,9 +9,10 @@ interface HeroSectionProps {
 }
 
 const HeroSection: React.FC<HeroSectionProps> = ({ className = '' }) => {
+  const navigate = useNavigate();
+
   const handleStartClick = () => {
-    // TODO: 시작하기 버튼 클릭 핸들러
-    console.log('시작하기 클릭');
+    navigate('/video-chat');
   };
 
   return (

@@ -1,11 +1,18 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 
-export default function DesktopRouter() {
+// 메인 페이지
+import DesktopVideoChatPage from '../pages/DesktopVideoChatPage.tsx';
+
+// 화상채팅
+import DesktopMainPage from '../pages/DesktopMainPage.tsx';
+
+const AppRouter = () => {
   return (
     <Routes>
-      <Route path="/" element={<div />} />
-      <Route path="/room/:roomId" element={<div />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/" element={<DesktopMainPage />} />
+      <Route path="/video-chat" element={<DesktopVideoChatPage />} />
     </Routes>
   );
-}
+};
+
+export default AppRouter;
