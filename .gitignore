@@ -11,4 +11,5 @@ out/
 
 ### Application secrets ###
 **/application-local.yaml
-docs/
+docs/src/main/resources/application-local.yaml
+src/main/resources/application-local.yml
