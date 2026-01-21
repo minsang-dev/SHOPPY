@@ -10,7 +10,7 @@ const AppRouter = () => {
   return (
     <Routes>
       <Route path="/" element={<DesktopMainPage />} />
-      <Route path="/video-chat" element={<DesktopVideoChatPage />} />
+      <Route path="/room" element={<DesktopVideoChatPage />} />
     </Routes>
   );
 };
