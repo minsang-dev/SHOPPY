@@ -1,7 +1,6 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import Button from '../DesktopButton/Button';
-// import laptopImage from '../../assets/mainPage/shoppingMall_main_laptop.png';
+import RoomModal from '../DesktopRoomModal/RoomModal';
 import './HeroSection.css';
 
 interface HeroSectionProps {
@@ -9,10 +8,14 @@ interface HeroSectionProps {
 }
 
 const HeroSection: React.FC<HeroSectionProps> = ({ className = '' }) => {
-  const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleStartClick = () => {
-    navigate('/video-chat');
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
   };
 
   return (
@@ -42,6 +45,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ className = '' }) => {
           </div>
         </div>
       </div>
+      <RoomModal isOpen={isModalOpen} onClose={handleCloseModal} />
     </section>
   );
 };
