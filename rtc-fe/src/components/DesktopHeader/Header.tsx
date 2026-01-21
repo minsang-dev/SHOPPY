@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './Header.css';
 
 interface HeaderProps {
@@ -6,6 +6,12 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ className = '' }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
   return (
     <header className={`header ${className}`}>
       <div className="header-container">
@@ -16,16 +22,26 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           </a>
         </div>
         
-        <nav className="header-nav">
-          <a href="/" className="nav-link">Home</a>
-          <a href="/best" className="nav-link">Best</a>
-          <a href="/product" className="nav-link">Product</a>
-          <a href="/faq" className="nav-link">FAQ</a>
+        <button 
+          className={`menu-toggle ${isMenuOpen ? 'active' : ''}`}
+          onClick={toggleMenu}
+          aria-label="메뉴 토글"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        
+        <nav className={`header-menu ${isMenuOpen ? 'open' : ''}`}>
+          <a href="#" className="nav-link">Home</a>
+          <a href="#" className="nav-link">Best</a>
+          <a href="#" className="nav-link">Product</a>
+          <a href="#" className="nav-link">FAQ</a>
         </nav>
         
-        <div className="header-actions">
-          <a href="/login" className="btn-login">Login</a>
-          <a href="/signup" className="btn-signup">Sign up</a>
+        <div className={`header-actions ${isMenuOpen ? 'open' : ''}`}>
+          <a href="#" className="btn-login">Login</a>
+          <a href="#" className="btn-signup">Sign up</a>
         </div>
       </div>
     </header>
