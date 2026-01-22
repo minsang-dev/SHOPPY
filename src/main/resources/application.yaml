@@ -4,10 +4,6 @@ spring:
   profiles:
     active: local
 
-server:
-  servlet:
-    context-path: /api
-
 # kjs start
 google:
   cloud:
