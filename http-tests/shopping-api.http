@@ -1,0 +1,9 @@
+### 장바구니 아이템 추가 테스트
+POST http://localhost:8080/api/rooms/1/shopping-items
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "productId": 1,
+  "quantity": 2
+}

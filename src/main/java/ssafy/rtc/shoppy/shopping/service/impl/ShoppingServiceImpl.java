@@ -19,10 +19,10 @@ public class ShoppingServiceImpl implements ShoppingService {
     private final ProductRepository productRepository;
 
     @Override
-    public void addShoppingItem(ShoppingItemAddRequestDto requestDto) {
+    public void addShoppingItem(Long roomId, ShoppingItemAddRequestDto requestDto) {
         // 1. 이미 장바구니에 있는지 확인
         ShoppingItem existingItem = shoppingItemRepository.findByRoomIdAndUserIdAndProduct_ProductId(
-                requestDto.getRoomId(),
+                roomId,
                 requestDto.getUserId(),
                 requestDto.getProductId()
         ).orElse(null);
@@ -36,7 +36,7 @@ public class ShoppingServiceImpl implements ShoppingService {
                     .orElseThrow(() -> new IllegalArgumentException("Product not found"));
 
             ShoppingItem newItem = ShoppingItem.builder()
-                    .roomId(requestDto.getRoomId())
+                    .roomId(roomId)
                     .userId(requestDto.getUserId())
                     .product(product)
                     .quantity(requestDto.getQuantity())
