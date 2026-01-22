@@ -38,6 +38,9 @@ public enum ErrorCode {
     CONFLICT(HttpStatus.CONFLICT, "리소스 충돌이 발생했습니다."),
     ROOM_ALREADY_CLOSED(HttpStatus.CONFLICT, "이미 종료된 방입니다."),
 
+    // 503 Service Unavailable
+    MEDIA_SERVER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Media server is unavailable."),
+
     // 500 Internal Server Error
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
