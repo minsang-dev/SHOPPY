@@ -1,0 +1,89 @@
+.invite-card-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 13, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 40;
+}
+
+.invite-card {
+  width: min(100%, 360px);
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 20px 18px 22px;
+  box-shadow: 0 24px 50px rgba(20, 18, 13, 0.18);
+  display: grid;
+  gap: 16px;
+  font-family: 'Sora', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+}
+
+.invite-card-header {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.invite-card-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.invite-card-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1c1a17;
+}
+
+.invite-card-close {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  background: #f1f1f1;
+  border-radius: 12px;
+
+  cursor: pointer;
+
+  font-size: 18px;
+  line-height: 2;
+  padding: 0;
+}
+
+.invite-card-body {
+  display: grid;
+  gap: 10px;
+}
+
+.invite-card-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #3d3832;
+}
+
+.invite-card-input {
+  border: 1px solid #d4cec5;
+  border-radius: 14px;
+  padding: 0.75rem 0.85rem;
+  font-size: 0.9rem;
+  background: #fdfbf7;
+}
+
+.invite-card-enter {
+  border: none;
+  border-radius: 14px;
+  background: #1c1a17;
+  color: #fdfbf7;
+  padding: 0.8rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}

@@ -1,0 +1,53 @@
+.mobile-topbar {
+  display: grid;
+  grid-template-columns: 40px 1fr 76px;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+}
+
+.mobile-topbar-exit {
+  border: none;
+  background: #f3f4f6;
+  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #111827;
+  cursor: pointer;
+}
+
+.mobile-topbar-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+}
+
+.mobile-topbar-controls {
+  display: inline-flex;
+  gap: 6px;
+  justify-self: end;
+}
+
+.mobile-topbar-icon {
+  border: none;
+  background: #f3f4f6;
+  color: #111827;
+  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.mobile-topbar-icon.is-off {
+  background: #fee2e2;
+  color: #991b1b;
+}
