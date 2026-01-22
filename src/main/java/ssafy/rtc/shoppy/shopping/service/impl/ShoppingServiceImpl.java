@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.rtc.shoppy.product.entity.Product;
 import ssafy.rtc.shoppy.product.repository.ProductRepository;
-import ssafy.rtc.shoppy.shopping.dto.ShoppingItemRequestDto;
+import ssafy.rtc.shoppy.shopping.dto.ShoppingItemAddRequestDto;
 import ssafy.rtc.shoppy.shopping.entity.ShoppingItem;
 import ssafy.rtc.shoppy.shopping.repository.ShoppingItemRepository;
 import ssafy.rtc.shoppy.shopping.service.ShoppingService;
@@ -19,33 +19,30 @@ public class ShoppingServiceImpl implements ShoppingService {
     private final ProductRepository productRepository;
 
     @Override
-    public void addShoppingItem(ShoppingItemRequestDto requestDto, Long userId) {
-
-        // 1. 상품 존재 확인
-        Product product = productRepository.findById(requestDto.getProductId())
-                .orElseThrow(() -> new IllegalArgumentException("해당 상품이 존재하지 않습니다."));
-
-        // 2. 해당 방(Room)에 이미 같은 상품이 담겨있는지 확인
-        ShoppingItem item = shoppingItemRepository.findByRoomIdAndProduct_ProductId(
+    public void addShoppingItem(ShoppingItemAddRequestDto requestDto) {
+        // 1. 이미 장바구니에 있는지 확인
+        ShoppingItem existingItem = shoppingItemRepository.findByRoomIdAndUserIdAndProduct_ProductId(
                 requestDto.getRoomId(),
+                requestDto.getUserId(),
                 requestDto.getProductId()
         ).orElse(null);
 
-        if (item != null) {
-            // 3-1. 이미 존재하면 -> 수량 증가
-            item.addQuantity(requestDto.getQuantity());
+        if (existingItem != null) {
+            // 이미 있으면 수량 증가
+            existingItem.addQuantity(requestDto.getQuantity());
         } else {
-            // 3-2. 없으면 -> 새로 생성
-            item = ShoppingItem.builder()
+            // 없으면 새로 생성
+            Product product = productRepository.findById(requestDto.getProductId())
+                    .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+
+            ShoppingItem newItem = ShoppingItem.builder()
                     .roomId(requestDto.getRoomId())
-                    .addedByUserId(userId)
+                    .userId(requestDto.getUserId())
                     .product(product)
-                    .displayName(product.getName())
                     .quantity(requestDto.getQuantity())
-                    .isCheck(false)
                     .build();
 
-            shoppingItemRepository.save(item);
+            shoppingItemRepository.save(newItem);
         }
     }
 }
