@@ -17,24 +17,35 @@ public class ShoppingItem {
     @Column(name = "shopping_item_id")
     private Long shoppingItemId;
 
-    // TODO: 추후 Room 엔티티가 구현되면 @ManyToOne 관계로 변경 필요
     @Column(name = "room_id", nullable = false)
     private Long roomId;
 
-    // TODO: 추후 User 엔티티가 구현되면 @ManyToOne 관계로 변경 필요
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @Column(name = "added_by_user_id", nullable = false)
+    private Long addedByUserId;
 
+    // Product가 null일 수 있음 (직접 입력 아이템)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
+    @JoinColumn(name = "product_id", nullable = true)
     private Product product;
 
-    @Column(name = "quantity", nullable = false)
+    @Column(name = "display_name")
+    private String displayName;
+
+    @Column(name = "quantity")
     private int quantity;
 
     @Builder.Default
-    @Column(name = "is_checked", nullable = false)
+    @Column(name = "is_checked")
     private boolean isChecked = false;
+
+    // purchase_type: boolean (true: online, false: offline 등으로 가정하거나, 
+    // 스키마에는 boolean으로 되어있지만 의미상 Enum이나 String이 더 적합할 수 있음. 
+    // 일단 스키마대로 boolean으로 매핑하되, DTO 변환 시 주의 필요)
+    @Column(name = "purchase_type")
+    private Boolean purchaseType; 
+
+    @Column(name = "expected_unit_price")
+    private String expectedUnitPrice;
 
     public void addQuantity(int quantity) {
         this.quantity += quantity;
