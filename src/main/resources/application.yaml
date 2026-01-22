@@ -3,3 +3,14 @@ spring:
     name: shoppy
   profiles:
     active: local
+
+server:
+  servlet:
+    context-path: /api
+
+# kjs start
+google:
+  cloud:
+    vision:
+      credentials-path: ${GOOGLE_APPLICATION_CREDENTIALS:}
+# kjs end

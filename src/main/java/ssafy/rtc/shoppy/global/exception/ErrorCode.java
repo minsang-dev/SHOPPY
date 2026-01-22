@@ -42,6 +42,7 @@ public enum ErrorCode {
     MEDIA_SERVER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Media server is unavailable."),
 
     // 500 Internal Server Error
+    AI_SERVICE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI 분석 서비스에서 예외가 발생했습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;
