@@ -5,8 +5,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
- * 이미지 분석 요청에서 필요한 데이터 모델.
+ * 이미지 인식 요청 페이로드를 담는 DTO.
  */
 @Getter
 @Builder
@@ -16,5 +18,5 @@ public class ImageRecognitionRequestDto {
     private String imageUrl;
     private String imageBase64;
     private String prompt;
+    private List<String> features;
 }
-        
