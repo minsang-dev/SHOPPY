@@ -4,13 +4,29 @@ import productList from './productList.json';
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const handlers = [
-  // http.get('요청할 주소', (요청정보) => { ... })
-  // 정확히 해당 api 주소로 가는 요청만 가로챔
-  http.get(`${API_URL}/products`, () => {
-    
-    console.log('msw 성공');
-    
-    // HttpResponse.json() -> 데이터를 JSON 형식으로 변환
+  // 1. 전체 상품 목록 조회: GET /api/products
+  http.get(`${API_URL}/api/products`, () => {
+    console.log('MSW: 전체 목록 조회 요청 받음');
     return HttpResponse.json(productList);
+  }),
+
+  // 2. 상품 키워드 검색: GET /api/products/search?q=검색어
+  http.get(`${API_URL}/api/products/search`, ({ request }) => {
+    const url = new URL(request.url);
+    const keyword = url.searchParams.get('q'); // 쿼리 파라미터 q 추출
+
+    console.log(`MSW: 검색 요청 받음 (검색어: ${keyword})`);
+
+    // 검색어가 없으면 빈 배열 리턴 
+    if (!keyword) {
+      return HttpResponse.json([]); 
+    }
+
+    // 백엔드 로직 흉내: JSON 데이터에서 필터링 수행
+    const filteredProducts = productList.filter((product) => 
+      product.name.toLowerCase().includes(keyword.toLowerCase())
+    );
+    // 걸러진 데이터 리턴
+    return HttpResponse.json(filteredProducts);
   }),
 ];

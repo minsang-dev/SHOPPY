@@ -1,0 +1,73 @@
+/* 필터링 옵션 */
+.filter-options {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.filter-option {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #333;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.filter-option:hover {
+  color: #000;
+  text-decoration: underline;
+}
+
+.filter-option.active {
+  color: #000;
+  font-weight: 600;
+}
+
+.filter-separator {
+  color: #666;
+  font-size: 16px;
+  user-select: none;
+}
+
+/* 반응형 - 태블릿 */
+@media (max-width: 1024px) {
+  .filter-options {
+    justify-content: flex-end;
+  }
+}
+
+/* 반응형 - 모바일 */
+@media (max-width: 768px) {
+  .filter-options {
+    gap: 6px;
+  }
+
+  .filter-option {
+    font-size: 14px;
+  }
+
+  .filter-separator {
+    font-size: 14px;
+  }
+}
+
+/* 반응형 - 작은 모바일 */
+@media (max-width: 480px) {
+  .filter-options {
+    gap: 4px;
+  }
+
+  .filter-option {
+    font-size: 13px;
+  }
+
+  .filter-separator {
+    font-size: 13px;
+  }
+}

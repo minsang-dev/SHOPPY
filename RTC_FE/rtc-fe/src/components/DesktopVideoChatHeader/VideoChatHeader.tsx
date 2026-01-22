@@ -48,28 +48,28 @@ const VideoChatHeader: React.FC<DesktopVideoChatHeaderProps> = ({
             onClick={() => handleIconClick('cart')}
             aria-label="장바구니"
           >
-            🛒
+            <i className="fa-solid fa-cart-arrow-down"></i>
           </button>
           <button
             className={`header-icon ${activePanel === 'participants' ? 'active' : ''}`}
             onClick={() => handleIconClick('participants')}
             aria-label="참여자 목록"
           >
-            👥
+            <i className="fa-solid fa-users"></i>
           </button>
           <button
             className={`header-icon ${activePanel === 'vote' ? 'active' : ''}`}
             onClick={() => handleIconClick('vote')}
             aria-label="투표"
           >
-            📊
+            <i className="fa-solid fa-check-to-slot"></i>
           </button>
           <button
             className={`header-icon ${activePanel === 'chat' ? 'active' : ''}`}
             onClick={() => handleIconClick('chat')}
             aria-label="실시간 채팅"
           >
-            💬
+            <i className="fa-regular fa-comment-dots"></i>
           </button>
         </div>
       </div>
