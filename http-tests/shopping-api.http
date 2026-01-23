@@ -30,7 +30,9 @@ PATCH http://localhost:8080/api/rooms/1/shopping-items/1
 Content-Type: application/json
 
 {
-  "quantity": 3,
-  "is_checked": true,
-  "product_id": null
+  "quantity": 5,
+  "is_checked": true
 }
+
+### 장바구니 아이템 삭제 테스트
+DELETE http://localhost:8080/api/rooms/1/shopping-items/1
