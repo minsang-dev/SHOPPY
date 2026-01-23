@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Outlet } from 'react-router-dom';
 import type { VideoChatMode, RightPanelType } from '../types/desktopVideoChat.types';
 import VideoChatHeader from '../components/DesktopVideoChatHeader/VideoChatHeader';
 import RightPanel from '../components/DesktopRightPanel/RightPanel';
-import MainPage from './DesktopMainPage';
 import './DesktopVideoChatPage.css';
 
 
@@ -35,7 +34,8 @@ const DesktopVideoChatPage: React.FC = () => {
       />
       <div className="video-chat-content">
         <div className="video-chat-left">
-          <MainPage />
+          {/* 중첩 라우터 -> Outlet으로 router에서 정의한 화면 랜더링 */}
+          <Outlet />
         </div>
         <div className="video-chat-right">
           <RightPanel panelType={activePanel} />

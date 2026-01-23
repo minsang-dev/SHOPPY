@@ -19,3 +19,295 @@
   font-size: 1rem;
   margin: 0;
 }
+/* 장바구니 패널 스타일 */
+.cart-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* 온라인/오프라인 토글 */
+.cart-type-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e5e5;
+  padding-bottom: 0.75rem;
+}
+
+.cart-type-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  background-color: #f5f5f5;
+  color: #666666;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.cart-type-btn:hover {
+  background-color: #e8e8e8;
+}
+
+.cart-type-btn.active {
+  background-color: #007bff;
+  color: #ffffff;
+}
+
+/* 장바구니 아이템 목록 */
+.cart-items-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.empty-cart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #999999;
+  font-size: 0.9rem;
+}
+
+/* 장바구니 아이템 */
+.cart-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e5e5e5;
+}
+
+/* 이미지와 상품 정보를 좌우로 배치하는 컨테이너 */
+.cart-item-content {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.cart-item-image {
+  flex: 1;
+  min-width: 0;
+  height: 150px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: #f0f0f0;
+}
+
+.cart-item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cart-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.cart-item-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #000000;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.cart-item-price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #000000;
+  margin: 0;
+}
+
+.cart-item-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+}
+
+/* 수량 조절 */
+.quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  padding: 0.25rem;
+}
+
+.quantity-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background-color: transparent;
+  color: #666666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.quantity-btn:hover:not(:disabled) {
+  background-color: #f0f0f0;
+  color: #000000;
+}
+
+.quantity-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.quantity-value {
+  min-width: 30px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* 삭제 버튼 */
+.remove-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background-color: transparent;
+  color: #000000;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.remove-btn:hover {
+  background-color: #fee;
+  color: #c82333;
+}
+
+/* 구분선 */
+.cart-item-divider {
+  width: 100%;
+  height: 1px;
+  background-color: #e5e5e5;
+  margin: 0;
+}
+
+/* 장바구니 아이템 푸터 (투표 + 참여자) */
+.cart-item-footer {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0;
+}
+
+/* 이모지 투표 버튼 */
+.cart-item-votes {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.vote-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  background-color: transparent;
+  color: #666666;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+}
+
+.vote-btn:hover {
+  background-color: #f0f0f0;
+}
+
+.vote-btn i {
+  font-size: 1rem;
+}
+
+.vote-btn.like-btn:hover {
+  color: #007bff;
+}
+
+.vote-btn.dislike-btn:hover {
+  color: #dc3545;
+}
+
+.vote-btn span {
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+/* 참여자 토글 버튼 */
+.participants-toggle-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  background-color: transparent;
+  color: #666666;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+}
+
+.participants-toggle-btn:hover {
+  background-color: #f0f0f0;
+  color: #000000;
+}
+
+.participants-toggle-btn i {
+  font-size: 1rem;
+}
+
+.participants-toggle-btn span {
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+/* 참여자 드롭다운 (나중에 구현) */
+.participants-dropdown {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 0.5rem;
+  background-color: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  padding: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-width: 150px;
+  z-index: 10;
+}
+
+.participants-dropdown p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #999999;
+  text-align: center;
+}
+
