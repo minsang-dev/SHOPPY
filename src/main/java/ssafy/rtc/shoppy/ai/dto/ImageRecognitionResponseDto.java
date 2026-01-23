@@ -7,9 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/**
- * 첫 단계에서 이미지 분석 결과를 감싼 응답 DTO.
- */
 @Getter
 @Builder
 @NoArgsConstructor
@@ -20,4 +17,9 @@ public class ImageRecognitionResponseDto {
     private boolean safeContent;
     private List<ImageRecognitionLabelDto> labelDetails;
     private ImageRecognitionSafeSearchDto safeSearch;
+    private List<ImageRecognitionLogoDto> logos;
+    private List<ImageRecognitionTextDto> texts;
+    private List<ImageRecognitionWebLabelDto> bestGuessLabels;
+    private List<ImageRecognitionWebEntityDto> webEntities;
+    private ProductMatchDto finalMatch;
 }

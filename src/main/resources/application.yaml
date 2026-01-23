@@ -7,7 +7,6 @@ spring:
 server:
   servlet:
     context-path: /api
-
 # kjs start
 google:
   cloud:
