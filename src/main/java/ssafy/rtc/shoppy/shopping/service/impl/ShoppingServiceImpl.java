@@ -5,9 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.rtc.shoppy.product.entity.Product;
 import ssafy.rtc.shoppy.product.repository.ProductRepository;
-import ssafy.rtc.shoppy.shopping.dto.ShoppingItemAddRequestDto;
-import ssafy.rtc.shoppy.shopping.dto.ShoppingItemResponseDto;
-import ssafy.rtc.shoppy.shopping.dto.ShoppingListResponseDto;
+import ssafy.rtc.shoppy.shopping.dto.*;
 import ssafy.rtc.shoppy.shopping.entity.ShoppingItem;
 import ssafy.rtc.shoppy.shopping.repository.ShoppingItemRepository;
 import ssafy.rtc.shoppy.shopping.service.ShoppingService;
@@ -85,5 +83,42 @@ public class ShoppingServiceImpl implements ShoppingService {
                 .collect(Collectors.toList());
 
         return new ShoppingListResponseDto(itemDtos);
+    }
+
+    @Override
+    public ShoppingItemUpdateResponseDto updateShoppingItem(Long roomId, Long shoppingItemId, ShoppingItemUpdateRequestDto requestDto) {
+        ShoppingItem item = shoppingItemRepository.findById(shoppingItemId)
+                .orElseThrow(() -> new IllegalArgumentException("Shopping item not found"));
+
+        if (!item.getRoomId().equals(roomId)) {
+            throw new IllegalArgumentException("Shopping item does not belong to this room");
+        }
+
+        Product product = null;
+        if (requestDto.getProductId() != null) {
+            product = productRepository.findById(requestDto.getProductId())
+                    .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+        }
+        
+        item.update(requestDto.getQuantity(), requestDto.getIsChecked(), product);
+
+        return ShoppingItemUpdateResponseDto.from(item);
+    }
+
+    @Override
+    public ShoppingItemDeleteResponseDto deleteShoppingItem(Long roomId, Long shoppingItemId) {
+        ShoppingItem item = shoppingItemRepository.findById(shoppingItemId)
+                .orElseThrow(() -> new IllegalArgumentException("Shopping item not found"));
+
+        // 방 ID 검증
+        if (!item.getRoomId().equals(roomId)) {
+            throw new IllegalArgumentException("Shopping item does not belong to this room");
+        }
+
+        // TODO: 권한 체크 (호스트만 가능 등)
+
+        shoppingItemRepository.delete(item);
+
+        return new ShoppingItemDeleteResponseDto(shoppingItemId);
     }
 }
