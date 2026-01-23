@@ -23,13 +23,13 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
 
   // 목표 예산 값 가져오기
   const targetBudgetValue = parseBudget(formData.targetBudget);
-  
+
   // 목표 예산이 1000원 미만인지 확인
   const isTargetBudgetInvalid = targetBudgetValue > 0 && targetBudgetValue < 1000;
 
   // 최소 예산 값 가져오기
   const minBudgetValue = formData.minBudget;
-  
+
   // 최소 예산이 목표 예산을 초과하는지 확인
   const isMinBudgetInvalid = targetBudgetValue >= 1000 && minBudgetValue > targetBudgetValue;
 
@@ -52,7 +52,6 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
         onChange({ ...formData, minBudget: 0 });
       }
     }
-  }, [targetBudgetValue, formData, onChange]);
 
   const handleParticipantsChange = (delta: number) => {
     const newValue = Math.max(0, formData.participants + delta); // 음수는 허용X
@@ -84,21 +83,21 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
       handleChange('minBudget', 0);
       return;
     }
-    
+
     // 숫자만 허용
     if (!/^\d+$/.test(cleaned)) {
       return; // 숫자가 아니면 무시
     }
-    
+
     const parsed = parseInt(cleaned, 10);
     if (isNaN(parsed)) {
       return;
     }
-    
+
     // 목표 예산을 초과하지 않도록 제한 (입력 중에는 1000원 단위로 반올림하지 않음)
     const maxValue = targetBudgetValue >= 1000 ? targetBudgetValue : 0;
     const clampedValue = Math.max(0, Math.min(parsed, maxValue));
-    
+
     handleChange('minBudget', clampedValue);
   };
 
@@ -113,7 +112,13 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
   };
 
   return (
-    <form className="create-room-form" onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
+    <form
+      className="create-room-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit();
+      }}
+    >
       <div className="form-field">
         <label className="form-label">방 제목</label>
         <input

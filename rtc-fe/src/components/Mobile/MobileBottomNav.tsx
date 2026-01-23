@@ -8,11 +8,11 @@ interface MobileBottomNavProps {
   onChange: (value: BottomNavType) => void;
 }
 
-const items: Array<{ id: BottomNavType; label: string }> = [
-  { id: 'cart', label: '장바구니' },
-  { id: 'vote', label: '투표' },
-  { id: 'members', label: '참여자 목록' },
-  { id: 'chat', label: '채팅' },
+const items: Array<{ id: BottomNavType; label: string; icon: string }> = [
+  { id: 'cart', label: '장바구니', icon: 'ri-shopping-cart-line' },
+  { id: 'vote', label: '투표', icon: 'ri-checkbox-multiple-line' },
+  { id: 'members', label: '참여자 목록', icon: 'ri-group-line' },
+  { id: 'chat', label: '채팅', icon: 'ri-chat-3-line' },
 ];
 
 const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ active, onChange }) => {
@@ -25,7 +25,8 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ active, onChange }) =
           className={`mobile-bottom-nav-item ${active === item.id ? 'active' : ''}`}
           onClick={() => onChange(item.id)}
         >
-          {item.label}
+          <i className={item.icon} />
+          <span>{item.label}</span>
         </button>
       ))}
     </nav>

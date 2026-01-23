@@ -1,19 +1,27 @@
-import React, { useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import MobileBottomNav from '../components/Mobile/MobileBottomNav';
 import MobileCameraStage from '../components/Mobile/MobileCameraStage';
 import MobilePanelHost from '../components/Mobile/MobilePanelHost';
 import type { PanelType } from '../components/Mobile/MobilePanelHost';
 import MobileTopBar from '../components/Mobile/MobileTopBar';
 import { realtimeConfig } from '../constants/realtime';
+import { useOpenViduSession } from '../hooks/useOpenViduSession';
 import './MobileVideoChatPage.css';
 
 const MobileVideoChatPage: React.FC = () => {
+  const navigate = useNavigate();
   const [activePanel, setActivePanel] = useState<PanelType>('cart');
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
 
   const handleExit = () => {
     console.log('exit room');
+  };
+
+  const handleEndShopping = () => {
+    navigate('/m/settlement');
   };
 
   const handleToggleMic = () => {
@@ -29,12 +37,38 @@ const MobileVideoChatPage: React.FC = () => {
     Boolean(realtimeConfig.websocketUrl) &&
     Boolean(realtimeConfig.signalingUrl);
 
+  const searchParams = useMemo(() => new URLSearchParams(window.location.search), []);
+  const roomId = searchParams.get('room_id') ?? undefined;
+  const accessToken =
+    searchParams.get('access_token') ??
+    window.localStorage.getItem('access_token') ??
+    window.localStorage.getItem('accessToken') ??
+    undefined;
+  const nickname = searchParams.get('nickname') ?? undefined;
+  const profileColor = searchParams.get('profile_color') ?? undefined;
+
+  const { isConnected, setPublishAudio, setPublishVideo } = useOpenViduSession({
+    enabled: realtimeReady,
+    roomId,
+    accessToken,
+    profile: { nickname, profileColor },
+    localVideoRef,
+  });
+
+  useEffect(() => {
+    setPublishAudio(micOn);
+  }, [micOn, setPublishAudio]);
+
+  useEffect(() => {
+    setPublishVideo(camOn);
+  }, [camOn, setPublishVideo]);
+
   return (
     <div className="mobile-room-page" data-realtime-ready={realtimeReady ? 'true' : 'false'}>
       <div className="mobile-room-shell">
         <MobileTopBar
           onExit={handleExit}
-          title="Weekend shopping"
+          title="shoppy"
           backLabel="Go back"
           micOnLabel="Mute microphone"
           micOffLabel="Unmute microphone"
@@ -46,9 +80,11 @@ const MobileVideoChatPage: React.FC = () => {
           onToggleCam={handleToggleCam}
         />
 
-        <MobileCameraStage />
+        <MobileCameraStage videoRef={localVideoRef} hasVideo={isConnected && camOn} />
 
-        <MobilePanelHost activePanel={activePanel} />
+        <div className="mobile-room-panel">
+          <MobilePanelHost activePanel={activePanel} onEndShopping={handleEndShopping} />
+        </div>
 
         <MobileBottomNav active={activePanel} onChange={setActivePanel} />
       </div>
