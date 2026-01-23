@@ -25,7 +25,7 @@ public class RoomMemberEntity {
     @JoinColumn(name = "room_id", nullable = false)
     private RoomEntity room;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = true)
     private Long userId;
 
     @Enumerated(EnumType.STRING)

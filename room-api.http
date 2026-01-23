@@ -1,0 +1,80 @@
+### Room API Test
+
+### 방 생성 (POST /rooms)
+POST http://localhost:8080/api/rooms
+Content-Type: application/json
+
+{
+  "roomName": "함께하는 쇼핑",
+  "targetBudget": 500000,
+  "syncMode": "FOLLOW",
+  "roomMeta": {
+    "shoppingPurpose": "친구들과 함께하는 겨울 쇼핑",
+    "interestCategories": ["패션", "전자제품", "가구"],
+    "headcount": 4,
+    "budgetMin": 100000
+  }
+}
+
+###
+
+### 방 생성 - FREE 모드
+POST http://localhost:8080/api/rooms
+Content-Type: application/json
+
+{
+  "roomName": "자유 쇼핑방",
+  "targetBudget": 1000000,
+  "syncMode": "FREE",
+  "roomMeta": {
+    "shoppingPurpose": "각자 원하는 물건 구매",
+    "interestCategories": ["도서", "스포츠", "뷰티"],
+    "headcount": 2,
+    "budgetMin": 50000
+  }
+}
+
+###
+
+### 방 조회 - ID로 조회 (GET /rooms/{roomId})
+GET http://localhost:8080/api/rooms/1
+
+###
+
+### 방 조회 - 초대 코드로 조회 (GET /rooms/code/{roomCode})
+GET http://localhost:8080/api/rooms/code/ab
+
+###
+
+### 방 입장 (POST /rooms/join) - 초대 코드로 입장
+POST http://localhost:8080/api/rooms/join
+Content-Type: application/json
+
+{
+  "roomCode": "426302D1",
+  "nickname": "게스트1",
+  "profileImage": "https://example.com/profile1.jpg"
+}
+
+###
+
+### 방 입장
+POST http://localhost:8080/api/rooms/join
+Content-Type: application/json
+
+{
+  "roomCode": "426302D1",
+  "nickname": "게스트2"
+}
+
+###
+
+### 참여자 목록 조회 (GET /rooms/{roomId}/members)
+GET http://localhost:8080/api/rooms/1/members
+
+###
+
+### 방 나가기 (DELETE /rooms/{roomId}/members/{memberId})
+DELETE http://localhost:8080/api/rooms/1/members/2
+
+###

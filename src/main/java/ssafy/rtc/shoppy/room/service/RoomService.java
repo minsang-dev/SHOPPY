@@ -3,6 +3,8 @@ package ssafy.rtc.shoppy.room.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ssafy.rtc.shoppy.global.exception.BusinessException;
+import ssafy.rtc.shoppy.global.exception.ErrorCode;
 import ssafy.rtc.shoppy.room.domain.Room;
 import ssafy.rtc.shoppy.room.entity.RoomEntity;
 import ssafy.rtc.shoppy.room.enums.SyncMode;
@@ -25,5 +27,19 @@ public class RoomService {
         RoomEntity savedEntity = roomRepository.save(roomEntity);
 
         return savedEntity.toDomain();
+    }
+
+    public Room getRoomById(Long roomId) {
+        RoomEntity roomEntity = roomRepository.findById(roomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
+
+        return roomEntity.toDomain();
+    }
+
+    public Room getRoomByCode(String roomCode) {
+        RoomEntity roomEntity = roomRepository.findByRoomCode(roomCode)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
+
+        return roomEntity.toDomain();
     }
 }

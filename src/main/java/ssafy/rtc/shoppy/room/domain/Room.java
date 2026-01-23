@@ -113,4 +113,10 @@ public class Room {
     public boolean isHost(Long userId) {
         return this.hostId.equals(userId);
     }
+
+    public void validateJoinable() {
+        if (!isActive()) {
+            throw new BusinessException(ErrorCode.ROOM_CLOSED);
+        }
+    }
 }

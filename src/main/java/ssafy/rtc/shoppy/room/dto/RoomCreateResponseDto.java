@@ -6,7 +6,7 @@ import ssafy.rtc.shoppy.room.enums.SyncMode;
 
 import java.math.BigDecimal;
 
-public record RoomResponseDto(
+public record RoomCreateResponseDto(
         Long roomId,
 
         Long hostId,
@@ -21,10 +21,12 @@ public record RoomResponseDto(
 
         SyncMode syncMode,
 
-        String hostCurrentUrl
+        String hostCurrentUrl,
+
+        RoomMetaDto roomMeta
 ) {
-    public static RoomResponseDto from(Room room) {
-        return new RoomResponseDto(
+    public static RoomCreateResponseDto from(Room room, RoomMetaDto roomMeta) {
+        return new RoomCreateResponseDto(
                 room.getRoomId(),
                 room.getHostId(),
                 room.getTitle(),
@@ -32,7 +34,8 @@ public record RoomResponseDto(
                 room.getStatus(),
                 room.getTargetBudget(),
                 room.getSyncMode(),
-                room.getHostCurrentUrl()
+                room.getHostCurrentUrl(),
+                roomMeta
         );
     }
 }

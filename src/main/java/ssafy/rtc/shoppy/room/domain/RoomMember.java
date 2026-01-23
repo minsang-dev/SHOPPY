@@ -38,6 +38,23 @@ public class RoomMember {
         );
     }
 
+    public static RoomMember joinAsGuest(Long roomId) {
+        if (roomId == null) {
+            throw new BusinessException(ErrorCode.INVALID_ARGUMENT);
+        }
+        return new RoomMember(
+                null,
+                roomId,
+                null,
+                MemberRole.GUEST,
+                MemberStatus.ACTIVE,
+                false,
+                null,
+                null,
+                LocalDateTime.now()
+        );
+    }
+
     public static RoomMember from(
             Long memberId,
             Long roomId,

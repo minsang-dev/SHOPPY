@@ -31,12 +31,14 @@ public enum ErrorCode {
     // 404 Not Found
     NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다."),
     ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "방을 찾을 수 없습니다."),
+    ROOM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "방 참여자를 찾을 수 없습니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."),
 
     // 409 Conflict
     CONFLICT(HttpStatus.CONFLICT, "리소스 충돌이 발생했습니다."),
     ROOM_ALREADY_CLOSED(HttpStatus.CONFLICT, "이미 종료된 방입니다."),
+    ROOM_CLOSED(HttpStatus.BAD_REQUEST, "종료된 방입니다."),
     ROOM_FULL(HttpStatus.CONFLICT, "방 인원이 가득 찼습니다."),
     MEMBER_ALREADY_LEFT(HttpStatus.CONFLICT, "이미 퇴장한 멤버입니다."),
     INVALID_CURSOR_POSITION(HttpStatus.BAD_REQUEST, "유효하지 않은 커서 위치입니다."),
