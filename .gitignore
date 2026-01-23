@@ -1,0 +1,25 @@
+### Gradle ###
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+out/
+
+### Application secrets ###
+**/application-local.yaml
+docs/
+.claude/*
+
+### Local development ###
+docker-compose.openvidu.yml
+src/main/resources/static/webrtc-demo/
+src/main/resources/static/.well-known/
+src/main/resources/static/favicon.ico
+docs/src/main/resources/application-local.yaml
+docs/
+src/main/resources/application-local.yml
+bin/
