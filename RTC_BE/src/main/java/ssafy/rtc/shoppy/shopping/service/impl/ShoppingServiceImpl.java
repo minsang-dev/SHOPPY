@@ -5,10 +5,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.rtc.shoppy.product.entity.Product;
 import ssafy.rtc.shoppy.product.repository.ProductRepository;
-import ssafy.rtc.shoppy.shopping.dto.ShoppingItemRequestDto;
+import ssafy.rtc.shoppy.shopping.dto.*;
 import ssafy.rtc.shoppy.shopping.entity.ShoppingItem;
 import ssafy.rtc.shoppy.shopping.repository.ShoppingItemRepository;
 import ssafy.rtc.shoppy.shopping.service.ShoppingService;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -19,33 +22,103 @@ public class ShoppingServiceImpl implements ShoppingService {
     private final ProductRepository productRepository;
 
     @Override
-    public void addShoppingItem(ShoppingItemRequestDto requestDto, Long userId) {
+    public void addShoppingItem(Long roomId, ShoppingItemAddRequestDto requestDto) {
+        ShoppingItem existingItem = null;
 
-        // 1. 상품 존재 확인
-        Product product = productRepository.findById(requestDto.getProductId())
-                .orElseThrow(() -> new IllegalArgumentException("해당 상품이 존재하지 않습니다."));
+        // 1. 상품 ID가 있는 경우 (상품 선택)
+        if (requestDto.getProductId() != null) {
+            existingItem = shoppingItemRepository.findByRoomIdAndAddedByUserIdAndProduct_ProductId(
+                    roomId,
+                    requestDto.getUserId(),
+                    requestDto.getProductId()
+            ).orElse(null);
+        } 
+        // 2. 상품 ID가 없는 경우 (직접 입력) - 이름으로 중복 체크
+        else if (requestDto.getDisplayName() != null) {
+            existingItem = shoppingItemRepository.findByRoomIdAndAddedByUserIdAndDisplayNameAndProductIsNull(
+                    roomId,
+                    requestDto.getUserId(),
+                    requestDto.getDisplayName()
+            ).orElse(null);
+        }
 
-        // 2. 해당 방(Room)에 이미 같은 상품이 담겨있는지 확인
-        ShoppingItem item = shoppingItemRepository.findByRoomIdAndProduct_ProductId(
-                requestDto.getRoomId(),
-                requestDto.getProductId()
-        ).orElse(null);
-
-        if (item != null) {
-            // 3-1. 이미 존재하면 -> 수량 증가
-            item.addQuantity(requestDto.getQuantity());
+        if (existingItem != null) {
+            // 이미 있으면 수량 증가
+            existingItem.addQuantity(requestDto.getQuantity());
         } else {
-            // 3-2. 없으면 -> 새로 생성
-            item = ShoppingItem.builder()
-                    .roomId(requestDto.getRoomId())
-                    .addedByUserId(userId)
+            // 없으면 새로 생성
+            Product product = null;
+            String displayName = requestDto.getDisplayName();
+
+            if (requestDto.getProductId() != null) {
+                product = productRepository.findById(requestDto.getProductId())
+                        .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+                // 상품 선택 시 displayName이 없으면 상품명 사용
+                if (displayName == null) {
+                    displayName = product.getName();
+                }
+            }
+
+            ShoppingItem newItem = ShoppingItem.builder()
+                    .roomId(roomId)
+                    .addedByUserId(requestDto.getUserId())
                     .product(product)
-                    .displayName(product.getName())
+                    .displayName(displayName)
                     .quantity(requestDto.getQuantity())
-                    .isCheck(false)
+                    .purchaseType(requestDto.getPurchaseType())
+                    .expectedUnitPrice(requestDto.getExpectedUnitPrice())
                     .build();
 
-            shoppingItemRepository.save(item);
+            shoppingItemRepository.save(newItem);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShoppingListResponseDto getShoppingList(Long roomId) {
+        List<ShoppingItem> items = shoppingItemRepository.findByRoomId(roomId);
+        
+        List<ShoppingItemResponseDto> itemDtos = items.stream()
+                .map(ShoppingItemResponseDto::from)
+                .collect(Collectors.toList());
+
+        return new ShoppingListResponseDto(itemDtos);
+    }
+
+    @Override
+    public ShoppingItemUpdateResponseDto updateShoppingItem(Long roomId, Long shoppingItemId, ShoppingItemUpdateRequestDto requestDto) {
+        ShoppingItem item = shoppingItemRepository.findById(shoppingItemId)
+                .orElseThrow(() -> new IllegalArgumentException("Shopping item not found"));
+
+        if (!item.getRoomId().equals(roomId)) {
+            throw new IllegalArgumentException("Shopping item does not belong to this room");
+        }
+
+        Product product = null;
+        if (requestDto.getProductId() != null) {
+            product = productRepository.findById(requestDto.getProductId())
+                    .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+        }
+        
+        item.update(requestDto.getQuantity(), requestDto.getIsChecked(), product);
+
+        return ShoppingItemUpdateResponseDto.from(item);
+    }
+
+    @Override
+    public ShoppingItemDeleteResponseDto deleteShoppingItem(Long roomId, Long shoppingItemId) {
+        ShoppingItem item = shoppingItemRepository.findById(shoppingItemId)
+                .orElseThrow(() -> new IllegalArgumentException("Shopping item not found"));
+
+        // 방 ID 검증
+        if (!item.getRoomId().equals(roomId)) {
+            throw new IllegalArgumentException("Shopping item does not belong to this room");
+        }
+
+        // TODO: 권한 체크 (호스트만 가능 등)
+
+        shoppingItemRepository.delete(item);
+
+        return new ShoppingItemDeleteResponseDto(shoppingItemId);
     }
 }

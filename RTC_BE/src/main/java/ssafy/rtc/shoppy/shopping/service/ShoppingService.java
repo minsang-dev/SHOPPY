@@ -1,13 +1,14 @@
 package ssafy.rtc.shoppy.shopping.service;
 
-import ssafy.rtc.shoppy.shopping.dto.ShoppingItemRequestDto;
+import ssafy.rtc.shoppy.shopping.dto.ShoppingItemAddRequestDto;
+import ssafy.rtc.shoppy.shopping.dto.ShoppingItemDeleteResponseDto;
+import ssafy.rtc.shoppy.shopping.dto.ShoppingItemUpdateRequestDto;
+import ssafy.rtc.shoppy.shopping.dto.ShoppingItemUpdateResponseDto;
+import ssafy.rtc.shoppy.shopping.dto.ShoppingListResponseDto;
 
 public interface ShoppingService {
-
-    /**
-     * 장바구니(쇼핑 아이템) 추가
-     * @param requestDto 상품 ID, 방 ID, 수량 정보
-     * @param userId 요청한 사용자 ID
-     */
-    void addShoppingItem(ShoppingItemRequestDto requestDto, Long userId);
+    void addShoppingItem(Long roomId, ShoppingItemAddRequestDto requestDto);
+    ShoppingListResponseDto getShoppingList(Long roomId);
+    ShoppingItemUpdateResponseDto updateShoppingItem(Long roomId, Long shoppingItemId, ShoppingItemUpdateRequestDto requestDto);
+    ShoppingItemDeleteResponseDto deleteShoppingItem(Long roomId, Long shoppingItemId);
 }
