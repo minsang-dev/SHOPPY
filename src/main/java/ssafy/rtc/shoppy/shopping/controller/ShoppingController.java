@@ -5,6 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ssafy.rtc.shoppy.global.response.ApiResponse;
 import ssafy.rtc.shoppy.shopping.dto.ShoppingItemAddRequestDto;
+import ssafy.rtc.shoppy.shopping.dto.ShoppingItemUpdateRequestDto;
+import ssafy.rtc.shoppy.shopping.dto.ShoppingItemUpdateResponseDto;
 import ssafy.rtc.shoppy.shopping.dto.ShoppingListResponseDto;
 import ssafy.rtc.shoppy.shopping.service.ShoppingService;
 
@@ -29,6 +31,16 @@ public class ShoppingController {
             @PathVariable Long roomId
     ) {
         ShoppingListResponseDto responseDto = shoppingService.getShoppingList(roomId);
+        return ResponseEntity.ok(ApiResponse.success(responseDto));
+    }
+
+    @PatchMapping("/{shoppingItemId}")
+    public ResponseEntity<ApiResponse<ShoppingItemUpdateResponseDto>> updateShoppingItem(
+            @PathVariable Long roomId,
+            @PathVariable Long shoppingItemId,
+            @RequestBody ShoppingItemUpdateRequestDto requestDto
+    ) {
+        ShoppingItemUpdateResponseDto responseDto = shoppingService.updateShoppingItem(roomId, shoppingItemId, requestDto);
         return ResponseEntity.ok(ApiResponse.success(responseDto));
     }
 }
