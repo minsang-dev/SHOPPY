@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
-import productList from './productList.json'; 
+import productList from './productList.json';
+import participantList from './ParticipantList.json';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -26,7 +27,12 @@ export const handlers = [
     const filteredProducts = productList.filter((product) => 
       product.name.toLowerCase().includes(keyword.toLowerCase())
     );
-    // 걸러진 데이터 리턴
     return HttpResponse.json(filteredProducts);
+  }),
+
+  // 3. 참여자 목록 조회: GET /api/rooms/members/member_list
+  http.get(`${API_URL}/api/rooms/members/member_list`, () => {
+    console.log('MSW: 참여자 목록 조회 요청 받음');
+    return HttpResponse.json(participantList);
   }),
 ];
