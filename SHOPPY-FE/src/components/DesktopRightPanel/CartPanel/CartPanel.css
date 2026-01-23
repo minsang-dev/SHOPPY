@@ -1,0 +1,20 @@
+/* 장바구니 패널 스타일 */
+.cart-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cart-items-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.empty-cart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #999999;
+  font-size: 0.9rem;
+}

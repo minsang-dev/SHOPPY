@@ -1,0 +1,41 @@
+/* 장바구니 아이템 투표 스타일 */
+.cart-item-votes {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.vote-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  background-color: transparent;
+  color: #666666;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+}
+
+.vote-btn:hover {
+  background-color: #f0f0f0;
+}
+
+.vote-btn i {
+  font-size: 1rem;
+}
+
+.vote-btn.like-btn:hover {
+  color: #007bff;
+}
+
+.vote-btn.dislike-btn:hover {
+  color: #dc3545;
+}
+
+.vote-btn span {
+  font-weight: 500;
+  font-size: 0.85rem;
+}

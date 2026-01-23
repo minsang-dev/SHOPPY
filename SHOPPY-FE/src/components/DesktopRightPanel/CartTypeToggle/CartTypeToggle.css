@@ -1,0 +1,30 @@
+/* 장바구니 타입 토글 스타일 */
+.cart-type-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e5e5;
+  padding-bottom: 0.75rem;
+}
+
+.cart-type-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  background-color: #f5f5f5;
+  color: #666666;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.cart-type-btn:hover {
+  background-color: #e8e8e8;
+}
+
+.cart-type-btn.active {
+  background-color: #007bff;
+  color: #ffffff;
+}

@@ -1,0 +1,36 @@
+.mobile-camera-stage {
+  display: grid;
+  gap: 8px;
+}
+
+.mobile-camera-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.mobile-camera-frame {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 180px;
+  max-height: 240px;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
+}
+
+.mobile-camera-placeholder {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.mobile-camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
