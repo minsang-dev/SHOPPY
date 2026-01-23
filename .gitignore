@@ -14,3 +14,4 @@ out/
 docs/src/main/resources/application-local.yaml
 docs/
 src/main/resources/application-local.yml
+bin/
