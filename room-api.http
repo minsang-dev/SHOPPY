@@ -18,22 +18,6 @@ Content-Type: application/json
 
 ###
 
-### 방 생성 - FREE 모드
-POST http://localhost:8080/api/rooms
-Content-Type: application/json
-
-{
-  "roomName": "자유 쇼핑방",
-  "targetBudget": 1000000,
-  "syncMode": "FREE",
-  "roomMeta": {
-    "shoppingPurpose": "각자 원하는 물건 구매",
-    "interestCategories": ["도서", "스포츠", "뷰티"],
-    "headcount": 2,
-    "budgetMin": 50000
-  }
-}
-
 ###
 
 ### 방 조회 - ID로 조회 (GET /rooms/{roomId})
@@ -42,19 +26,7 @@ GET http://localhost:8080/api/rooms/1
 ###
 
 ### 방 조회 - 초대 코드로 조회 (GET /rooms/code/{roomCode})
-GET http://localhost:8080/api/rooms/code/ab
-
-###
-
-### 방 입장 (POST /rooms/join) - 초대 코드로 입장
-POST http://localhost:8080/api/rooms/join
-Content-Type: application/json
-
-{
-  "roomCode": "426302D1",
-  "nickname": "게스트1",
-  "profileImage": "https://example.com/profile1.jpg"
-}
+GET http://localhost:8080/api/rooms/code/426302D1
 
 ###
 
@@ -70,11 +42,46 @@ Content-Type: application/json
 ###
 
 ### 참여자 목록 조회 (GET /rooms/{roomId}/members)
-GET http://localhost:8080/api/rooms/1/members
+GET http://localhost:8080/api/rooms/4/members
 
 ###
 
 ### 방 나가기 (DELETE /rooms/{roomId}/members/{memberId})
-DELETE http://localhost:8080/api/rooms/1/members/2
+DELETE http://localhost:8080/api/rooms/4/members/17
+
+###
+
+### 동기화 모드 변경 (PATCH /rooms/{roomId}/sync-mode) - 호스트만 가능
+PATCH http://localhost:8080/api/rooms/4/sync-mode
+Content-Type: application/json
+
+{
+  "syncMode": "FREE"
+}
+
+###
+
+### 호스트 URL 업데이트 (PATCH /rooms/{roomId}/host-url) - FOLLOW 모드
+PATCH http://localhost:8080/api/rooms/5/host-url
+Content-Type: application/json
+
+{
+  "currentUrl": "https://example.com"
+}
+
+###
+
+### 참여자 상태 업데이트 (PATCH /rooms/{roomId}/members/{memberId})
+PATCH http://localhost:8080/api/rooms/4/members/17
+Content-Type: application/json
+
+{
+  "isCameraOn": true
+}
+
+###
+
+### 방 종료 (POST /rooms/{roomId}/close) - 호스트만 가능
+POST http://localhost:8080/api/rooms/4/close
 
 ###

@@ -71,9 +71,9 @@ public class RoomController {
     public ResponseEntity<SuccessResponse<RoomMemberDto>> joinRoom(
             @Valid @RequestBody RoomMemberJoinRequestDto request
     ) {
-        RoomMember member = roomMemberService.joinRoomAsGuest(request.roomCode());
+        RoomMember member = roomMemberService.joinRoomAsGuest(request.roomCode(), request.nickname());
 
-        RoomMemberDto response = RoomMemberDto.from(member, request.nickname());
+        RoomMemberDto response = RoomMemberDto.from(member);
 
         return ResponseEntity.ok(SuccessResponse.of(response));
     }
@@ -86,7 +86,7 @@ public class RoomController {
         List<RoomMember> members = roomMemberService.getRoomMembers(roomId);
 
         List<RoomMemberDto> response = members.stream()
-                .map(member -> RoomMemberDto.from(member, "User" + member.getMemberId()))
+                .map(RoomMemberDto::from)
                 .toList();
 
         return ResponseEntity.ok(SuccessResponse.of(response));
@@ -98,7 +98,53 @@ public class RoomController {
             @PathVariable Long roomId,
             @PathVariable Long memberId
     ) {
-        roomMemberService.leaveRoom(memberId);
+        roomMemberService.leaveRoom(roomId, memberId);
         return ResponseEntity.ok(SuccessResponse.ok("방에서 나갔습니다."));
+    }
+
+    @PatchMapping("/{roomId}/sync-mode")
+    @Operation(summary = "동기화 모드 변경", description = "호스트가 방 동기화 모드를 변경합니다.")
+    public ResponseEntity<SuccessResponse<Void>> updateSyncMode(
+            @PathVariable Long roomId,
+            @Valid @RequestBody RoomSyncModeUpdateRequestDto request
+    ) {
+        Long hostId = 1L;
+
+        roomService.updateSyncMode(roomId, hostId, request.syncMode());
+        return ResponseEntity.ok(SuccessResponse.ok("동기화 모드가 변경되었습니다."));
+    }
+
+    @PatchMapping("/{roomId}/host-url")
+    @Operation(summary = "호스트 URL 업데이트", description = "FOLLOW 모드에서 호스트 URL을 업데이트합니다.")
+    public ResponseEntity<SuccessResponse<Void>> updateHostUrl(
+            @PathVariable Long roomId,
+            @Valid @RequestBody RoomHostUrlUpdateRequestDto request
+    ) {
+        Long hostId = 1L;
+
+        roomService.updateHostCurrentUrl(roomId, hostId, request.currentUrl());
+        return ResponseEntity.ok(SuccessResponse.ok("호스트 URL이 업데이트되었습니다."));
+    }
+
+    @PatchMapping("/{roomId}/members/{memberId}")
+    @Operation(summary = "참여자 상태 업데이트", description = "참여자의 카메라 상태를 업데이트합니다.")
+    public ResponseEntity<SuccessResponse<Void>> updateMemberState(
+            @PathVariable Long roomId,
+            @PathVariable Long memberId,
+            @Valid @RequestBody RoomMemberStateUpdateRequestDto request
+    ) {
+        roomMemberService.updateMemberState(roomId, memberId, request.isCameraOn());
+        return ResponseEntity.ok(SuccessResponse.ok("참여자 상태가 업데이트되었습니다."));
+    }
+
+    @PostMapping("/{roomId}/close")
+    @Operation(summary = "방 종료", description = "호스트가 방을 종료합니다.")
+    public ResponseEntity<SuccessResponse<Void>> closeRoom(
+            @PathVariable Long roomId
+    ) {
+        Long hostId = 1L;
+
+        roomService.closeRoom(roomId, hostId);
+        return ResponseEntity.ok(SuccessResponse.ok("방이 종료되었습니다."));
     }
 }

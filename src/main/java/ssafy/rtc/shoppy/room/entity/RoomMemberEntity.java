@@ -28,6 +28,9 @@ public class RoomMemberEntity {
     @Column(name = "user_id", nullable = true)
     private Long userId;
 
+    @Column(name = "nickname", length = 50)
+    private String nickname;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "role", length = 10)
     private MemberRole role;
@@ -39,12 +42,6 @@ public class RoomMemberEntity {
     @Column(name = "is_camera_on")
     private Boolean isCameraOn;
 
-    @Column(name = "current_cursor_x")
-    private Integer currentCursorX;
-
-    @Column(name = "current_cursor_y")
-    private Integer currentCursorY;
-
     @Column(name = "joined_at")
     private LocalDateTime joinedAt;
 
@@ -52,21 +49,19 @@ public class RoomMemberEntity {
             Long memberId,
             RoomEntity room,
             Long userId,
+            String nickname,
             MemberRole role,
             MemberStatus status,
             Boolean isCameraOn,
-            Integer currentCursorX,
-            Integer currentCursorY,
             LocalDateTime joinedAt
     ) {
         this.memberId = memberId;
         this.room = room;
         this.userId = userId;
+        this.nickname = nickname;
         this.role = role;
         this.status = status;
         this.isCameraOn = isCameraOn;
-        this.currentCursorX = currentCursorX;
-        this.currentCursorY = currentCursorY;
         this.joinedAt = joinedAt;
     }
 
@@ -88,11 +83,10 @@ public class RoomMemberEntity {
                 this.memberId,
                 this.room != null ? this.room.getRoomId() : null,
                 this.userId,
+                this.nickname,
                 this.role,
                 this.status,
                 this.isCameraOn,
-                this.currentCursorX,
-                this.currentCursorY,
                 this.joinedAt
         );
     }
@@ -102,11 +96,10 @@ public class RoomMemberEntity {
                 member.getMemberId(),
                 room,
                 member.getUserId(),
+                member.getNickname(),
                 member.getRole(),
                 member.getStatus(),
                 member.isCameraOn(),
-                member.getCurrentCursorX(),
-                member.getCurrentCursorY(),
                 member.getJoinedAt()
         );
     }

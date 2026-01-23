@@ -14,14 +14,13 @@ public class RoomMember {
     private final Long memberId;
     private final Long roomId;
     private final Long userId;
+    private final String nickname;
     private final MemberRole role;
     private final MemberStatus status;
     private final boolean isCameraOn;
-    private final Integer currentCursorX;
-    private final Integer currentCursorY;
     private final LocalDateTime joinedAt;
 
-    public static RoomMember join(Long roomId, Long userId, MemberRole role) {
+    public static RoomMember join(Long roomId, Long userId, String nickname, MemberRole role) {
         if (roomId == null || userId == null || role == null) {
             throw new BusinessException(ErrorCode.INVALID_ARGUMENT);
         }
@@ -29,16 +28,15 @@ public class RoomMember {
                 null,
                 roomId,
                 userId,
+                nickname,
                 role,
                 MemberStatus.ACTIVE,
                 false,
-                null,
-                null,
                 LocalDateTime.now()
         );
     }
 
-    public static RoomMember joinAsGuest(Long roomId) {
+    public static RoomMember joinAsGuest(Long roomId, String nickname) {
         if (roomId == null) {
             throw new BusinessException(ErrorCode.INVALID_ARGUMENT);
         }
@@ -46,11 +44,10 @@ public class RoomMember {
                 null,
                 roomId,
                 null,
+                nickname,
                 MemberRole.GUEST,
                 MemberStatus.ACTIVE,
                 false,
-                null,
-                null,
                 LocalDateTime.now()
         );
     }
@@ -59,22 +56,20 @@ public class RoomMember {
             Long memberId,
             Long roomId,
             Long userId,
+            String nickname,
             MemberRole role,
             MemberStatus status,
             Boolean isCameraOn,
-            Integer currentCursorX,
-            Integer currentCursorY,
             LocalDateTime joinedAt
     ) {
         return new RoomMember(
                 memberId,
                 roomId,
                 userId,
+                nickname,
                 role,
                 status,
                 isCameraOn != null ? isCameraOn : false,
-                currentCursorX,
-                currentCursorY,
                 joinedAt
         );
     }
@@ -83,21 +78,19 @@ public class RoomMember {
             Long memberId,
             Long roomId,
             Long userId,
+            String nickname,
             MemberRole role,
             MemberStatus status,
             boolean isCameraOn,
-            Integer currentCursorX,
-            Integer currentCursorY,
             LocalDateTime joinedAt
     ) {
         this.memberId = memberId;
         this.roomId = roomId;
         this.userId = userId;
+        this.nickname = nickname;
         this.role = role;
         this.status = status;
         this.isCameraOn = isCameraOn;
-        this.currentCursorX = currentCursorX;
-        this.currentCursorY = currentCursorY;
         this.joinedAt = joinedAt;
     }
 
@@ -109,11 +102,10 @@ public class RoomMember {
                 this.memberId,
                 this.roomId,
                 this.userId,
+                this.nickname,
                 this.role,
                 newStatus,
                 this.isCameraOn,
-                this.currentCursorX,
-                this.currentCursorY,
                 this.joinedAt
         );
     }
@@ -123,25 +115,25 @@ public class RoomMember {
                 this.memberId,
                 this.roomId,
                 this.userId,
+                this.nickname,
                 this.role,
                 this.status,
                 !this.isCameraOn,
-                this.currentCursorX,
-                this.currentCursorY,
                 this.joinedAt
         );
     }
 
-    public RoomMember updateCursorPosition(Integer x, Integer y) {
+    public RoomMember updateCameraState(Boolean newCameraOn) {
+        boolean resolvedCameraOn = newCameraOn != null ? newCameraOn : this.isCameraOn;
+
         return new RoomMember(
                 this.memberId,
                 this.roomId,
                 this.userId,
+                this.nickname,
                 this.role,
                 this.status,
-                this.isCameraOn,
-                x,
-                y,
+                resolvedCameraOn,
                 this.joinedAt
         );
     }

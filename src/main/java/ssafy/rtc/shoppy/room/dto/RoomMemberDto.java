@@ -23,12 +23,12 @@ public record RoomMemberDto(
 
         LocalDateTime joinedAt
 ) {
-    public static RoomMemberDto from(RoomMember member, String nickname) {
+    public static RoomMemberDto from(RoomMember member) {
         return new RoomMemberDto(
                 member.getMemberId(),
                 member.getRoomId(),
                 member.getUserId(),
-                nickname,
+                member.getNickname(),
                 member.getRole(),
                 member.getStatus(),
                 member.isCameraOn(),

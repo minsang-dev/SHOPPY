@@ -42,4 +42,60 @@ public class RoomService {
 
         return roomEntity.toDomain();
     }
+
+    @Transactional
+    public void updateSyncMode(Long roomId, Long requestUserId, SyncMode syncMode) {
+        RoomEntity roomEntity = roomRepository.findById(roomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
+
+        Room room = roomEntity.toDomain();
+
+        if (!room.isHost(requestUserId)) {
+            throw new BusinessException(ErrorCode.HOST_ONLY);
+        }
+
+        Room updatedRoom = room.updateSyncMode(syncMode);
+        RoomEntity updatedEntity = RoomEntity.fromDomain(updatedRoom);
+        roomRepository.save(updatedEntity);
+    }
+
+    @Transactional
+    public void updateHostCurrentUrl(Long roomId, Long requestUserId, String currentUrl) {
+        if (currentUrl == null || currentUrl.isBlank()) {
+            throw new BusinessException(ErrorCode.HOST_URL_REQUIRED);
+        }
+
+        RoomEntity roomEntity = roomRepository.findById(roomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
+
+        Room room = roomEntity.toDomain();
+
+        if (!room.isHost(requestUserId)) {
+            throw new BusinessException(ErrorCode.HOST_ONLY);
+        }
+
+        if (room.getSyncMode() != SyncMode.FOLLOW) {
+            throw new BusinessException(ErrorCode.SYNC_MODE_NOT_FOLLOW);
+        }
+
+        Room updatedRoom = room.updateHostCurrentUrl(currentUrl);
+        RoomEntity updatedEntity = RoomEntity.fromDomain(updatedRoom);
+        roomRepository.save(updatedEntity);
+    }
+
+    @Transactional
+    public void closeRoom(Long roomId, Long requestUserId) {
+        RoomEntity roomEntity = roomRepository.findById(roomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
+
+        Room room = roomEntity.toDomain();
+
+        if (!room.isHost(requestUserId)) {
+            throw new BusinessException(ErrorCode.HOST_ONLY);
+        }
+
+        Room closedRoom = room.close();
+        RoomEntity updatedEntity = RoomEntity.fromDomain(closedRoom);
+        roomRepository.save(updatedEntity);
+    }
 }

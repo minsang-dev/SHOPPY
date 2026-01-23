@@ -89,6 +89,22 @@ public class Room {
         );
     }
 
+    public Room updateSyncMode(SyncMode newSyncMode) {
+        if (newSyncMode == null) {
+            throw new BusinessException(ErrorCode.INVALID_ARGUMENT);
+        }
+        return new Room(
+                this.roomId,
+                this.hostId,
+                this.title,
+                this.roomCode,
+                this.status,
+                this.targetBudget,
+                newSyncMode,
+                this.hostCurrentUrl
+        );
+    }
+
     public Room updateHostCurrentUrl(String newUrl) {
         return new Room(
                 this.roomId,
