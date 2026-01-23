@@ -19,6 +19,13 @@
   padding: 8px 4px;
   cursor: pointer;
   font-weight: 600;
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+}
+
+.mobile-bottom-nav-item i {
+  font-size: 1rem;
 }
 
 .mobile-bottom-nav-item.active {

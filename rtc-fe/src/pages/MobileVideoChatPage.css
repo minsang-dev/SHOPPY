@@ -1,5 +1,5 @@
 .mobile-room-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
   padding: 24px 12px 32px;
@@ -9,12 +9,14 @@
 }
 
 .mobile-room-shell {
-  width: min(100%, 380px);
+  width: min(100%, 360px);
+  height: min(800px, calc(100dvh - 56px));
   background: #ffffff;
   border-radius: 24px;
   padding: 14px;
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.1);
   display: grid;
+  grid-template-rows: auto auto 1fr auto;
   gap: 12px;
 }
 
@@ -31,4 +33,29 @@
   padding: 10px 0;
   font-weight: 600;
   cursor: pointer;
+}
+
+.mobile-room-panel {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mobile-room-scan {
+  border: none;
+  width: 100%;
+  background: #f3f4f6;
+  color: #6b7280;
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.mobile-room-scan i {
+  font-size: 1rem;
 }

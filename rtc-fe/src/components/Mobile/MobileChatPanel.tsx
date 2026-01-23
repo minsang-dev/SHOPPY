@@ -1,8 +1,21 @@
 import React, { useState } from 'react';
 import './MobilePanels.css';
 
-const MobileChatPanel: React.FC = () => {
-  const [messages, setMessages] = useState<string[]>([]);
+export interface ChatMessage {
+  chat_message_id: number;
+  room_id: number;
+  sender_user_id: number;
+  content: string;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+interface MobileChatPanelProps {
+  messages?: ChatMessage[];
+  onSendMessage?: (payload: { content: string }) => void;
+}
+
+const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ messages = [], onSendMessage }) => {
   const [input, setInput] = useState('');
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -10,7 +23,7 @@ const MobileChatPanel: React.FC = () => {
     if (!input.trim()) {
       return;
     }
-    setMessages((prev) => [...prev, input]);
+    onSendMessage?.({ content: input.trim() });
     setInput('');
   };
 
@@ -23,9 +36,13 @@ const MobileChatPanel: React.FC = () => {
           <div className="mobile-panel-empty">아직 메시지가 없습니다.</div>
         ) : (
           <div className="mobile-panel-chat-list">
-            {messages.map((message, index) => (
-              <div key={`${message}-${index}`} className="mobile-panel-chat-item">
-                <span className="mobile-panel-chat-content">{message}</span>
+            {messages.map((message) => (
+              <div key={message.chat_message_id} className="mobile-panel-chat-item">
+                <span className="mobile-panel-chat-name">
+                  USER {message.sender_user_id} ·{' '}
+                  {new Date(message.created_at).toLocaleTimeString()}
+                </span>
+                <span className="mobile-panel-chat-content">{message.content}</span>
               </div>
             ))}
           </div>
