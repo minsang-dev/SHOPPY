@@ -24,20 +24,18 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
   onToggle,
 }) => {
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
 
   // 전역 store에서 참여자 선택 상태 관리
   const {
     getParticipantStatus,
     toggleParticipantSelection,
     initializeParticipantSelections,
-    getParticipantSelectionsForProduct,
   } = useSettlementStore();
 
   // 토글이 열릴 때 API 호출 및 초기화
   useEffect(() => {
-    if (isExpanded && participants.length === 0) {
-      setLoading(true);
+    if (isExpanded && !hasFetched) {
       getMemberList()
         .then((data) => {
           setParticipants(data);
@@ -49,10 +47,13 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
           console.error('참여자 목록 조회 실패:', error);
         })
         .finally(() => {
-          setLoading(false);
+          setHasFetched(true);
         });
     }
-  }, [isExpanded, participants.length, productId, initializeParticipantSelections]);
+  }, [isExpanded, hasFetched, productId, initializeParticipantSelections]);
+
+  // 로딩 상태는 계산으로 처리
+  const loading = isExpanded && !hasFetched;
 
   // 참여자 선택 상태 토글 (전역 store 사용)
   const handleStatusToggle = (memberId: number) => {
