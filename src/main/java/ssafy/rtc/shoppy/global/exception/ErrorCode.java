@@ -37,6 +37,9 @@ public enum ErrorCode {
     // 409 Conflict
     CONFLICT(HttpStatus.CONFLICT, "리소스 충돌이 발생했습니다."),
     ROOM_ALREADY_CLOSED(HttpStatus.CONFLICT, "이미 종료된 방입니다."),
+    ROOM_FULL(HttpStatus.CONFLICT, "방 인원이 가득 찼습니다."),
+    MEMBER_ALREADY_LEFT(HttpStatus.CONFLICT, "이미 퇴장한 멤버입니다."),
+    INVALID_CURSOR_POSITION(HttpStatus.BAD_REQUEST, "유효하지 않은 커서 위치입니다."),
 
     // 503 Service Unavailable
     MEDIA_SERVER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Media server is unavailable."),
