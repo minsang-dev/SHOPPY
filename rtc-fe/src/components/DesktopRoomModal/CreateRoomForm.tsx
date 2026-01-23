@@ -52,7 +52,6 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
         onChange({ ...formData, minBudget: 0 });
       }
     }
-  }, [formData, onChange, targetBudgetValue]);
 
   const handleParticipantsChange = (delta: number) => {
     const newValue = Math.max(0, formData.participants + delta); // 음수는 허용X

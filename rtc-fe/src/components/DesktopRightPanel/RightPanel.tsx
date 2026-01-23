@@ -1,43 +1,30 @@
 import React from 'react';
 import type { RightPanelType } from '../../types/desktopVideoChat.types';
+import CartPanel from './CartPanel/CartPanel';
+import ParticipantsPanel from './ParticipantsPanel/ParticipantsPanel';
+import VotePanel from './VotePanel/VotePanel';
+import ChatPanel from './ChatPanel/ChatPanel';
 import './RightPanel.css';
 
 interface DesktopRightPanelProps {
   panelType: RightPanelType;
 }
 
+/**
+ * 오른쪽 패널 메인 컴포넌트
+ * 패널 타입에 따라 적절한 하위 패널 컴포넌트를 렌더링
+ */
 const RightPanel: React.FC<DesktopRightPanelProps> = ({ panelType }) => {
-
   const renderPanelContent = () => {
     switch (panelType) {
       case 'cart':
-        return (
-          <div className="panel-content">
-            <h3>장바구니</h3>
-            <p>장바구니 내용이 여기에 표시됩니다.</p>
-          </div>
-        );
+        return <CartPanel />;
       case 'participants':
-        return (
-          <div className="panel-content">
-            <h3>참여자 목록</h3>
-            <p>참여자 목록이 여기에 표시됩니다.</p>
-          </div>
-        );
+        return <ParticipantsPanel />;
       case 'vote':
-        return (
-          <div className="panel-content">
-            <h3>투표</h3>
-            <p>투표 내용이 여기에 표시됩니다.</p>
-          </div>
-        );
+        return <VotePanel />;
       case 'chat':
-        return (
-          <div className="panel-content">
-            <h3>실시간 채팅</h3>
-            <p>채팅 내용이 여기에 표시됩니다.</p>
-          </div>
-        );
+        return <ChatPanel />;
       default:
         return null;
     }
