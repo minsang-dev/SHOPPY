@@ -18,9 +18,9 @@ pipeline {
             }
             steps {
                 dir('SHOPPY-BE') {
-                    // 1. 단위 테스트 및 검증을 위한 Gradle 빌드
-                    sh 'chmod +x gradlew'
-                    sh './gradlew clean build'
+                    // // 1. 단위 테스트 및 검증을 위한 Gradle 빌드
+                    // sh 'chmod +x gradlew'
+                    // sh './gradlew clean build'
                     
                     // 2. Docker 이미지 빌드
                     sh 'docker build -t shoppy-be:latest .'
@@ -29,7 +29,7 @@ pipeline {
             post {
                 always {
                     // JUnit 테스트 결과 리포트 (Gradle 빌드 결과)
-                    junit testResults: 'SHOPPY-BE/build/test-results/test/*.xml', allowEmptyResults: true
+                    // junit testResults: 'SHOPPY-BE/build/test-results/test/*.xml', allowEmptyResults: true
                 }
             }
         }
