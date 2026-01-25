@@ -8,7 +8,7 @@ pipeline {
             }
         }
 
-        stage('Backend - Build & Dockerize') {
+        stage('Backend - Dockerize') {
             when {
                 anyOf {
                     branch 'BE'
@@ -18,21 +18,10 @@ pipeline {
             }
             steps {
                 dir('SHOPPY-BE') {
-                    // // 1. 단위 테스트 및 검증을 위한 Gradle 빌드
-                    // sh 'chmod +x gradlew'
-                    // sh './gradlew clean build'
-                    
-                    // 2. Docker 이미지 빌드
+                    // Gradle 직접 빌드 제거 (Dockerfile 내부 빌드 사용)
                     sh 'docker build -t shoppy-be:latest .'
                 }
             }
-            // post {
-            //     always {
-            //         // JUnit 테스트 결과 리포트 (Gradle 빌드 결과)
-            //         junit testResults: 'SHOPPY-BE/build/test-results/test/*.xml', allowEmptyResults: true
-            //     }
-            // }
-            // commit test
         }
 
         stage('Frontend - Dockerize') {
@@ -45,8 +34,29 @@ pipeline {
             }
             steps {
                 dir('SHOPPY-FE') {
-                    // Docker 이미지 빌드 (빌드 과정은 Dockerfile 내부에 포함됨)
                     sh 'docker build -t shoppy-fe:latest .'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    // 1. Frontend 배포
+                    if (env.BRANCH_NAME == 'FE' || env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'buildtest') {
+                        echo 'Deploying Frontend...'
+                        sh 'docker stop shoppy-fe || true'
+                        sh 'docker rm shoppy-fe || true'
+                        sh 'docker run -d --name shoppy-fe -p 3000:3000 --restart always shoppy-fe:latest'
+                    }
+
+                    // 2. Backend & OpenVidu 배포
+                    if (env.BRANCH_NAME == 'BE' || env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'buildtest') {
+                        echo 'Deploying Backend & OpenVidu...'
+                        dir('SHOPPY-BE') {
+                            sh 'docker-compose up -d --no-build'
+                        }
+                    }
                 }
             }
         }
