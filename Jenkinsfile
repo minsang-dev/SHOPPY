@@ -26,12 +26,12 @@ pipeline {
                     sh 'docker build -t shoppy-be:latest .'
                 }
             }
-            post {
-                always {
-                    // JUnit 테스트 결과 리포트 (Gradle 빌드 결과)
-                    // junit testResults: 'SHOPPY-BE/build/test-results/test/*.xml', allowEmptyResults: true
-                }
-            }
+            // post {
+            //     always {
+            //         // JUnit 테스트 결과 리포트 (Gradle 빌드 결과)
+            //         junit testResults: 'SHOPPY-BE/build/test-results/test/*.xml', allowEmptyResults: true
+            //     }
+            // }
         }
 
         stage('Frontend - Dockerize') {
