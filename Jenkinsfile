@@ -32,6 +32,7 @@ pipeline {
             //         junit testResults: 'SHOPPY-BE/build/test-results/test/*.xml', allowEmptyResults: true
             //     }
             // }
+            // commit test
         }
 
         stage('Frontend - Dockerize') {
