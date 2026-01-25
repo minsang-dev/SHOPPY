@@ -30,11 +30,30 @@ public class RoomController {
 
     @PostMapping
     @Operation(summary = "방 생성", description = "새로운 쇼핑 방을 생성합니다.")
-    public ResponseEntity<SuccessResponse<AiRoomCreateResponseDto>> createRoom(
-            @Valid @RequestBody AiRoomCreateRequestDto request
+    public ResponseEntity<SuccessResponse<RoomCreateResponseDto>> createRoom(
+            @Valid @RequestBody RoomCreateRequestDto request
     ) {
         Long hostId = 1L;
 
+        Room room = roomService.createRoom(
+                request.roomName(),
+                request.targetBudget(),
+                request.syncMode(),
+                hostId
+        );
+
+        RoomMetaDto responseMeta = RoomMetaDto.copyWithBudgetMax(request.roomMeta(), request.targetBudget());
+        RoomCreateResponseDto response = RoomCreateResponseDto.from(room, responseMeta);
+
+        return ResponseEntity.ok(SuccessResponse.of(response));
+    }
+
+    @PostMapping("/ai/LLM")
+    @Operation(summary = "AI 방 생성", description = "AI 체크리스트용 방을 생성합니다.")
+    public ResponseEntity<SuccessResponse<AiRoomCreateResponseDto>> createAiRoom(
+            @Valid @RequestBody AiRoomCreateRequestDto request
+    ) {
+        Long hostId = 1L;
         AiRoomCreateResponseDto response = aiRoomService.createRoomWithChecklist(request, hostId);
         return ResponseEntity.ok(SuccessResponse.of(response));
     }
