@@ -4,13 +4,11 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // 소스 코드 체크아웃
                 checkout scm
             }
         }
 
-        stage('Backend - Build & Test') {
-            // BE 브랜치이거나 develop 브랜치일 때만 실행
+        stage('Backend - Build & Dockerize') {
             when {
                 anyOf {
                     branch 'BE'
@@ -20,36 +18,34 @@ pipeline {
             }
             steps {
                 dir('SHOPPY-BE') {
-                    // gradlew 실행 권한 부여
+                    // 1. 단위 테스트 및 검증을 위한 Gradle 빌드
                     sh 'chmod +x gradlew'
-                    // 클린 빌드 및 테스트 실행
                     sh './gradlew clean build'
+                    
+                    // 2. Docker 이미지 빌드
+                    sh 'docker build -t shoppy-be:latest .'
                 }
             }
             post {
                 always {
-                    // JUnit 테스트 결과 리포트 저장
+                    // JUnit 테스트 결과 리포트 (Gradle 빌드 결과)
                     junit testResults: 'SHOPPY-BE/build/test-results/test/*.xml', allowEmptyResults: true
                 }
             }
         }
 
-        stage('Frontend - Install & Build') {
-            // FE 브랜치이거나 develop 브랜치일 때만 실행
+        stage('Frontend - Dockerize') {
             when {
                 anyOf {
                     branch 'FE'
                     branch 'develop'
                     branch 'buildtest'
-
                 }
             }
             steps {
                 dir('SHOPPY-FE') {
-                    // 프론트엔드 의존성 설치
-                    sh 'npm install'
-                    // 프로덕션 빌드 수행
-                    sh 'npm run build'
+                    // Docker 이미지 빌드 (빌드 과정은 Dockerfile 내부에 포함됨)
+                    sh 'docker build -t shoppy-fe:latest .'
                 }
             }
         }
