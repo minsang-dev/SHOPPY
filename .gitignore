@@ -52,3 +52,8 @@ dist-ssr
 .env
 .env.local
 .env.*
+
+
+# AI experimental / local-only
+SHOPPY-BE/src/main/java/ssafy/rtc/shoppy/ai/direciton/
+SHOPPY-BE/src/main/java/ssafy/rtc/shoppy/ai/direction/
