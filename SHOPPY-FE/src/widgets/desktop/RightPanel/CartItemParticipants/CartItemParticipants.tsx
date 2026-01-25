@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useParticipantsForProduct } from '../../../../features/participant/fetch-members/model/useParticipantsForProduct';
 import ParticipantAvatar from './ParticipantAvatar/ParticipantAvatar';
 import './CartItemParticipants.css';
@@ -9,6 +9,7 @@ interface CartItemParticipantsProps {
   isExpanded: boolean;
   onToggle: () => void;
 }
+
 
 const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
   productId,
@@ -22,11 +23,16 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
     error,
     getParticipantStatus,
     toggleParticipantSelection,
+    getSelectedParticipantCount,
   } = useParticipantsForProduct(productId, isExpanded);
 
   const handleStatusToggle = (memberId: number) => {
     toggleParticipantSelection(productId, memberId);
   };
+
+  // 참여자 목록 로드 전엔 participantCount, 로드 후엔 정산 참여자(체크) 수 실시간 반영
+  const displayCount =
+    participants.length > 0 ? getSelectedParticipantCount(productId) : participantCount;
 
   return (
     <>
@@ -38,7 +44,7 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
           aria-expanded={isExpanded}
         >
           <i className="ri-user-line"></i>
-          <span>{participantCount}</span>
+          <span>{displayCount}</span>
         </button>
       </div>
 
@@ -50,7 +56,7 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
           <div className="participants-list-content">
             {loading ? (
               <div className="participants-loading">
-                <p>로딩 중...</p>
+                <p>濡쒕뵫 以?..</p>
               </div>
             ) : error ? (
               <div className="participants-empty">
@@ -58,7 +64,7 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
               </div>
             ) : participants.length === 0 ? (
               <div className="participants-empty">
-                <p>참여자가 없습니다.</p>
+                <p>李몄뿬?먭? ?놁뒿?덈떎.</p>
               </div>
             ) : (
               <div className="participants-list">
@@ -80,3 +86,4 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
 };
 
 export default CartItemParticipants;
+

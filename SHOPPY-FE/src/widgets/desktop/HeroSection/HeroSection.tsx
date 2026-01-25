@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import Button from '../../../shared/ui/DesktopButton/Button';
-import RoomModal from '../DesktopRoomModal/RoomModal';
+import RoomModal from '../RoomModal/RoomModal';
 import './HeroSection.css';
 
 interface HeroSectionProps {
@@ -23,17 +23,17 @@ const HeroSection: React.FC<HeroSectionProps> = ({ className = '' }) => {
       <div className="hero-container">
         <div className="hero-content">
           <div className="hero-text">
-            <div className="hero-title-row">
-              <h1 className="hero-title">혼자 말고 같이 쇼핑해요</h1>
-              <Button
-                variant="primary"
-                size="large"
-                onClick={handleStartClick}
-                className="hero-button"
-              >
-                시작하기
-              </Button>
-            </div>
+            <h1 className="hero-title">
+              실시간 협업 쇼핑을 <br/>시작해 보세요
+            </h1>
+            <Button
+              variant="primary"
+              size="large"
+              onClick={handleStartClick}
+              className="hero-button"
+            >
+              시작하기
+            </Button>
           </div>
           <div className="hero-image">
             <img

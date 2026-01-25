@@ -98,3 +98,11 @@
   align-items: center;
   overflow: visible;
 }
+
+.participants-list .participant-avatar-container {
+  flex: 0 0 calc((100% - 2.25rem) / 4); /* 4개씩 배치 (gap 3개 = 0.75rem * 3 = 2.25rem 고려) */
+  max-width: calc((100% - 2.25rem) / 4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
