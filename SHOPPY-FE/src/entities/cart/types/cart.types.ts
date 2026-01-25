@@ -1,5 +1,5 @@
 // src/types/cart.types.ts
-import type { Product } from './desktopProductList';
+import type { Product } from '../../product/types/desktopProductList';
 
 /**
  * 장바구니에 담기는 상품 아이템 타입

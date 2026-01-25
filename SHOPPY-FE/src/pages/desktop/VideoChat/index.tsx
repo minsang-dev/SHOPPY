@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Outlet } from 'react-router-dom';
 import type { VideoChatMode, RightPanelType } from '../../../entities/room/types/desktopVideoChat.types';
-import VideoChatHeader from '../../../widgets/desktop/DesktopVideoChatHeader/VideoChatHeader';
-import RightPanel from '../../../widgets/desktop/DesktopRightPanel/RightPanel';
+import VideoChatHeader from '../../../widgets/desktop/VideoChatHeader/VideoChatHeader';
+import RightPanel from '../../../widgets/desktop/RightPanel/RightPanel';
 import './styles.css';
 
 

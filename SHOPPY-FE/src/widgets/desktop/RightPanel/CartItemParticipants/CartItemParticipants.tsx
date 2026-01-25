@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useParticipantsForProduct } from '../../../../features/participant/fetch-members/model/useParticipantsForProduct';
 import ParticipantAvatar from './ParticipantAvatar/ParticipantAvatar';
 import './CartItemParticipants.css';
@@ -10,11 +10,7 @@ interface CartItemParticipantsProps {
   onToggle: () => void;
 }
 
-/**
- * ?뺤궛 李몄뿬??
- * ?좉????대━硫?API瑜??몄텧?? ?뺤궛 李몄뿬??紐⑸줉???쒖떆
- * 李몄뿬???좏깮 ?곹깭???꾩뿭 store?먯꽌 愿由?
- */
+
 const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
   productId,
   participantCount,
@@ -27,12 +23,16 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
     error,
     getParticipantStatus,
     toggleParticipantSelection,
+    getSelectedParticipantCount,
   } = useParticipantsForProduct(productId, isExpanded);
 
-  // 李몄뿬???좏깮 ?곹깭 ?좉? (?꾩뿭 store ?ъ슜)
   const handleStatusToggle = (memberId: number) => {
     toggleParticipantSelection(productId, memberId);
   };
+
+  // 참여자 목록 로드 전엔 participantCount, 로드 후엔 정산 참여자(체크) 수 실시간 반영
+  const displayCount =
+    participants.length > 0 ? getSelectedParticipantCount(productId) : participantCount;
 
   return (
     <>
@@ -40,15 +40,14 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
         <button
           className="participants-toggle-btn"
           onClick={onToggle}
-          aria-label="李몄뿬??紐⑸줉"
+          aria-label="참여자 목록"
           aria-expanded={isExpanded}
         >
           <i className="ri-user-line"></i>
-          <span>{participantCount}</span>
+          <span>{displayCount}</span>
         </button>
       </div>
 
-      {/* ?좉????대졇????李몄뿬??紐⑸줉 ?쒖떆 - footer ?꾨옒??蹂꾨룄濡??쒖떆 */}
       {isExpanded && (
         <div className="participants-list-container">
           <div className="participants-list-header">
