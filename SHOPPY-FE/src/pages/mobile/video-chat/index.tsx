@@ -7,6 +7,7 @@ import type { PanelType } from '../../../widgets/mobile/Mobile/MobilePanelHost';
 import MobileTopBar from '../../../widgets/mobile/Mobile/MobileTopBar';
 import { realtimeConfig } from '../../../shared/config/realtime';
 import { useOpenViduSession } from '../../../features/video-chat/model/useOpenViduSession';
+import { useRoomInfo } from '../../../features/room/fetch-room/model/useRoomInfo';
 import './styles.css';
 
 const MobileVideoChatPage: React.FC = () => {
@@ -17,7 +18,7 @@ const MobileVideoChatPage: React.FC = () => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
 
   const handleExit = () => {
-    console.log('exit room');
+    navigate('/m');
   };
 
   const handleEndShopping = () => {
@@ -47,6 +48,8 @@ const MobileVideoChatPage: React.FC = () => {
   const nickname = searchParams.get('nickname') ?? undefined;
   const profileColor = searchParams.get('profile_color') ?? undefined;
 
+  const { room } = useRoomInfo(roomId);
+
   const { isConnected, setPublishAudio, setPublishVideo } = useOpenViduSession({
     enabled: realtimeReady,
     roomId,
@@ -68,7 +71,7 @@ const MobileVideoChatPage: React.FC = () => {
       <div className="mobile-room-shell">
         <MobileTopBar
           onExit={handleExit}
-          title="shoppy"
+          title={room?.roomName ?? 'shoppy'}
           backLabel="Go back"
           micOnLabel="Mute microphone"
           micOffLabel="Unmute microphone"
@@ -83,7 +86,11 @@ const MobileVideoChatPage: React.FC = () => {
         <MobileCameraStage videoRef={localVideoRef} hasVideo={isConnected && camOn} />
 
         <div className="mobile-room-panel">
-          <MobilePanelHost activePanel={activePanel} onEndShopping={handleEndShopping} />
+          <MobilePanelHost
+            activePanel={activePanel}
+            roomId={roomId}
+            onEndShopping={handleEndShopping}
+          />
         </div>
 
         <MobileBottomNav active={activePanel} onChange={setActivePanel} />

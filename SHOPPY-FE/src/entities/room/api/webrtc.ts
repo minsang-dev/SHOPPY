@@ -44,7 +44,7 @@ export const joinWebrtcSession = async (
   accessToken: string,
 ) => {
   const baseUrl = getApiBaseUrl();
-  const response = await fetch(`${baseUrl}/api/rooms/${roomId}/webrtc/session`, {
+  const response = await fetch(`${baseUrl}/api/rooms/${roomId}/webrtc/sessions`, {
     method: 'POST',
     headers: buildHeaders(accessToken),
     body: JSON.stringify(payload),
@@ -58,7 +58,7 @@ export const joinWebrtcSession = async (
 
 export const getWebrtcQualities = async (roomId: string, accessToken: string) => {
   const baseUrl = getApiBaseUrl();
-  const response = await fetch(`${baseUrl}/api/rooms/${roomId}/webrtc/qualities`, {
+  const response = await fetch(`${baseUrl}/api/rooms/${roomId}/webrtc/quality/profiles`, {
     method: 'GET',
     headers: buildHeaders(accessToken),
   });
@@ -75,11 +75,14 @@ export const setWebrtcQuality = async (
   accessToken: string,
 ) => {
   const baseUrl = getApiBaseUrl();
-  const response = await fetch(`${baseUrl}/api/rooms/${roomId}/webrtc/quality`, {
-    method: 'POST',
-    headers: buildHeaders(accessToken),
-    body: JSON.stringify(payload),
-  });
+  const response = await fetch(
+    `${baseUrl}/api/rooms/${roomId}/webrtc/quality/recommendation`,
+    {
+      method: 'POST',
+      headers: buildHeaders(accessToken),
+      body: JSON.stringify(payload),
+    },
+  );
   if (!response.ok) {
     throw new Error('Failed to set webrtc quality');
   }

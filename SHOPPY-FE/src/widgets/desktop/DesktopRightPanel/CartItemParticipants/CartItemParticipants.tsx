@@ -10,11 +10,6 @@ interface CartItemParticipantsProps {
   onToggle: () => void;
 }
 
-/**
- * ?뺤궛 李몄뿬??
- * ?좉????대━硫?API瑜??몄텧?? ?뺤궛 李몄뿬??紐⑸줉???쒖떆
- * 李몄뿬???좏깮 ?곹깭???꾩뿭 store?먯꽌 愿由?
- */
 const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
   productId,
   participantCount,
@@ -29,7 +24,6 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
     toggleParticipantSelection,
   } = useParticipantsForProduct(productId, isExpanded);
 
-  // 李몄뿬???좏깮 ?곹깭 ?좉? (?꾩뿭 store ?ъ슜)
   const handleStatusToggle = (memberId: number) => {
     toggleParticipantSelection(productId, memberId);
   };
@@ -40,7 +34,7 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
         <button
           className="participants-toggle-btn"
           onClick={onToggle}
-          aria-label="李몄뿬??紐⑸줉"
+          aria-label="참여자 목록"
           aria-expanded={isExpanded}
         >
           <i className="ri-user-line"></i>
@@ -48,7 +42,6 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
         </button>
       </div>
 
-      {/* ?좉????대졇????李몄뿬??紐⑸줉 ?쒖떆 - footer ?꾨옒??蹂꾨룄濡??쒖떆 */}
       {isExpanded && (
         <div className="participants-list-container">
           <div className="participants-list-header">
@@ -57,7 +50,7 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
           <div className="participants-list-content">
             {loading ? (
               <div className="participants-loading">
-                <p>濡쒕뵫 以?..</p>
+                <p>로딩 중...</p>
               </div>
             ) : error ? (
               <div className="participants-empty">
@@ -65,7 +58,7 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
               </div>
             ) : participants.length === 0 ? (
               <div className="participants-empty">
-                <p>李몄뿬?먭? ?놁뒿?덈떎.</p>
+                <p>참여자가 없습니다.</p>
               </div>
             ) : (
               <div className="participants-list">
@@ -87,4 +80,3 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
 };
 
 export default CartItemParticipants;
-

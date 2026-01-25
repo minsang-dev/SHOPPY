@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './styles.css';
 
@@ -13,6 +13,7 @@ interface SettlementItem {
 
 const MobileSettlementPage: React.FC = () => {
   const navigate = useNavigate();
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
   const items: SettlementItem[] = [];
 
   const totalAmount = items.reduce((sum, item) => {
@@ -36,7 +37,7 @@ const MobileSettlementPage: React.FC = () => {
           <section className="mobile-settlement-section">
             <h2 className="mobile-settlement-section-title">정산할 물품</h2>
             {items.length === 0 ? (
-              <div className="mobile-settlement-empty">등록된 물품이 없습니다.</div>
+              <div className="mobile-settlement-empty">정산할 물품이 없습니다.</div>
             ) : (
               <div className="mobile-settlement-list">
                 {items.map((item) => (
@@ -57,7 +58,7 @@ const MobileSettlementPage: React.FC = () => {
                         <input type="number" value={item.price ?? 0} readOnly />
                       </label>
                       <label className="mobile-settlement-field">
-                        <span>개수</span>
+                        <span>수량</span>
                         <input type="number" value={item.quantity ?? 1} readOnly />
                       </label>
                     </div>
@@ -65,9 +66,7 @@ const MobileSettlementPage: React.FC = () => {
                     <div className="mobile-settlement-members">
                       <span>결제 인원</span>
                       <div className="mobile-settlement-member-list">
-                        <div className="mobile-settlement-member-empty">
-                          선택된 인원이 없습니다.
-                        </div>
+                        <div className="mobile-settlement-member-empty">선택된 인원이 없습니다.</div>
                       </div>
                     </div>
                   </article>
@@ -94,15 +93,57 @@ const MobileSettlementPage: React.FC = () => {
         </div>
 
         <div className="mobile-settlement-actions">
-          <button type="button" className="mobile-settlement-action outline">
+          <button
+            type="button"
+            className="mobile-settlement-action outline"
+            onClick={() => setShowReceiptModal(true)}
+          >
             <i className="ri-camera-line" />
             영수증 등록
           </button>
-          <button type="button" className="mobile-settlement-action primary">
+          <button
+            type="button"
+            className="mobile-settlement-action primary"
+            onClick={() => navigate('/m/room')}
+          >
             정산 완료
           </button>
         </div>
       </div>
+
+      {showReceiptModal && (
+        <div className="receipt-modal">
+          <div className="receipt-modal-backdrop" onClick={() => setShowReceiptModal(false)} />
+          <div className="receipt-modal-sheet">
+            <div className="receipt-modal-header">
+              <button type="button" className="receipt-modal-close" onClick={() => setShowReceiptModal(false)}>
+                <i className="ri-close-line" />
+              </button>
+              <h2 className="receipt-modal-title">영수증 촬영</h2>
+              <div className="receipt-modal-spacer" />
+            </div>
+
+            <div className="receipt-modal-body">
+              <div className="receipt-camera-frame">
+                <div className="receipt-camera-placeholder">
+                  카메라 화면
+                </div>
+                <div className="receipt-frame-guide" />
+              </div>
+              <p className="receipt-guide-text">영수증을 프레임 안에 맞춰 촬영해주세요.</p>
+            </div>
+
+            <div className="receipt-modal-actions">
+              <button type="button" className="receipt-action ghost">
+                갤러리
+              </button>
+              <button type="button" className="receipt-action primary">
+                촬영
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

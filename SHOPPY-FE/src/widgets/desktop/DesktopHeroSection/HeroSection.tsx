@@ -23,18 +23,17 @@ const HeroSection: React.FC<HeroSectionProps> = ({ className = '' }) => {
       <div className="hero-container">
         <div className="hero-content">
           <div className="hero-text">
-            <h1 className="hero-title">
-              Shop together in real time<br />
-              Start your live session now
-            </h1>
-            <Button
-              variant="primary"
-              size="large"
-              onClick={handleStartClick}
-              className="hero-button"
-            >
-              시작하기
-            </Button>
+            <div className="hero-title-row">
+              <h1 className="hero-title">혼자 말고 같이 쇼핑해요</h1>
+              <Button
+                variant="primary"
+                size="large"
+                onClick={handleStartClick}
+                className="hero-button"
+              >
+                시작하기
+              </Button>
+            </div>
           </div>
           <div className="hero-image">
             <img
