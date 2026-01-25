@@ -1,22 +1,19 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
+import { useShoppingItems } from '../../../features/shopping/cart/model/useShoppingItems';
 import './MobilePanels.css';
 
 interface MobileCartPanelProps {
+  roomId?: string;
   onEndShopping?: () => void;
 }
 
-interface CartItem {
-  id: number;
-  name: string;
-  quantity: number;
-  checked: boolean;
-}
-
-const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ onEndShopping }) => {
+const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping }) => {
+  const { items, loading, error, addItem, updateQuantity, toggleChecked, removeItem } =
+    useShoppingItems(roomId);
   const [showManualInput, setShowManualInput] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [manualName, setManualName] = useState('');
   const [manualQty, setManualQty] = useState(1);
-  const [items, setItems] = useState<CartItem[]>([]);
   const [manualError, setManualError] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -27,24 +24,21 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ onEndShopping }) => {
     setManualError('');
   };
 
-  const handleSubmitManual = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmitManual = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedName = manualName.trim();
     if (!trimmedName) {
-      setManualError('상품명을 입력하세요.');
+      setManualError('상품명을 입력해주세요.');
       return;
     }
     const normalizedName = trimmedName.toLowerCase();
     const exists = items.some((item) => item.name.toLowerCase() === normalizedName);
     if (exists) {
-      setManualError('중복입니다.');
+      setManualError('이미 추가된 상품입니다.');
       return;
     }
     setManualError('');
-    setItems((prev) => [
-      ...prev,
-      { id: Date.now(), name: trimmedName, quantity: manualQty, checked: false },
-    ]);
+    await addItem(trimmedName, manualQty);
     handleCloseManual();
   };
 
@@ -52,25 +46,25 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ onEndShopping }) => {
     setManualQty((prev) => Math.max(1, prev + delta));
   };
 
-  const updateItemQty = (id: number, delta: number) => {
-    setItems((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) {
-          return item;
-        }
-        return { ...item, quantity: Math.max(1, item.quantity + delta) };
-      }),
-    );
+  const handleUpdateQty = async (id: number, delta: number) => {
+    const current = items.find((item) => item.id === id);
+    if (!current) {
+      return;
+    }
+    const nextQty = Math.max(1, current.quantity + delta);
+    await updateQuantity(id, nextQty);
   };
 
-  const toggleChecked = (id: number) => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, checked: !item.checked } : item)),
-    );
+  const handleToggleChecked = async (id: number) => {
+    const current = items.find((item) => item.id === id);
+    if (!current) {
+      return;
+    }
+    await toggleChecked(id, !current.checked);
   };
 
-  const removeItem = (id: number) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
+  const handleRemoveItem = async (id: number) => {
+    await removeItem(id);
   };
 
   const handleEndShopping = () => {
@@ -91,12 +85,16 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ onEndShopping }) => {
     onEndShopping?.();
   };
 
+  const handleVoiceToggle = () => {
+    setIsRecording((prev) => !prev);
+  };
+
   return (
     <section className="mobile-panel">
       <div className="mobile-panel-pill">장바구니</div>
       <div className="mobile-panel-card cart-panel-card">
         <div className="mobile-panel-header">
-          <div className="mobile-panel-title">현장 쇼핑 목록</div>
+          <div className="mobile-panel-title">장바구니 목록</div>
           <div className="mobile-panel-header-actions">
             <button
               type="button"
@@ -104,16 +102,25 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ onEndShopping }) => {
               onClick={() => setShowManualInput(true)}
             >
               <i className="ri-add-line" aria-hidden="true" />
-              수동 입력
+              항목 추가
             </button>
-            <button type="button" className="mobile-panel-header-button">
+            <button
+              type="button"
+              className={`mobile-panel-header-button ${isRecording ? 'is-recording' : ''}`}
+              onClick={handleVoiceToggle}
+              aria-pressed={isRecording}
+            >
               <i className="ri-mic-line" aria-hidden="true" />
-              음성
+              {isRecording ? '인식중' : '음성입력'}
             </button>
           </div>
         </div>
         <div className="mobile-cart-list">
-          {items.length === 0 ? (
+          {loading ? (
+            <div className="mobile-panel-empty">로딩 중...</div>
+          ) : error ? (
+            <div className="mobile-panel-empty">{error}</div>
+          ) : items.length === 0 ? (
             <div className="mobile-panel-empty">등록된 상품이 없습니다.</div>
           ) : (
             items.map((item) => (
@@ -121,7 +128,7 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ onEndShopping }) => {
                 <button
                   type="button"
                   className="mobile-cart-item-button"
-                  onClick={() => toggleChecked(item.id)}
+                  onClick={() => void handleToggleChecked(item.id)}
                 >
                   <span className="mobile-cart-item-name">{item.name}</span>
                 </button>
@@ -129,7 +136,7 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ onEndShopping }) => {
                   <button
                     type="button"
                     className="mobile-cart-qty-btn"
-                    onClick={() => updateItemQty(item.id, -1)}
+                    onClick={() => void handleUpdateQty(item.id, -1)}
                     aria-label="수량 감소"
                   >
                     <i className="ri-subtract-line" aria-hidden="true" />
@@ -138,7 +145,7 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ onEndShopping }) => {
                   <button
                     type="button"
                     className="mobile-cart-qty-btn"
-                    onClick={() => updateItemQty(item.id, 1)}
+                    onClick={() => void handleUpdateQty(item.id, 1)}
                     aria-label="수량 증가"
                   >
                     <i className="ri-add-line" aria-hidden="true" />
@@ -147,8 +154,8 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ onEndShopping }) => {
                 <button
                   type="button"
                   className="mobile-cart-delete"
-                  onClick={() => removeItem(item.id)}
-                  aria-label="삭제"
+                  onClick={() => void handleRemoveItem(item.id)}
+                  aria-label="항목 삭제"
                 >
                   <i className="ri-delete-bin-line" aria-hidden="true" />
                 </button>
@@ -167,7 +174,7 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ onEndShopping }) => {
           <div className="mobile-manual-backdrop" onClick={handleCloseManual} />
           <div className="mobile-manual-card">
             <div className="mobile-manual-header">
-              <h3 className="mobile-manual-title">수동 입력</h3>
+              <h3 className="mobile-manual-title">항목 추가</h3>
               <button type="button" className="mobile-manual-close" onClick={handleCloseManual}>
                 <i className="ri-close-line" aria-hidden="true" />
               </button>
@@ -190,7 +197,7 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ onEndShopping }) => {
                 }}
               />
               {manualError && <div className="mobile-manual-error">{manualError}</div>}
-              <div className="mobile-manual-label">개수</div>
+              <div className="mobile-manual-label">수량</div>
               <div className="mobile-manual-qty">
                 <button
                   type="button"
@@ -211,7 +218,7 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ onEndShopping }) => {
                   취소
                 </button>
                 <button type="submit" className="mobile-manual-submit">
-                  등록하기
+                  저장
                 </button>
               </div>
             </form>
@@ -222,8 +229,8 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ onEndShopping }) => {
         <div className="mobile-confirm-modal">
           <div className="mobile-confirm-backdrop" onClick={handleConfirmClose} />
           <div className="mobile-confirm-card">
-            <div className="mobile-confirm-title">체크 안한 항목이 있습니다.</div>
-            <div className="mobile-confirm-desc">정말로 넘어가시겠습니까?</div>
+            <div className="mobile-confirm-title">체크되지 않은 항목이 있어요.</div>
+            <div className="mobile-confirm-desc">정말로 쇼핑을 종료할까요?</div>
             <div className="mobile-confirm-actions">
               <button type="button" className="mobile-confirm-cancel" onClick={handleConfirmClose}>
                 취소

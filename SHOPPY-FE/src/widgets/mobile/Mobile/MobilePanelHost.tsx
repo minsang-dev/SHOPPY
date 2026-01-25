@@ -10,6 +10,7 @@ export type PanelType = 'cart' | 'vote' | 'members' | 'chat';
 
 interface MobilePanelHostProps {
   activePanel: PanelType;
+  roomId?: string;
   totalParticipants?: number;
   vote?: VoteData;
   onCreateVote?: (payload: { title: string; options: string[] }) => void;
@@ -21,6 +22,7 @@ interface MobilePanelHostProps {
 
 const MobilePanelHost: React.FC<MobilePanelHostProps> = ({
   activePanel,
+  roomId,
   totalParticipants,
   vote,
   onCreateVote,
@@ -40,12 +42,12 @@ const MobilePanelHost: React.FC<MobilePanelHostProps> = ({
         />
       );
     case 'members':
-      return <MobileMembersPanel />;
+      return <MobileMembersPanel roomId={roomId} />;
     case 'chat':
       return <MobileChatPanel messages={chatMessages} onSendMessage={onSendChatMessage} />;
     case 'cart':
     default:
-      return <MobileCartPanel onEndShopping={onEndShopping} />;
+      return <MobileCartPanel roomId={roomId} onEndShopping={onEndShopping} />;
   }
 };
 

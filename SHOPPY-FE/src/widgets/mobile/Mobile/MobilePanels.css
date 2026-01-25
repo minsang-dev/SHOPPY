@@ -460,6 +460,11 @@
   cursor: pointer;
 }
 
+.mobile-panel-header-button.is-recording {
+  background: #ef4444;
+  color: #fff5f5;
+}
+
 .mobile-panel-header-button i {
   font-size: 0.9rem;
 }
@@ -538,6 +543,11 @@
   padding: 8px;
   border-radius: 10px;
   background: #f3f4f6;
+}
+
+.mobile-panel-members {
+  display: grid;
+  gap: 8px;
 }
 
 .mobile-panel-member-role {
@@ -784,4 +794,109 @@
   padding: 12px 0;
   font-weight: 700;
   cursor: pointer;
+}
+
+.member-card {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+}
+
+.member-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #eef2ff;
+  color: #4338ca;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.member-info {
+  display: grid;
+  gap: 4px;
+}
+
+.member-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.member-name {
+  font-weight: 700;
+  color: #111827;
+}
+
+.member-role {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+
+.member-role.host {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.member-role.guest {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.member-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.member-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9ca3af;
+}
+
+.member-dot.online {
+  background: #22c55e;
+}
+
+.member-dot.offline {
+  background: #9ca3af;
+}
+
+.member-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.member-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 0.95rem;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.member-icon.on {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.member-icon.off {
+  background: #fee2e2;
+  color: #b91c1c;
 }

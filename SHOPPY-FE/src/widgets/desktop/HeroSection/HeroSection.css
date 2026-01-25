@@ -60,6 +60,13 @@
   gap: 2rem;
 }
 
+.hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
 .hero-title {
   font-size: 2rem;
   font-weight: 700;
@@ -99,7 +106,6 @@
 
 .hero-button {
   width: 15rem;
-  align-self: center;
 }
 
 .hero-image {
@@ -126,13 +132,17 @@
     flex-direction: column;
     text-align: center;
   }
+
+  .hero-title-row {
+    justify-content: center;
+  }
   
   .hero-title {
     font-size: 2.5rem;
   }
   
   .hero-button {
-    align-self: center;
+    width: 14rem;
   }
   
   .laptop-image {

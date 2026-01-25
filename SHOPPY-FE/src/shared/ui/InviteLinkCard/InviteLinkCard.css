@@ -87,3 +87,8 @@
   font-weight: 700;
   cursor: pointer;
 }
+
+.invite-card-error {
+  color: #dc2626;
+  font-size: 0.8rem;
+}

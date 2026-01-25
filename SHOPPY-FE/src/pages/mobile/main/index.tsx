@@ -2,20 +2,41 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../../shared/ui/DesktopButton/Button';
 import InviteLinkCard from '../../../shared/ui/InviteLinkCard/InviteLinkCard';
+import { useJoinRoom } from '../../../features/room/join-room/model/useJoinRoom';
 import './styles.css';
 
 const navItems = ['Home', 'Best', 'Product', 'FAQ'];
 
 const products = [
-  { image: '/images/product1.png', alt: '추천 상품 1' },
-  { image: '/images/product2.png', alt: '추천 상품 2' },
-  { image: '/images/product3.png', alt: '추천 상품 3' },
-  { image: '/images/product4.png', alt: '추천 상품 4' },
+  { image: '/images/product1.png', alt: '��õ ��ǰ 1' },
+  { image: '/images/product2.png', alt: '��õ ��ǰ 2' },
+  { image: '/images/product3.png', alt: '��õ ��ǰ 3' },
+  { image: '/images/product4.png', alt: '��õ ��ǰ 4' },
 ];
+
+const parseRoomCode = (input: string) => {
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  try {
+    const url = new URL(trimmed);
+    const codeFromQuery = url.searchParams.get('code') ?? url.searchParams.get('roomCode');
+    if (codeFromQuery) {
+      return codeFromQuery;
+    }
+    const parts = url.pathname.split('/').filter(Boolean);
+    return parts[parts.length - 1] ?? trimmed;
+  } catch {
+    return trimmed;
+  }
+};
 
 const MobileMainPage: React.FC = () => {
   const navigate = useNavigate();
   const [showInvite, setShowInvite] = useState(false);
+  const { loading, error, submit } = useJoinRoom();
 
   const handleStartClick = () => {
     setShowInvite(true);
@@ -25,9 +46,25 @@ const MobileMainPage: React.FC = () => {
     setShowInvite(false);
   };
 
-  const handleInviteEnter = () => {
+  const handleInviteEnter = async ({ link, nickname }: { link: string; nickname: string }) => {
+    const roomCode = parseRoomCode(link);
+    const trimmedNickname = nickname.trim();
+    if (!roomCode || !trimmedNickname) {
+      return;
+    }
+
+    const response = await submit({ roomCode, nickname: trimmedNickname });
+    if (!response) {
+      return;
+    }
+
+    const query = new URLSearchParams({
+      room_id: String(response.roomId),
+      nickname: trimmedNickname,
+    });
+
     setShowInvite(false);
-    navigate('/m/room');
+    navigate(`/m/room?${query.toString()}`);
   };
 
   return (
@@ -43,10 +80,10 @@ const MobileMainPage: React.FC = () => {
         </div>
         <div className="mobile-main-actions">
           <button type="button" className="mobile-main-login">
-            Login
+            login
           </button>
           <button type="button" className="mobile-main-signup">
-            Sign up
+            sign up
           </button>
         </div>
       </header>
@@ -62,9 +99,7 @@ const MobileMainPage: React.FC = () => {
       <section className="mobile-main-hero">
         <div className="mobile-main-hero-text">
           <h1 className="mobile-main-title">
-            실시간 협업 쇼핑을
-            <br />
-            시작해 보세요
+            혼자 말고 함께 쇼핑해요
           </h1>
           <Button
             variant="primary"
@@ -76,7 +111,7 @@ const MobileMainPage: React.FC = () => {
           </Button>
         </div>
         <div className="mobile-main-hero-image">
-          <img src="/images/shoppingMall_main_laptop.png" alt="협업 쇼핑 데모" />
+          <img src="/images/shoppingMall_main_laptop.png" alt="���̺� ���� �����" />
         </div>
       </section>
 
@@ -93,7 +128,12 @@ const MobileMainPage: React.FC = () => {
 
       {showInvite && (
         <div className="mobile-main-invite-overlay">
-          <InviteLinkCard onClose={handleInviteClose} onEnter={handleInviteEnter} />
+          <InviteLinkCard
+            onClose={handleInviteClose}
+            onEnter={handleInviteEnter}
+            loading={loading}
+            error={error}
+          />
         </div>
       )}
     </div>
