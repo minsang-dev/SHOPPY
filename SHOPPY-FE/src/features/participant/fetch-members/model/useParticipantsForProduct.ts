@@ -9,6 +9,7 @@ interface UseParticipantsForProductResult {
   error: string | null;
   getParticipantStatus: (productId: number, memberId: number) => ParticipantSelectionStatus;
   toggleParticipantSelection: (productId: number, memberId: number) => void;
+  getSelectedParticipantCount: (productId: number) => number;
 }
 
 export const useParticipantsForProduct = (
@@ -22,6 +23,7 @@ export const useParticipantsForProduct = (
   const {
     getParticipantStatus,
     toggleParticipantSelection,
+    getSelectedParticipantCount,
     initializeParticipantSelections,
   } = useSettlementStore();
 
@@ -46,8 +48,8 @@ export const useParticipantsForProduct = (
         if (cancelled) {
           return;
         }
-        setError('참여자 목록을 불러오는데 실패했습니다.');
-        console.error('참여자 목록 조회 실패:', err);
+        setError('?????? ????? ???????? ??????????.');
+        console.error('?????? ??? ??? ????:', err);
       })
       .finally(() => {
         if (!cancelled) {
@@ -68,5 +70,6 @@ export const useParticipantsForProduct = (
     error,
     getParticipantStatus,
     toggleParticipantSelection,
+    getSelectedParticipantCount,
   };
 };

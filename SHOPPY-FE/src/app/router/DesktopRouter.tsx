@@ -1,13 +1,13 @@
 import { Routes, Route } from 'react-router-dom';
 
 // 메인 페이지
-import DesktopVideoChatPage from '../../pages/desktop/video-chat';
+import DesktopVideoChatPage from '../../pages/desktop/VideoChat';
 
 // 화상채팅
-import DesktopMainPage from '../../pages/desktop/main';
+import DesktopMainPage from '../../pages/desktop/Main';
 
 // 상품 페이지
-import DesktopProductList from '../../pages/desktop/product-list'
+import DesktopProductList from '../../pages/desktop/ProductList'
 
 const AppRouter = () => {
   return (

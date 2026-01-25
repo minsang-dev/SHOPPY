@@ -1,10 +1,10 @@
-﻿import { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useAddToCart } from '../../../features/cart/add-to-cart/model/useAddToCart';
 import { useProductList } from '../../../features/product/fetch-products/model/useProductList';
-import Header from '../../../widgets/desktop/DesktopHeader/Header';
+import Header from '../../../widgets/desktop/Header/Header';
 
-import SearchBar from '../../../widgets/desktop/DesktopSearchBar/SearchBar';
-import SortOptions from '../../../widgets/desktop/DesktopSortOptions/SortOptions';
+import SearchBar from '../../../widgets/desktop/SearchBar/SearchBar';
+import SortOptions from '../../../widgets/desktop/SortOptions/SortOptions';
 import './styles.css';
 
 const DesktopProductList = () => {
@@ -23,7 +23,7 @@ const DesktopProductList = () => {
     return (
       <div>
         <Header />
-        <div className="message">濡쒕뵫 以?..</div>
+        <div className="message">로딩 중...</div>
       </div>
     );
   }
@@ -41,33 +41,33 @@ const DesktopProductList = () => {
     <div>
       <Header />
       <div className="container">
-        {/* 寃??諛?*/}
+        {/* 검색 바 */}
         <div className="search-filter-bar">
           <SearchBar onSearch={handleSearch} />
         </div>
 
-        {/* ?뺣젹 ?듭뀡 */}
+        {/* 정렬 옵션 */}
         <div className="sort-options-container">
           <SortOptions />
         </div>
 
-        {/* ?곹뭹 洹몃━??*/}
+        {/* 상품 그리드 */}
         <div className="product-grid">
           {products.map((product) => (
             <div key={product.product_id} className="product-card">
-              {/* ?대?吏 */}
+              {/* 이미지 */}
               <div className="image-box">
                 <img src={product.image_url} alt={product.name} />
               </div>
 
-              {/* ?곹뭹 ?뺣낫 */}
+              {/* 상품 정보 */}
               <div className="info-box">
-                {/* ?곹뭹紐?*/}
+                {/* 상품명 */}
                 <div className="name-row">
                   <h3 className="name">{product.name}</h3>
                 </div>
 
-                {/* 媛寃⑷낵 ?λ컮援щ땲 踰꾪듉 */}
+                {/* 가격과 장바구니 버튼 */}
                 <div className="price-row">
                   <div className="price">{product.price.toLocaleString()}원</div>
 
@@ -85,4 +85,3 @@ const DesktopProductList = () => {
 };
 
 export default DesktopProductList;
-

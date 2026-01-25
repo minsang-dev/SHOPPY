@@ -38,12 +38,18 @@ const CartItem: React.FC<CartItemProps> = ({
     <div className="cart-item">
       {/* 상품 이미지와 정보 */}
       <div className="cart-item-content">
-        <div className="cart-item-image">
-          <img src={item.image_url} alt={item.name} />
-        </div>
+        {isOnline && (
+          <div className="cart-item-image">
+            <img src={item.image_url} alt={item.name} />
+          </div>
+        )}
         <div className="cart-item-info">
           <h4 className="cart-item-name">{item.name}</h4>
-          <p className="cart-item-price">{item.price.toLocaleString()}원</p>
+          {/* <p className="cart-item-price">
+            {cartType === 'offline' && item.price === 0 
+              ? '미정' 
+              : `${item.price.toLocaleString()}원`}
+          </p> */}
           
           <div className="cart-item-controls">
             {/* 수량 조절 */}
@@ -78,26 +84,22 @@ const CartItem: React.FC<CartItemProps> = ({
         </div>
       </div>
 
-      {/* 온라인 장바구니에만 표시: 투표 및 참여자 */}
-      {isOnline && (
-        <>
-          <div className="cart-item-divider"></div>
-          <div className="cart-item-footer">
-            <CartItemVotes
-              likes={item.likes || 0}
-              dislikes={item.dislikes || 0}
-              onLike={onLike}
-              onDislike={onDislike}
-            />
-            <CartItemParticipants
-              productId={item.product_id}
-              participantCount={item.participants?.length || 0}
-              isExpanded={isExpanded}
-              onToggle={onToggleParticipants}
-            />
-          </div>
-        </>
-      )}
+      {/* 투표 및 참여자 (온라인/오프라인 모두 표시) */}
+      <div className="cart-item-divider"></div>
+      <div className="cart-item-footer">
+        <CartItemVotes
+          likes={item.likes || 0}
+          dislikes={item.dislikes || 0}
+          onLike={onLike}
+          onDislike={onDislike}
+        />
+        <CartItemParticipants
+          productId={item.product_id}
+          participantCount={item.participants?.length || 0}
+          isExpanded={isExpanded}
+          onToggle={onToggleParticipants}
+        />
+      </div>
     </div>
   );
 };

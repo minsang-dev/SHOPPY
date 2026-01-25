@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import Button from '../../../shared/ui/DesktopButton/Button';
-import RoomModal from '../DesktopRoomModal/RoomModal';
+import RoomModal from '../RoomModal/RoomModal';
 import './HeroSection.css';
 
 interface HeroSectionProps {
@@ -24,8 +24,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ className = '' }) => {
         <div className="hero-content">
           <div className="hero-text">
             <h1 className="hero-title">
-              Shop together in real time<br />
-              Start your live session now
+              실시간 협업 쇼핑을 <br/>시작해 보세요
             </h1>
             <Button
               variant="primary"

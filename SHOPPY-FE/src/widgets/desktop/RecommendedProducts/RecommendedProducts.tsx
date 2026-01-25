@@ -1,5 +1,5 @@
 import React from 'react';
-import ProductCard from '../DesktopProductCard/ProductCard';
+import ProductCard from '../ProductCard/ProductCard';
 import './RecommendedProducts.css';
 
 interface RecommendedProductsProps {
