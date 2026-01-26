@@ -1,0 +1,176 @@
+/* 수동입력 모달 오버레이 */
+.manual-input-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+}
+
+/* 수동입력 모달 */
+.manual-input-modal {
+  background-color: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  padding: 2rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* 모달 제목 */
+.manual-input-modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #000000;
+  margin: 0;
+  text-align: center;
+}
+
+/* 폼 */
+.manual-input-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* 입력 필드 */
+.manual-input-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.manual-input-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #000000;
+}
+
+.manual-input-text {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: #f9f9f9;
+  transition: border-color 0.2s, background-color 0.2s;
+  box-sizing: border-box;
+}
+
+.manual-input-text:focus {
+  outline: none;
+  border-color: #000000;
+  background-color: #ffffff;
+}
+
+.manual-input-text::placeholder {
+  color: #999999;
+}
+
+/* 수량 컨트롤 */
+.manual-input-quantity {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.manual-input-quantity-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #000000;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.manual-input-quantity-btn:hover:not(:disabled) {
+  background-color: #f5f5f5;
+  border-color: #000000;
+}
+
+.manual-input-quantity-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.manual-input-quantity-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  min-width: 40px;
+  text-align: center;
+  color: #000000;
+}
+
+/* 모달 액션 버튼 */
+.manual-input-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.manual-input-cancel-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  background-color: #f5f5f5;
+  color: #000000;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.manual-input-cancel-btn:hover {
+  background-color: #e8e8e8;
+}
+
+.manual-input-submit-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  background-color: #007bff;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.manual-input-submit-btn:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.manual-input-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 반응형 */
+@media (max-width: 767px) {
+  .manual-input-modal {
+    padding: 1.5rem;
+    max-width: 90%;
+  }
+
+  .manual-input-modal-title {
+    font-size: 1.25rem;
+  }
+}
