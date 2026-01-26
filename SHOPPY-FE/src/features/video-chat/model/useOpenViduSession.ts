@@ -40,7 +40,8 @@ export const useOpenViduSession = ({
   const [isConnected, setIsConnected] = useState(false);
 
   const connect = useCallback(async () => {
-    if (!roomId || !accessToken || isConnected) {
+    const authToken = accessToken ?? localStorage.getItem('accessToken');
+    if (!roomId || !authToken || isConnected) {
       return;
     }
 
@@ -114,7 +115,8 @@ export const useOpenViduSession = ({
   }, []);
 
   useEffect(() => {
-    if (!enabled || !roomId || !accessToken) {
+    const authToken = accessToken ?? localStorage.getItem('accessToken');
+    if (!enabled || !roomId || !authToken) {
       return;
     }
     let cancelled = false;

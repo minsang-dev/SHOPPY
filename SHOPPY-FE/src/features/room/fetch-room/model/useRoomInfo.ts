@@ -1,16 +1,16 @@
 ﻿import { useCallback, useEffect, useState } from 'react';
-import { getRoom } from '../../../../entities/room/api/room';
-import type { RoomResponse } from '../../../../entities/room/types/room.types';
+import { getRoom } from '../../../../shared/api/rooms';
+import type { Room } from '../../../../shared/api/types';
 
 interface UseRoomInfoState {
-  room: RoomResponse | null;
+  room: Room | null;
   loading: boolean;
   error: string | null;
   reload: () => Promise<void>;
 }
 
 export const useRoomInfo = (roomId?: string): UseRoomInfoState => {
-  const [room, setRoom] = useState<RoomResponse | null>(null);
+  const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

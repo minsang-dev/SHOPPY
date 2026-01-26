@@ -4,7 +4,7 @@ import { Routes, Route } from 'react-router-dom';
 import DesktopVideoChatPage from '@/pages/desktop/VideoChat';
 
 // 화상채팅
-import DesktopMainPage from '@/pages/desktop/Main';
+import DesktopMainPage from '@/pages/desktop/main';
 
 // 헤더
 import DesktopProductList from '@/pages/desktop/ProductList';

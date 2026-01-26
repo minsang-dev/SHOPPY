@@ -1,66 +1,54 @@
-import type {
-  JoinWebrtcSessionRequest,
-  JoinWebrtcSessionResponse,
-  WebrtcQualityRequest,
-  WebrtcQualityProfile,
-  ApiResponse,
-} from '../types/webrtc.types';
+import { createWebRtcSession, listWebRtcProfiles, recommendWebRtcQuality, stringifyWebRtcData, type WebRtcRole } from '../../../shared/api/webrtc';
 
-const getApiBaseUrl = () => import.meta.env.VITE_API_BASE_URL ?? '';
+export interface JoinWebrtcSessionRequest {
+  role: WebRtcRole;
+  data: string;
+}
 
-const buildHeaders = (accessToken: string) => ({
-  'Content-Type': 'application/json',
-  Authorization: `Bearer ${accessToken}`,
-});
+export interface JoinWebrtcSessionResponse {
+  sessionId: string;
+  token: string;
+  openViduUrl: string;
+  maxParticipants: number;
+  iceServers: RTCIceServer[];
+}
+
+export interface WebrtcQualityRequest {
+  rttMs: number;
+  packetLossRatio: number;
+  uplinkKbps: number;
+}
+
+export interface WebrtcQualityProfile {
+  name: string;
+  width: number;
+  height: number;
+  maxFps: number;
+  maxBitrateKbps: number;
+}
 
 export const joinWebrtcSession = async (
   roomId: string,
   payload: JoinWebrtcSessionRequest,
-  accessToken: string,
-) => {
-  const baseUrl = getApiBaseUrl();
-  const response = await fetch(`${baseUrl}/api/rooms/${roomId}/webrtc/sessions`, {
-    method: 'POST',
-    headers: buildHeaders(accessToken),
-    body: JSON.stringify(payload),
+  _accessToken?: string,
+): Promise<JoinWebrtcSessionResponse> => {
+  const response = await createWebRtcSession(roomId, {
+    role: payload.role,
+    data: stringifyWebRtcData(payload.data),
   });
-  if (!response.ok) {
-    throw new Error('Failed to join webrtc session');
-  }
-  const json: ApiResponse<JoinWebrtcSessionResponse> = await response.json();
-  return json.data;
+  return response as JoinWebrtcSessionResponse;
 };
 
-export const getWebrtcQualities = async (roomId: string, accessToken: string) => {
-  const baseUrl = getApiBaseUrl();
-  const response = await fetch(`${baseUrl}/api/rooms/${roomId}/webrtc/quality/profiles`, {
-    method: 'GET',
-    headers: buildHeaders(accessToken),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to load webrtc qualities');
-  }
-  const json: ApiResponse<WebrtcQualityProfile[]> = await response.json();
-  return json.data;
+export const getWebrtcQualities = async (roomId: string, _accessToken?: string) => {
+  const response = await listWebRtcProfiles(roomId);
+  return response as WebrtcQualityProfile[];
 };
 
 export const setWebrtcQuality = async (
   roomId: string,
   payload: WebrtcQualityRequest,
-  accessToken: string,
+  _accessToken?: string,
 ) => {
-  const baseUrl = getApiBaseUrl();
-  const response = await fetch(
-    `${baseUrl}/api/rooms/${roomId}/webrtc/quality/recommendation`,
-    {
-      method: 'POST',
-      headers: buildHeaders(accessToken),
-      body: JSON.stringify(payload),
-    },
-  );
-  if (!response.ok) {
-    throw new Error('Failed to set webrtc quality');
-  }
-  const json: ApiResponse<WebrtcQualityProfile> = await response.json();
-  return json.data;
+  const response = await recommendWebRtcQuality(roomId, payload);
+  return response as WebrtcQualityProfile;
 };

@@ -1,18 +1,22 @@
-import axios from 'axios';
 import type { Product } from '../types/desktopProductList';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { getProducts, searchProducts } from '../../../shared/api/products';
 
 export const getProductList = async (keyword?: string): Promise<Product[]> => {
-  let url = `${API_BASE_URL}/api/products`;
-  let params = {};
-
   if (keyword) {
-    url = `${API_BASE_URL}/api/products/search`;
-    // handler에서 get('q') 했기 때문에
-    params = { q: keyword }; 
+    const response = await searchProducts(keyword);
+    return response.items.map((item) => ({
+      product_id: item.product_id,
+      name: item.product_name,
+      price: item.price,
+      image_url: item.image_url,
+    }));
   }
 
-  const response = await axios.get<Product[]>(url, { params });
-  return response.data;
+  const response = await getProducts();
+  return response.items.map((item) => ({
+    product_id: item.product_id,
+    name: item.product_name,
+    price: item.price,
+    image_url: item.image_url,
+  }));
 };
