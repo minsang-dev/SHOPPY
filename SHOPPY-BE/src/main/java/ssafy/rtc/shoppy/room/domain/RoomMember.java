@@ -149,4 +149,23 @@ public class RoomMember {
     public boolean isHost() {
         return this.role == MemberRole.HOST;
     }
+
+    public boolean isInRoom(Long requestedRoomId) {
+        return this.roomId.equals(requestedRoomId);
+    }
+
+    public void validateCanSendMessage(Long requestedRoomId) {
+        if (!isInRoom(requestedRoomId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        if (!isActive()) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+    }
+
+    public void validateCanAccessRoom(Long requestedRoomId) {
+        if (!isInRoom(requestedRoomId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+    }
 }
