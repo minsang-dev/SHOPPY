@@ -42,6 +42,8 @@ public enum ErrorCode {
     INVALID_ROOM_MEMBER(HttpStatus.BAD_REQUEST, "해당 방의 참여자가 아닙니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."),
+    VOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "투표를 찾을 수 없습니다."),
+    VOTE_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "투표 항목을 찾을 수 없습니다."),
 
     // 409 Conflict
     CONFLICT(HttpStatus.CONFLICT, "리소스 충돌이 발생했습니다."),
@@ -49,6 +51,8 @@ public enum ErrorCode {
     ROOM_CLOSED(HttpStatus.BAD_REQUEST, "종료된 방입니다."),
     ROOM_FULL(HttpStatus.CONFLICT, "방 인원이 가득 찼습니다."),
     MEMBER_ALREADY_LEFT(HttpStatus.CONFLICT, "이미 퇴장한 멤버입니다."),
+    ALREADY_VOTED(HttpStatus.CONFLICT, "이미 투표에 참여했습니다."),
+    VOTE_ALREADY_CLOSED(HttpStatus.CONFLICT, "이미 종료된 투표입니다."),
 
     // 503 Service Unavailable
     MEDIA_SERVER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Media server is unavailable."),
