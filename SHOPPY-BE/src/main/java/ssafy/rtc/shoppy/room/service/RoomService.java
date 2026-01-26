@@ -1,11 +1,13 @@
 package ssafy.rtc.shoppy.room.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.rtc.shoppy.global.exception.BusinessException;
 import ssafy.rtc.shoppy.global.exception.ErrorCode;
 import ssafy.rtc.shoppy.room.domain.Room;
+import ssafy.rtc.shoppy.room.dto.RoomEventDto;
 import ssafy.rtc.shoppy.room.entity.RoomEntity;
 import ssafy.rtc.shoppy.room.enums.SyncMode;
 import ssafy.rtc.shoppy.room.repository.RoomRepository;
@@ -18,6 +20,7 @@ import java.math.BigDecimal;
 public class RoomService {
 
     private final RoomRepository roomRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public Room createRoom(String roomName, BigDecimal targetBudget, SyncMode syncMode, Long hostId) {
@@ -57,6 +60,9 @@ public class RoomService {
         Room updatedRoom = room.updateSyncMode(syncMode);
         RoomEntity updatedEntity = RoomEntity.fromDomain(updatedRoom);
         roomRepository.save(updatedEntity);
+
+        // WebSocket event: sync mode changed
+        publishRoomEvent(roomId, "/sync-mode", RoomEventDto.syncModeChanged(roomId, syncMode));
     }
 
     @Transactional
@@ -81,6 +87,9 @@ public class RoomService {
         Room updatedRoom = room.updateHostCurrentUrl(currentUrl);
         RoomEntity updatedEntity = RoomEntity.fromDomain(updatedRoom);
         roomRepository.save(updatedEntity);
+
+        // WebSocket event: host URL updated
+        publishRoomEvent(roomId, "/host-url", RoomEventDto.hostUrlUpdated(roomId, currentUrl));
     }
 
     @Transactional
@@ -97,5 +106,15 @@ public class RoomService {
         Room closedRoom = room.close();
         RoomEntity updatedEntity = RoomEntity.fromDomain(closedRoom);
         roomRepository.save(updatedEntity);
+
+        // WebSocket event: room closed
+        publishRoomEvent(roomId, "/status", RoomEventDto.closed(roomId));
+    }
+
+    /**
+     * Publish room event to WebSocket subscribers
+     */
+    private void publishRoomEvent(Long roomId, String destination, RoomEventDto event) {
+        messagingTemplate.convertAndSend("/topic/rooms/" + roomId + destination, event);
     }
 }
