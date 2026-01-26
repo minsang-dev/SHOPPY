@@ -26,11 +26,11 @@ interface UseShoppingItemsState {
 }
 
 const toUiItems = (items: ShoppingItem[]): UiCartItem[] =>
-  items.map((item) => ({
-    id: item.shoppingItemId,
-    name: item.name,
-    quantity: item.quantity,
-    checked: Boolean(item.checked),
+  (items as any[]).map((item) => ({
+    id: item.shoppingItemId ?? item.shopping_item_id,
+    name: item.name ?? item.display_name ?? '',
+    quantity: item.quantity ?? 0,
+    checked: Boolean(item.checked ?? item.is_checked),
   }));
 
 export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
@@ -67,8 +67,12 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
       try {
         setLoading(true);
         await addShoppingItem(roomId, {
-          name,
+          userId: 1,
+          productId: null,
+          displayName: name,
           quantity,
+          purchaseType: false,
+          expectedUnitPrice: null,
         });
         await reload();
       } catch (err) {
@@ -88,7 +92,7 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
       }
       try {
         setLoading(true);
-        await updateShoppingItem(roomId, id, { quantity });
+        await updateShoppingItem(roomId, id, { quantity } as any);
         setItems((prev) =>
           prev.map((item) => (item.id === id ? { ...item, quantity } : item)),
         );
@@ -109,7 +113,7 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
       }
       try {
         setLoading(true);
-        await updateShoppingItem(roomId, id, { checked });
+        await updateShoppingItem(roomId, id, { checked, is_checked: checked } as any);
         setItems((prev) =>
           prev.map((item) => (item.id === id ? { ...item, checked } : item)),
         );

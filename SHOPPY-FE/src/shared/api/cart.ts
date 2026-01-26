@@ -8,7 +8,14 @@ export const getShoppingItems = (roomId: RoomId) =>
 
 export const addShoppingItem = (
   roomId: RoomId,
-  payload: { name: string; quantity: number; price?: number; imageUrl?: string | null },
+  payload: {
+    userId: number | null;
+    productId: number | null;
+    displayName: string;
+    quantity: number;
+    purchaseType: boolean | null;
+    expectedUnitPrice?: string | null;
+  },
 ) => apiPost<void>(`/rooms/${roomId}/shopping-items`, payload);
 
 export const updateShoppingItem = (
