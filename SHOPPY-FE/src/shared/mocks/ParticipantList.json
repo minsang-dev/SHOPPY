@@ -1,74 +1,26 @@
-[
-  {
-    "member_id": 1,
-    "room_id": 2001,
-    "user_id": 501,
-    "name": "지인",
-    "role": "HOST",
-    "status": "ACTIVE",
-    "is_camera_on": true,
-    "current_cursor_x": 480,
-    "current_cursor_y": 320,
-    "joined_at": "2026-01-23T14:00:00"
-  },
-  {
-    "member_id": 2,
-    "room_id": 2001,
-    "user_id": null,
-    "name": "김민상",
-    "role": "GUEST",
-    "status": "ACTIVE",
-    "is_camera_on": true,
-    "current_cursor_x": null,
-    "current_cursor_y": null,
-    "joined_at": "2026-01-23T14:01:10"
-  },
-  {
-    "member_id": 3,
-    "room_id": 2001,
-    "user_id": null,
-    "name": "송이룸",
-    "role": "GUEST",
-    "status": "ACTIVE",
-    "is_camera_on": false,
-    "current_cursor_x": null,
-    "current_cursor_y": null,
-    "joined_at": "2026-01-23T14:02:35"
-  },
-  {
-    "member_id": 4,
-    "room_id": 2001,
-    "user_id": null,
-    "name": "기장선",
-    "role": "GUEST",
-    "status": "ACTIVE",
-    "is_camera_on": true,
-    "current_cursor_x": null,
-    "current_cursor_y": null,
-    "joined_at": "2026-01-23T14:03:50"
-  },
-  {
-    "member_id": 5,
-    "room_id": 2001,
-    "user_id": null,
-    "name": "송주헌",
-    "role": "GUEST",
-    "status": "ACTIVE",
-    "is_camera_on": false,
-    "current_cursor_x": null,
-    "current_cursor_y": null,
-    "joined_at": "2026-01-23T14:05:05"
-  },
-  {
-    "member_id": 6,
-    "room_id": 2001,
-    "user_id": null,
-    "name": "김민우",
-    "role": "GUEST",
-    "status": "ACTIVE",
-    "is_camera_on": false,
-    "current_cursor_x": null,
-    "current_cursor_y": null,
-    "joined_at": "2026-01-23T14:05:05"
-  }
-]
+{
+  "status": "success",
+  "message": "OK",
+  "data": [
+    {
+      "memberId": 16,
+      "roomId": 4,
+      "userId": null,
+      "nickname": "게스트2",
+      "role": "GUEST",
+      "status": "ACTIVE",
+      "isCameraOn": false,
+      "joinedAt": "2026-01-23T14:07:18.251727"
+    },
+    {
+      "memberId": 17,
+      "roomId": 4,
+      "userId": null,
+      "nickname": "게스트3",
+      "role": "GUEST",
+      "status": "ACTIVE",
+      "isCameraOn": false,
+      "joinedAt": "2026-01-23T14:10:00.974169"
+    }
+  ]
+}

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import type { Participant, ParticipantSelectionStatus } from '../../../../../entities/participant/types/participant.types';
+import type { RoomMember } from '@/entities/room/types/room.types';
+import type { ParticipantSelectionStatus } from '@/entities/settlement/model/useSettlementStore';
 import './ParticipantAvatar.css';
 
 interface ParticipantAvatarProps {
-  participant: Participant;
+  participant: RoomMember;
   status: ParticipantSelectionStatus;
   onStatusToggle: (memberId: number) => void;
 }
@@ -27,7 +28,7 @@ const ParticipantAvatar: React.FC<ParticipantAvatarProps> = ({
 
   // 참여자 선택 토글
   const handleClick = () => {
-    onStatusToggle(participant.member_id);
+    onStatusToggle(participant.memberId);
   };
 
   return (
@@ -39,19 +40,19 @@ const ParticipantAvatar: React.FC<ParticipantAvatarProps> = ({
         onMouseLeave={() => setShowTooltip(false)}
         role="button"
         tabIndex={0}
-        aria-label={`${participant.name}`}
+        aria-label={`${participant.nickname}`}
       >
         {/* 프로필 이미지 또는 초성 */}
-        {participant.user_id ? (
+        {participant.userId ? (
           <div className="participant-image">
             {/* 실제 프로필 이미지가 있다면 img 태그 사용 */}
             <div className="participant-image-placeholder">
-              {getInitial(participant.name)}
+              {getInitial(participant.nickname)}
             </div>
           </div>
         ) : (
           <div className="participant-initial">
-            {getInitial(participant.name)}
+            {getInitial(participant.nickname)}
           </div>
         )}
 
@@ -68,7 +69,7 @@ const ParticipantAvatar: React.FC<ParticipantAvatarProps> = ({
       {/* 툴팁 */}
       {showTooltip && (
         <div className="participant-tooltip">
-          {participant.name}
+          {participant.nickname}
         </div>
       )}
     </div>

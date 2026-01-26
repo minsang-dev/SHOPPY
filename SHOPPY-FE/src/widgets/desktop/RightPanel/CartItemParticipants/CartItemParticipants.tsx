@@ -56,7 +56,7 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
           <div className="participants-list-content">
             {loading ? (
               <div className="participants-loading">
-                <p>濡쒕뵫 以?..</p>
+                <p>로딩 중...</p>
               </div>
             ) : error ? (
               <div className="participants-empty">
@@ -64,15 +64,15 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
               </div>
             ) : participants.length === 0 ? (
               <div className="participants-empty">
-                <p>李몄뿬?먭? ?놁뒿?덈떎.</p>
+                <p>참여자가 없습니다.</p>
               </div>
             ) : (
               <div className="participants-list">
                 {participants.map((participant) => (
                   <ParticipantAvatar
-                    key={participant.member_id}
+                    key={participant.memberId}
                     participant={participant}
-                    status={getParticipantStatus(productId, participant.member_id)}
+                    status={getParticipantStatus(productId, participant.memberId)}
                     onStatusToggle={handleStatusToggle}
                   />
                 ))}
@@ -86,4 +86,3 @@ const CartItemParticipants: React.FC<CartItemParticipantsProps> = ({
 };
 
 export default CartItemParticipants;
-
