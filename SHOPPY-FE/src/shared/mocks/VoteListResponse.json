@@ -1,0 +1,22 @@
+{
+  "status": "success",
+  "message": "OK",
+  "data": {
+    "items": [
+      {
+        "vote_id": 2001,
+        "title": "삼겹살 vs 목살",
+        "status": "OPEN",
+        "created_at": "2026-01-19T09:20:00",
+        "closed_at": null
+      },
+      {
+        "vote_id": 2003,
+        "title": "숯을 살까요 말까요",
+        "status": "OPEN",
+        "created_at": "2026-01-19T09:21:00",
+        "closed_at": null
+      }
+    ]
+  }
+}

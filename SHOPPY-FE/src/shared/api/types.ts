@@ -41,7 +41,7 @@ export type ShoppingItem = {
 
 export type Product = {
   product_id: number;
-  product_name: string;
+  name: string;
   price: number;
   image_url: string;
 };

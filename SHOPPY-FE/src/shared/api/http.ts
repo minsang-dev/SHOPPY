@@ -74,18 +74,19 @@ export const apiRequest = async <T>(options: ApiRequestOptions): Promise<T> => {
     }
 
     throw toApiError(response.data as ApiFailResponse, response.status);
-  } catch (error: any) {
-    const status = error?.response?.status ?? null;
-    const payload = error?.response?.data;
+  } catch (error: unknown) {
+    const axiosError = error as { response?: { status?: number; data?: unknown }; message?: string };
+    const status = axiosError?.response?.status ?? null;
+    const payload = axiosError?.response?.data;
 
-    if (payload?.status === 'fail') {
+    if (payload && typeof payload === 'object' && 'status' in payload && payload.status === 'fail') {
       throw toApiError(payload as ApiFailResponse, status);
     }
 
     throw {
       statusCode: status,
       errorCode: null,
-      message: error?.message || 'Network error',
+      message: axiosError?.message || 'Network error',
       data: payload ?? null,
       httpStatus: status,
     } as ApiError;

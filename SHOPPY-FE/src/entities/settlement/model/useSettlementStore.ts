@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import type { ParticipantSelectionStatus } from '../../participant/types/participant.types';
+
+export type ParticipantSelectionStatus = 'checked' | 'unchecked';
 
 // 실제 데이터 구조: 상품 id -> 참여자 id -> 선택 상태
 // {
