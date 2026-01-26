@@ -11,8 +11,8 @@ out/
 
 ### Application secrets ###
 **/application-local.yaml
-docs/
-.claude/*
+SHOPPY-BE/docs/
+SHOPPY-BE/.claude/*
 
 ### Local development ###
 docker-compose.openvidu.yml
