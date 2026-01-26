@@ -26,7 +26,7 @@ GET http://localhost:8080/api/rooms/1
 ###
 
 ### 방 조회 - 초대 코드로 조회 (GET /rooms/code/{roomCode})
-GET http://localhost:8080/api/rooms/code/426302D1
+GET http://localhost:8080/api/rooms/code/4CE6A8F3
 
 ###
 
@@ -35,24 +35,24 @@ POST http://localhost:8080/api/rooms/join
 Content-Type: application/json
 
 {
-  "roomCode": "426302D1",
+  "roomCode": "4CE6A8F3",
   "nickname": "게스트2"
 }
 
 ###
 
 ### 참여자 목록 조회 (GET /rooms/{roomId}/members)
-GET http://localhost:8080/api/rooms/4/members
+GET http://localhost:8080/api/rooms/1/members
 
 ###
 
 ### 방 나가기 (DELETE /rooms/{roomId}/members/{memberId})
-DELETE http://localhost:8080/api/rooms/4/members/17
+DELETE http://localhost:8080/api/rooms/1/members/1
 
 ###
 
 ### 동기화 모드 변경 (PATCH /rooms/{roomId}/sync-mode) - 호스트만 가능
-PATCH http://localhost:8080/api/rooms/4/sync-mode
+PATCH http://localhost:8080/api/rooms/1/sync-mode
 Content-Type: application/json
 
 {
@@ -62,7 +62,7 @@ Content-Type: application/json
 ###
 
 ### 호스트 URL 업데이트 (PATCH /rooms/{roomId}/host-url) - FOLLOW 모드
-PATCH http://localhost:8080/api/rooms/5/host-url
+PATCH http://localhost:8080/api/rooms/1/host-url
 Content-Type: application/json
 
 {
@@ -72,7 +72,7 @@ Content-Type: application/json
 ###
 
 ### 참여자 상태 업데이트 (PATCH /rooms/{roomId}/members/{memberId})
-PATCH http://localhost:8080/api/rooms/4/members/17
+PATCH http://localhost:8080/api/rooms/1/members/17
 Content-Type: application/json
 
 {
