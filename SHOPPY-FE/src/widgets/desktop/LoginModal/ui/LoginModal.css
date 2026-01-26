@@ -1,0 +1,80 @@
+.login-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+}
+
+.login-modal {
+  position: relative;
+  background-color: #ffffff;
+  width: 100%;
+  max-width: 400px;
+  padding: 40px 32px 32px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #000000;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+  line-height: 1;
+}
+
+.login-modal-close:hover {
+  color: #666666;
+}
+
+.login-modal-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.login-modal-title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #000000;
+  text-align: center;
+  font-family: 'Sora', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+}
+
+.login-modal-slogan {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 400;
+  color: #666666;
+  text-align: center;
+  line-height: 1.6;
+  font-family: 'Sora', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+}
+
+.login-modal-button-area {
+  width: 100%;
+  margin-top: 8px;
+}
