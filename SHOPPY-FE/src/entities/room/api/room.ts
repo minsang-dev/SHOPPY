@@ -31,6 +31,7 @@ export const joinRoom = async (payload: JoinRoomRequest): Promise<JoinRoomRespon
   return response.data.data;
 };
 
+
 // 호스트 방 조회
 export const getRoom = async (roomId: string): Promise<RoomResponse> => {
   const response = await axios.get(
