@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useModalStore } from '@/shared/model/useModalStore';
+import { LoginModal } from '@/widgets/desktop/LoginModal';
 import './Header.css';
 
 interface HeaderProps {
@@ -9,6 +11,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const { openLoginModal } = useModalStore();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -49,7 +52,10 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
         </nav>
         
         <div className={`header-actions ${isMenuOpen ? 'open' : ''}`}>
-          <a href="#" className="btn-signup">Login</a>
+          <button onClick={openLoginModal} className="btn-login">
+            Login
+          </button>
+          <LoginModal />
         </div>
       </div>
     </header>

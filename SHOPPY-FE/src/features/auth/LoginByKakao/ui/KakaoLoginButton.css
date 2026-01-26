@@ -1,0 +1,33 @@
+.kakao-login-button {
+  width: 100%;
+  background-color: #FEE500;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-family: 'Sora', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+}
+
+.kakao-login-button:hover {
+  background-color: #FDD835;
+}
+
+.kakao-login-button:active {
+  background-color: #FBC02D;
+}
+
+.kakao-icon {
+  flex-shrink: 0;
+}
+
+.kakao-login-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000000;
+  line-height: 1;
+}
