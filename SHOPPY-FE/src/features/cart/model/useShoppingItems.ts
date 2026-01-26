@@ -32,9 +32,20 @@ export const useShoppingItems = (roomId: number | string | null) => {
     quantity: number;
     price?: number;
     imageUrl?: string | null;
+    userId?: number | null;
+    productId?: number | null;
+    purchaseType?: boolean | null;
   }) => {
     if (!roomId) return;
-    await addShoppingItem(roomId, payload);
+    await addShoppingItem(roomId, {
+      userId: payload.userId ?? null,
+      productId: payload.productId ?? null,
+      displayName: payload.name,
+      quantity: payload.quantity,
+      purchaseType: payload.purchaseType ?? false,
+      expectedUnitPrice:
+        typeof payload.price === 'number' ? String(payload.price) : payload.price ?? null,
+    });
     await fetchItems();
   };
 
