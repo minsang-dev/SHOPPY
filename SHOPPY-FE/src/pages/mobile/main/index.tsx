@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../../shared/ui/DesktopButton/Button';
 import InviteLinkCard from '../../../shared/ui/InviteLinkCard/InviteLinkCard';
-import { useJoinRoom } from '../../../features/room/join-room/model/useJoinRoom';
+import { useJoinRoom } from '../../../features/room/model/useJoinRoom';
 import './styles.css';
 
 const navItems = ['Home', 'Best', 'Product', 'FAQ'];
 
 const products = [
-  { image: '/images/product1.png', alt: 'ï¿½ï¿½Ãµ ï¿½ï¿½Ç° 1' },
-  { image: '/images/product2.png', alt: 'ï¿½ï¿½Ãµ ï¿½ï¿½Ç° 2' },
-  { image: '/images/product3.png', alt: 'ï¿½ï¿½Ãµ ï¿½ï¿½Ç° 3' },
-  { image: '/images/product4.png', alt: 'ï¿½ï¿½Ãµ ï¿½ï¿½Ç° 4' },
+  { image: '/images/product1.png', alt: 'ÃßÃµ »óÇ° 1' },
+  { image: '/images/product2.png', alt: 'ÃßÃµ »óÇ° 2' },
+  { image: '/images/product3.png', alt: 'ÃßÃµ »óÇ° 3' },
+  { image: '/images/product4.png', alt: 'ÃßÃµ »óÇ° 4' },
 ];
 
 const parseRoomCode = (input: string) => {
@@ -36,7 +36,7 @@ const parseRoomCode = (input: string) => {
 const MobileMainPage: React.FC = () => {
   const navigate = useNavigate();
   const [showInvite, setShowInvite] = useState(false);
-  const { loading, error, submit } = useJoinRoom();
+  const { loading, error, run } = useJoinRoom();
 
   const handleStartClick = () => {
     setShowInvite(true);
@@ -53,10 +53,7 @@ const MobileMainPage: React.FC = () => {
       return;
     }
 
-    const response = await submit({ roomCode, nickname: trimmedNickname });
-    if (!response) {
-      return;
-    }
+    const response = await run({ roomCode, nickname: trimmedNickname });
 
     const query = new URLSearchParams({
       room_id: String(response.roomId),
@@ -98,25 +95,23 @@ const MobileMainPage: React.FC = () => {
 
       <section className="mobile-main-hero">
         <div className="mobile-main-hero-text">
-          <h1 className="mobile-main-title">
-            í˜¼ìž ë§ê³  í•¨ê»˜ ì‡¼í•‘í•´ìš”
-          </h1>
+          <h1 className="mobile-main-title">È¥ÀÚ ¸»°í °°ÀÌ ¼îÇÎÇØ¿ä</h1>
           <Button
             variant="primary"
             size="large"
             className="mobile-main-cta"
             onClick={handleStartClick}
           >
-            ì‹œìž‘í•˜ê¸°
+            ½ÃÀÛÇÏ±â
           </Button>
         </div>
         <div className="mobile-main-hero-image">
-          <img src="/images/shoppingMall_main_laptop.png" alt="ï¿½ï¿½ï¿½Ìºï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½" />
+          <img src="/images/shoppingMall_main_laptop.png" alt="¶óÀÌºê ¼îÇÎ È­¸é" />
         </div>
       </section>
 
       <section className="mobile-main-products">
-        <h2 className="mobile-main-products-title">ì¶”ì²œ ìƒí’ˆ</h2>
+        <h2 className="mobile-main-products-title">ÃßÃµ »óÇ°</h2>
         <div className="mobile-main-products-grid">
           {products.map((product) => (
             <div key={product.image} className="mobile-main-product-card">
@@ -132,7 +127,7 @@ const MobileMainPage: React.FC = () => {
             onClose={handleInviteClose}
             onEnter={handleInviteEnter}
             loading={loading}
-            error={error}
+            error={error?.message}
           />
         </div>
       )}

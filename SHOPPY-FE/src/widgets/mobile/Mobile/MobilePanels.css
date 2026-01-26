@@ -518,6 +518,100 @@
   color: #4b5563;
 }
 
+.mobile-vote-list {
+  display: grid;
+  gap: 8px;
+  overflow: auto;
+  padding-right: 4px;
+  align-content: start;
+  grid-auto-rows: min-content;
+}
+
+.mobile-vote-item {
+  border: 1px solid #eef2f6;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  align-self: start;
+  min-height: 72px;
+}
+
+.mobile-vote-item-body {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.mobile-vote-item-delete {
+  border: none;
+  background: #f3f4f6;
+  color: #6b7280;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  align-self: center;
+  padding: 0;
+}
+
+.mobile-vote-item-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.mobile-vote-item-meta {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.mobile-vote-detail-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.mobile-vote-detail-card {
+  position: relative;
+  width: min(100%, 340px);
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+  z-index: 1;
+  display: grid;
+  gap: 14px;
+}
+
+.mobile-vote-detail-options {
+  display: grid;
+  gap: 12px;
+}
+
+.mobile-vote-detail-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
 .mobile-panel-row-text {
   font-size: 0.9rem;
   color: #4b5563;

@@ -1,16 +1,16 @@
 ﻿import { useCallback, useEffect, useState } from 'react';
-import { getRoomMembers } from '../../../../entities/room/api/room';
-import type { RoomMember } from '../../../../entities/room/types/room.types';
+import { getRoomMembers } from '../../../../shared/api/rooms';
+import type { Member } from '../../../../shared/api/types';
 
 interface UseRoomMembersState {
-  members: RoomMember[];
+  members: Member[];
   loading: boolean;
   error: string | null;
   reload: () => Promise<void>;
 }
 
 export const useRoomMembers = (roomId?: string): UseRoomMembersState => {
-  const [members, setMembers] = useState<RoomMember[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
