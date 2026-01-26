@@ -7,7 +7,7 @@ import SortOptions from '@/widgets/desktop/SortOptions/SortOptions';
 import './styles.css';
 
 const DesktopProductList = () => {
-  const { products, loading, error, search, reload } = useProductList();
+  const { products, loading, error, search } = useProductList();
   const addToCart = useAddToCart();
 
   const handleSearch = (keyword: string) => {

@@ -1,10 +1,10 @@
 import { Routes, Route } from 'react-router-dom';
 
 // 메인 페이지
-import DesktopVideoChatPage from '@/pages/desktop/VideoChat';
+import DesktopMainPage from '@/pages/desktop/Main';
 
 // 화상채팅
-import DesktopMainPage from '@/pages/desktop/Main';
+import DesktopVideoChatPage from '@/pages/desktop/VideoChat';
 
 // 헤더
 import DesktopProductList from '@/pages/desktop/ProductList';
@@ -12,11 +12,15 @@ import DesktopProductList from '@/pages/desktop/ProductList';
 // OAuth 콜백
 import { KakaoCallbackPage } from '@/pages/desktop/LoginCallBack/KakaoCallbackPage';
 
+// 마이페이지
+import MyPage from '@/pages/desktop/MyPage';
+
 const AppRouter = () => {
   return (
     <Routes>
       <Route index element={<DesktopMainPage />} />
       <Route path="products" element={<DesktopProductList />} />
+      <Route path="myPage/:userId" element={<MyPage />} />
 
       {/* 카카오 OAuth 콜백 */}
       <Route path="auth/kakao/callback" element={<KakaoCallbackPage />} />

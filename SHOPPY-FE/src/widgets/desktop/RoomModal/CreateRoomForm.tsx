@@ -14,7 +14,7 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
     return num.toLocaleString('ko-KR');
   };
 
-  // 예산 문자열을 숫자로 변환 (쉼표 제거)
+
   const parseBudget = (budgetStr: string): number => {
     const cleaned = budgetStr.replace(/,/g, '').trim();
     const parsed = parseInt(cleaned, 10);

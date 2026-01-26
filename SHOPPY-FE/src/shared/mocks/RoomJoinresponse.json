@@ -1,0 +1,14 @@
+{
+  "status": "success",
+  "message": "OK",
+  "data": {
+    "memberId": 17,
+    "roomId": 4,
+    "userId": null,
+    "nickname": "게스트2",
+    "role": "GUEST",
+    "status": "ACTIVE",
+    "isCameraOn": false,
+    "joinedAt": "2026-01-23T14:10:00.9741689"
+  }
+}

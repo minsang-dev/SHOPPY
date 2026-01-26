@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { useModalStore } from '@/shared/model/useModalStore';
+import { useAuthStore } from '@/entities/user';
 import { LoginModal } from '@/widgets/desktop/LoginModal';
 import './Header.css';
 
@@ -11,16 +12,19 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const { roomId } = useParams<{ roomId: string }>();
   const { openLoginModal } = useModalStore();
+  const { isLoggedIn, user } = useAuthStore();
+  const navigate = useNavigate();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  // 현재 경로가 /room으로 시작하는지 확인
-  const isInRoom = location.pathname.startsWith('/room');
-  const homePath = isInRoom ? '/room' : '/';
-  const productsPath = isInRoom ? '/room/products' : '/products';
+  // 현재 경로가 /rooms/:roomId 인지 확인
+  const isInRoom = location.pathname.startsWith('/rooms/') && roomId;
+  const homePath = isInRoom ? `/rooms/${roomId}` : '/';
+  const productsPath = isInRoom ? `/rooms/${roomId}/products` : '/products';
 
   return (
     <header className={`header ${className}`}>
@@ -52,9 +56,19 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
         </nav>
         
         <div className={`header-actions ${isMenuOpen ? 'open' : ''}`}>
-          <button onClick={openLoginModal} className="btn-login">
-            Login
-          </button>
+          {isLoggedIn ? (
+            <button
+              className="btn-profile"
+              aria-label="프로필"
+              onClick={() => navigate(`/myPage/${user?.id}`)}
+            >
+              <i className="ri-user-line"></i>
+            </button>
+          ) : (
+            <button onClick={openLoginModal} className="btn-login">
+              Login
+            </button>
+          )}
           <LoginModal />
         </div>
       </div>

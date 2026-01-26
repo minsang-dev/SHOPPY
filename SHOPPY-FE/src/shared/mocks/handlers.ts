@@ -1,6 +1,9 @@
 import { http, HttpResponse } from 'msw';
 import productList from './productList.json';
 import participantList from './ParticipantList.json';
+import roomCreateResponse from './RoomCreateResponse.json';
+import roomJoinResponse from './RoomJoinresponse.json';
+import kakaoLoginResponse from './kakaoLoginResponse.json';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -34,5 +37,34 @@ export const handlers = [
   http.get(`${API_URL}/api/rooms/members/member_list`, () => {
     console.log('MSW: 참여자 목록 조회 요청 받음');
     return HttpResponse.json(participantList);
+  }),
+
+  // 4. 방 생성: POST /api/rooms
+  http.post(`${API_URL}/api/rooms`, async ({ request }) => {
+    const body = await request.json();
+    console.log('MSW: 방 생성 요청 받음', body);
+    return HttpResponse.json(roomCreateResponse);
+  }),
+
+  // 5. 방 참여: POST /api/rooms/join
+  http.post(`${API_URL}/api/rooms/join`, async ({ request }) => {
+    const body = await request.json();
+    console.log('MSW: 방 참여 요청 받음', body);
+    return HttpResponse.json(roomJoinResponse);
+  }),
+
+  // 6. 카카오 로그인 콜백: GET /api/auth/kakao/callback
+  http.get(`${API_URL}/api/auth/kakao/callback`, ({ request }) => {
+    const url = new URL(request.url);
+    const code = url.searchParams.get('code');
+    console.log('MSW: 카카오 로그인 콜백 요청 받음 (code:', code, ')');
+    return HttpResponse.json(kakaoLoginResponse);
+  }),
+
+  // 7. 토큰 갱신: POST /api/auth/refresh
+  http.post(`${API_URL}/api/auth/refresh`, async ({ request }) => {
+    const body = await request.json();
+    console.log('MSW: 토큰 갱신 요청 받음', body);
+    return HttpResponse.json(kakaoLoginResponse);
   }),
 ];
