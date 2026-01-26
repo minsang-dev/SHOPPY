@@ -1,19 +1,14 @@
-import { useEffect } from 'react';
-import { useAddToCart } from '../../../features/cart/add-to-cart/model/useAddToCart';
-import { useProductList } from '../../../features/product/fetch-products/model/useProductList';
-import Header from '../../../widgets/desktop/Header/Header';
+import { useAddToCart } from '@/features/cart/add-to-cart/model/useAddToCart';
+import { useProductList } from '@/features/product/fetch-products/model/useProductList';
+import Header from '@/widgets/desktop/Header/Header';
 
-import SearchBar from '../../../widgets/desktop/SearchBar/SearchBar';
-import SortOptions from '../../../widgets/desktop/SortOptions/SortOptions';
+import SearchBar from '@/widgets/desktop/SearchBar/SearchBar';
+import SortOptions from '@/widgets/desktop/SortOptions/SortOptions';
 import './styles.css';
 
 const DesktopProductList = () => {
   const { products, loading, error, search, reload } = useProductList();
   const addToCart = useAddToCart();
-
-  useEffect(() => {
-    void reload();
-  }, [reload]);
 
   const handleSearch = (keyword: string) => {
     void search(keyword);

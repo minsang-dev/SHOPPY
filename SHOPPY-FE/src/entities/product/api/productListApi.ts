@@ -3,6 +3,7 @@ import type { Product } from '../types/desktopProductList';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// 상품 전체 목록, keyword가 있을 경우 검색 결과 필터링
 export const getProductList = async (keyword?: string): Promise<Product[]> => {
   let url = `${API_BASE_URL}/api/products`;
   let params = {};
