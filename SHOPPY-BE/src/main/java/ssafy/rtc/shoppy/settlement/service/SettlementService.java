@@ -21,6 +21,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import ssafy.rtc.shoppy.settlement.dto.ReceiptUploadResponse;
+import ssafy.rtc.shoppy.settlement.entity.Receipt;
+import ssafy.rtc.shoppy.settlement.repository.ReceiptRepository;
+import org.springframework.web.multipart.MultipartFile;
+
+import ssafy.rtc.shoppy.ai.imagerecognition.dto.ImageRecognitionRequestDto;
+import ssafy.rtc.shoppy.ai.imagerecognition.dto.ImageRecognitionResponseDto;
+import ssafy.rtc.shoppy.ai.imagerecognition.service.ImageRecognitionService;
+import ssafy.rtc.shoppy.settlement.utils.ReceiptParser;
+import java.util.Collections;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -31,6 +42,84 @@ public class SettlementService {
     private final PurchaseItemRepository purchaseItemRepository;
     private final ItemAllocationRepository itemAllocationRepository;
     private final RoomMemberRepository roomMemberRepository;
+    private final ReceiptRepository receiptRepository;
+    private final FileStorageService fileStorageService;
+    private final ImageRecognitionService imageRecognitionService;
+
+    /**
+     * 영수증 이미지 업로드 및 정산(Purchase) 초기 생성
+     */
+    public ReceiptUploadResponse uploadReceipt(Long roomId, Long memberId, MultipartFile file) {
+        // 1. 파일 저장 (S3)
+        String imageUrl = fileStorageService.storeFile(file);
+
+        // 2. OCR 분석 수행
+        BigDecimal recognizedTotal = BigDecimal.ZERO;
+        List<ReceiptParser.ParsedItem> parsedItems = new ArrayList<>();
+
+        try {
+            ImageRecognitionRequestDto requestDto = ImageRecognitionRequestDto.builder()
+                    .imageUrl(imageUrl)
+                    .features(Collections.singletonList("TEXT_DETECTION"))
+                    .build();
+
+            List<ImageRecognitionResponseDto> results = imageRecognitionService.analyzeImages(Collections.singletonList(requestDto));
+
+            if (!results.isEmpty() && !results.get(0).getTexts().isEmpty()) {
+                // 첫 번째 요소는 전체 텍스트
+                String fullText = results.get(0).getTexts().get(0).getDescription();
+                recognizedTotal = ReceiptParser.parseTotalAmount(fullText);
+                parsedItems = ReceiptParser.parseItems(fullText);
+                log.info("OCR Recognized Total: {}, Items: {}", recognizedTotal, parsedItems.size());
+            }
+        } catch (Exception e) {
+            log.error("OCR analysis failed for image: {}", imageUrl, e);
+        }
+
+        // 3. 정산(Purchase) 생성 (초기 상태)
+        Purchase purchase = Purchase.builder()
+                .roomId(roomId)
+                .payerMemberId(memberId)
+                .totalAmount(recognizedTotal) // OCR 결과 반영
+                .status("PENDING")
+                .build();
+        purchaseRepository.save(purchase);
+
+        // 4. 품목(PurchaseItem) 저장
+        List<ReceiptUploadResponse.ItemDto> itemDtos = new ArrayList<>();
+        for (ReceiptParser.ParsedItem item : parsedItems) {
+            PurchaseItem purchaseItem = PurchaseItem.builder()
+                    .purchase(purchase)
+                    .itemName(item.itemName())
+                    .unitPrice(item.unitPrice())
+                    .quantity(item.quantity())
+                    .build();
+            purchaseItemRepository.save(purchaseItem);
+            
+            itemDtos.add(ReceiptUploadResponse.ItemDto.builder()
+                    .itemName(item.itemName())
+                    .unitPrice(item.unitPrice())
+                    .quantity(item.quantity())
+                    .build());
+        }
+
+        // 5. 영수증(Receipt) 정보 저장
+        Receipt receipt = Receipt.builder()
+                .purchase(purchase)
+                .imageUrl(imageUrl)
+                .originalFilename(file.getOriginalFilename())
+                .recognizedTotal(recognizedTotal)
+                .build();
+        receiptRepository.save(receipt);
+
+        // 6. 응답 반환
+        return ReceiptUploadResponse.builder()
+                .receiptId(receipt.getReceiptId())
+                .settlementId(purchase.getPurchaseId())
+                .imageUrl(imageUrl)
+                .items(itemDtos)
+                .build();
+    }
 
     /**
      * 정산 마스터(Purchase) 생성 및 초기 분배 (모든 멤버 참여)
