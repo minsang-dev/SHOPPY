@@ -115,8 +115,7 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
       }
       try {
         setLoading(true);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await updateShoppingItem(roomId, id, { checked, is_checked: checked } as any);
+        await updateShoppingItem(roomId, id, { checked });
         setItems((prev) =>
           prev.map((item) => (item.id === id ? { ...item, checked } : item)),
         );

@@ -54,7 +54,7 @@ const VotePanel: React.FC = () => {
     }
 
     try {
-      await participateVote(roomId, selectedVoteId, { option_id: optionId });
+      await participateVote(roomId, selectedVoteId, { optionId });
       // 투표 성공 후 상세 정보 다시 불러오기
       await refetchVoteDetail();
     } catch (error) {

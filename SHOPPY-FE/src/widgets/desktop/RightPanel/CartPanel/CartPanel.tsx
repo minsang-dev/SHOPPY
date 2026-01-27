@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { getShoppingList, updateShoppingItem, deleteShoppingItem, addShoppingItem } from '@/entities/shopping/api/shopping';
 import type { ShoppingItem, ShoppingItemAddRequest } from '@/entities/shopping/types/shopping.types';
@@ -18,13 +18,13 @@ const CartPanel: React.FC = () => {
   // UI 전용 상태 (likes, dislikes, participants)
   const [itemLikes, setItemLikes] = useState<Record<number, number>>({});
   const [itemDislikes, setItemDislikes] = useState<Record<number, number>>({});
-  const [itemParticipants, setItemParticipants] = useState<Record<number, string[]>>({});
-  
+  const [itemParticipants] = useState<Record<number, string[]>>({});
+
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
 
   // 데이터 로드
-  const loadItems = async () => {
+  const loadItems = useCallback(async () => {
     if (!roomId) return;
     setLoading(true);
     try {
@@ -35,11 +35,11 @@ const CartPanel: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [roomId]);
 
   useEffect(() => {
     loadItems();
-  }, [roomId]);
+  }, [loadItems]);
 
   // purchase_type에 따라 필터링
   const currentCartItems = shoppingItems.filter((item) => {
@@ -99,7 +99,7 @@ const CartPanel: React.FC = () => {
 
   const handleToggleChecked = async (item: ShoppingItem) => {
     if (!roomId) return;
-    await updateShoppingItem(roomId, item.shopping_item_id, { is_checked: !item.is_checked });
+    await updateShoppingItem(roomId, item.shopping_item_id, { isChecked: !item.is_checked });
     await loadItems();
   };
 

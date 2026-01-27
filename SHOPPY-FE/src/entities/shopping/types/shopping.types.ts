@@ -24,8 +24,8 @@ export interface ShoppingItemAddRequest {
 
 export interface ShoppingItemUpdateRequest {
   quantity?: number;
-  is_checked?: boolean;
-  product_id?: number | null;
+  isChecked?: boolean;
+  productId?: number | null;
 }
 
 export interface ShoppingItemUpdateResponse {

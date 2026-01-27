@@ -34,7 +34,7 @@ export interface VoteListResponse {
 }
 
 export interface VoteParticipantRequest {
-  option_id: number;
+  optionId: number;
 }
 
 export interface VoteParticipantResponse {
