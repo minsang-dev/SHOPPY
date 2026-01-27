@@ -18,6 +18,15 @@ export interface KakaoLoginResponse {
     profileImageUrl: string;
     accessToken: string;
     refreshToken: string;
-    newMember: boolean;
+    isNewMember: boolean;
+  };
+}
+
+export interface TokenRefreshResponse {
+  status: string;
+  message: string;
+  data: {
+    accessToken: string;
+    refreshToken: string;
   };
 }

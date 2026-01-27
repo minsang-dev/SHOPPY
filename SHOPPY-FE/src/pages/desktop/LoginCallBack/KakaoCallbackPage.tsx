@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getKakaoToken, useAuthStore } from '@/entities/user';
 
@@ -7,9 +7,11 @@ export const KakaoCallbackPage = () => {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
   const code = searchParams.get('code');
+  const isProcessing = useRef(false);
 
   useEffect(() => {
-    if (code) {
+    if (code && !isProcessing.current) {
+      isProcessing.current = true;
       getKakaoToken(code)
         .then((data) => {
           setAuth(data.accessToken, {
