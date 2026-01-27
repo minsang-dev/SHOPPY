@@ -1,14 +1,12 @@
 package ssafy.rtc.shoppy.room.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.rtc.shoppy.global.exception.BusinessException;
 import ssafy.rtc.shoppy.global.exception.ErrorCode;
 import ssafy.rtc.shoppy.room.domain.Room;
 import ssafy.rtc.shoppy.room.domain.RoomMember;
-import ssafy.rtc.shoppy.room.dto.RoomMemberEventDto;
 import ssafy.rtc.shoppy.room.entity.RoomEntity;
 import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
 import ssafy.rtc.shoppy.room.enums.MemberStatus;
@@ -24,7 +22,6 @@ public class RoomMemberService {
 
     private final RoomRepository roomRepository;
     private final RoomMemberRepository roomMemberRepository;
-    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public RoomMember joinRoomAsGuest(String roomCode, String nickname) {
@@ -39,12 +36,7 @@ public class RoomMemberService {
         RoomMemberEntity memberEntity = RoomMemberEntity.fromDomain(member, roomEntity);
         RoomMemberEntity savedEntity = roomMemberRepository.save(memberEntity);
 
-        RoomMember savedMember = savedEntity.toDomain();
-
-        // WebSocket event: member joined
-        publishMemberEvent(savedMember.getRoomId(), RoomMemberEventDto.joined(savedMember));
-
-        return savedMember;
+        return savedEntity.toDomain();
     }
 
     public List<RoomMember> getRoomMembers(Long roomId) {
@@ -74,9 +66,6 @@ public class RoomMemberService {
 
         RoomMemberEntity updatedEntity = RoomMemberEntity.fromDomain(leftMember, memberEntity.getRoom());
         roomMemberRepository.save(updatedEntity);
-
-        // WebSocket event: member left
-        publishMemberEvent(leftMember.getRoomId(), RoomMemberEventDto.left(leftMember));
     }
 
     @Transactional
@@ -93,15 +82,5 @@ public class RoomMemberService {
         RoomMember updatedMember = member.updateCameraState(isCameraOn);
         RoomMemberEntity updatedEntity = RoomMemberEntity.fromDomain(updatedMember, memberEntity.getRoom());
         roomMemberRepository.save(updatedEntity);
-
-        // WebSocket event: member state updated
-        publishMemberEvent(updatedMember.getRoomId(), RoomMemberEventDto.stateUpdated(updatedMember));
-    }
-
-    /**
-     * Publish member event to WebSocket subscribers
-     */
-    private void publishMemberEvent(Long roomId, RoomMemberEventDto event) {
-        messagingTemplate.convertAndSend("/topic/rooms/" + roomId + "/members", event);
     }
 }

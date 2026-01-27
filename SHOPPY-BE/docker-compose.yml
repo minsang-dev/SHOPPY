@@ -123,6 +123,9 @@ services:
             - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
             - SPRING_JPA_HIBERNATE_DDL_AUTO=update
             - SPRING_JPA_DATABASE-PLATFORM=org.hibernate.dialect.MySQLDialect
+        depends_on:
+            mysql-db:
+                condition: service_healthy
         logging:
             options:
                 max-size: "100M"
