@@ -8,10 +8,10 @@ import './styles.css';
 const navItems = ['Home', 'Best', 'Product', 'FAQ'];
 
 const products = [
-  { image: '/images/product1.png', alt: '��õ ��ǰ 1' },
-  { image: '/images/product2.png', alt: '��õ ��ǰ 2' },
-  { image: '/images/product3.png', alt: '��õ ��ǰ 3' },
-  { image: '/images/product4.png', alt: '��õ ��ǰ 4' },
+  { image: '/images/product1.png', alt: '추천 상품 1' },
+  { image: '/images/product2.png', alt: '추천 상품 2' },
+  { image: '/images/product3.png', alt: '추천 상품 3' },
+  { image: '/images/product4.png', alt: '추천 상품 4' },
 ];
 
 const parseRoomCode = (input: string) => {
@@ -95,23 +95,23 @@ const MobileMainPage: React.FC = () => {
 
       <section className="mobile-main-hero">
         <div className="mobile-main-hero-text">
-          <h1 className="mobile-main-title">ȥ�� ���� ���� �����ؿ�</h1>
+          <h1 className="mobile-main-title">실시간 협업 쇼핑을 <br/> 시작해보세요</h1>
           <Button
             variant="primary"
             size="large"
             className="mobile-main-cta"
             onClick={handleStartClick}
           >
-            �����ϱ�
+            시작하기
           </Button>
         </div>
         <div className="mobile-main-hero-image">
-          <img src="/images/shoppingMall_main_laptop.png" alt="���̺� ���� ȭ��" />
+          <img src="/images/shoppingMall_main_laptop.png" alt="���̺� ���� ȭ��" />
         </div>
       </section>
 
       <section className="mobile-main-products">
-        <h2 className="mobile-main-products-title">��õ ��ǰ</h2>
+        <h2 className="mobile-main-products-title">추천 상품</h2>
         <div className="mobile-main-products-grid">
           {products.map((product) => (
             <div key={product.image} className="mobile-main-product-card">
