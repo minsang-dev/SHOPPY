@@ -25,6 +25,8 @@ public enum ErrorCode {
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
     TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
     TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
+    REFRESH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "Refresh Token이 만료되었습니다."),
+    REFRESH_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 Refresh Token입니다."),
 
     // 403 Forbidden
     FORBIDDEN(HttpStatus.FORBIDDEN, "권한이 없습니다."),
@@ -55,6 +57,8 @@ public enum ErrorCode {
 
     // 500 Internal Server Error
     AI_SERVICE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI 분석 서비스에서 예외가 발생했습니다."),
+    KAKAO_TOKEN_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "카카오 토큰 발급에 실패했습니다."),
+    KAKAO_USER_INFO_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "카카오 사용자 정보를 가져오는데 실패했습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;
