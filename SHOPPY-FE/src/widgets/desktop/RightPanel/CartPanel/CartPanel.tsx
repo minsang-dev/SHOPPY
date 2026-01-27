@@ -1,30 +1,55 @@
-import React, { useState } from 'react';
-import { useCartStore } from '../../../../entities/cart/model/useCartStore';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
+import { getShoppingList, updateShoppingItem, deleteShoppingItem, addShoppingItem } from '@/entities/shopping/api/shopping';
+import type { ShoppingItem, ShoppingItemAddRequest } from '@/entities/shopping/types/shopping.types';
 import CartTypeToggle from '../CartTypeToggle/CartTypeToggle';
 import CartItem from '../CartItem/CartItem';
-import OfflineCartInput from '../../../../features/cart/add-offline-item/ui/OfflineCartInput';
-import ManualInputModal from '../../../../features/cart/add-offline-item/ui/ManualInputModal';
-import type { CartItem as CartItemType } from '../../../../entities/cart/types/cart.types';
+import OfflineCartInput from '@/features/cart/add-offline-item/ui/OfflineCartInput';
+import ManualInputModal from '@/features/cart/add-offline-item/ui/ManualInputModal';
 import './CartPanel.css';
 
 
 const CartPanel: React.FC = () => {
+  const { roomId } = useParams<{ roomId: string }>();
   const [cartType, setCartType] = useState<'online' | 'offline'>('online');
   const [expandedParticipants, setExpandedParticipants] = useState<Record<number, boolean>>({});
   const [isManualInputModalOpen, setIsManualInputModalOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  
-  const {
-    onlineCartItems,
-    offlineCartItems,
-    updateQuantity,
-    removeFromCart,
-    toggleLike,
-    toggleDislike,
-    addToOfflineCart,
-  } = useCartStore();
+  // UI 전용 상태 (likes, dislikes, participants)
+  const [itemLikes, setItemLikes] = useState<Record<number, number>>({});
+  const [itemDislikes, setItemDislikes] = useState<Record<number, number>>({});
+  const [itemParticipants] = useState<Record<number, string[]>>({});
 
-  const currentCartItems = cartType === 'online' ? onlineCartItems : offlineCartItems;
+  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
+  const [, setLoading] = useState(false);
+
+  // 데이터 로드
+  const loadItems = useCallback(async () => {
+    if (!roomId) return;
+    setLoading(true);
+    try {
+      const response = await getShoppingList(roomId);
+      setShoppingItems(response.items);
+    } catch (error) {
+      console.error('장바구니 데이터 로드 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [roomId]);
+
+  useEffect(() => {
+    loadItems();
+  }, [loadItems]);
+
+  // purchase_type에 따라 필터링
+  const currentCartItems = shoppingItems.filter((item) => {
+    if (cartType === 'online') {
+      return item.purchase_type === 'online';
+    } else {
+      return item.purchase_type === 'offline';
+    }
+  });
+
   const isOnline = cartType === 'online';
 
   const handleToggleParticipants = (productId: number) => {
@@ -51,23 +76,51 @@ const CartPanel: React.FC = () => {
     setIsManualInputModalOpen(true);
   };
 
-  const handleAddOfflineItem = (productName: string, quantity: number) => {
-    // 오프라인 장바구니 아이템 생성
-    // product_id는 고유한 값으로 생성 (음수로 구분하여 온라인과 구분)
-    const offlineProductId = -Date.now();
+  const handleAddOfflineItem = async (productName: string, quantity: number) => {
+    if (!roomId) return;
     
-    const offlineItem: CartItemType = {
-      product_id: offlineProductId,
-      name: productName,
-      price: 0, // 오프라인은 가격 미정이므로 0으로 설정
-      image_url: '', // 기본 이미지 없음
-      quantity: quantity,
-      likes: 0,
-      dislikes: 0,
-      participants: [],
+    // entities/shopping의 API 사용
+    const payload: ShoppingItemAddRequest = {
+      userId: 0, // TODO: 실제 userId 가져오기
+      productId: null,
+      displayName: productName,
+      quantity,
+      purchaseType: false, // 오프라인
     };
+    await addShoppingItem(roomId, payload);
+    await loadItems();
+  };
 
-    addToOfflineCart(offlineItem);
+  const handleUpdateQuantity = async (item: ShoppingItem, newQuantity: number) => {
+    if (newQuantity < 1 || !roomId) return;
+    await updateShoppingItem(roomId, item.shopping_item_id, { quantity: newQuantity });
+    await loadItems();
+  };
+
+  const handleToggleChecked = async (item: ShoppingItem) => {
+    if (!roomId) return;
+    await updateShoppingItem(roomId, item.shopping_item_id, { isChecked: !item.is_checked });
+    await loadItems();
+  };
+
+  const handleRemoveItem = async (item: ShoppingItem) => {
+    if (!roomId) return;
+    await deleteShoppingItem(roomId, item.shopping_item_id);
+    await loadItems();
+  };
+
+  const handleToggleLike = (item: ShoppingItem) => {
+    setItemLikes((prev) => ({
+      ...prev,
+      [item.shopping_item_id]: (prev[item.shopping_item_id] || 0) + 1,
+    }));
+  };
+
+  const handleToggleDislike = (item: ShoppingItem) => {
+    setItemDislikes((prev) => ({
+      ...prev,
+      [item.shopping_item_id]: (prev[item.shopping_item_id] || 0) + 1,
+    }));
   };
 
   return (
@@ -91,16 +144,20 @@ const CartPanel: React.FC = () => {
         ) : (
           currentCartItems.map((item) => (
             <CartItem
-              key={item.product_id}
+              key={item.shopping_item_id}
               item={item}
               cartType={cartType}
-              isExpanded={expandedParticipants[item.product_id] || false}
-              onQuantityDecrease={() => updateQuantity(item.product_id, (item.quantity || 1) - 1, isOnline)}
-              onQuantityIncrease={() => updateQuantity(item.product_id, (item.quantity || 1) + 1, isOnline)}
-              onRemove={() => removeFromCart(item.product_id, isOnline)}
-              onLike={() => toggleLike(item.product_id)}
-              onDislike={() => toggleDislike(item.product_id)}
-              onToggleParticipants={() => handleToggleParticipants(item.product_id)}
+              isExpanded={expandedParticipants[item.shopping_item_id] || false}
+              onQuantityDecrease={() => handleUpdateQuantity(item, item.quantity - 1)}
+              onQuantityIncrease={() => handleUpdateQuantity(item, item.quantity + 1)}
+              onRemove={() => handleRemoveItem(item)}
+              onLike={() => handleToggleLike(item)}
+              onDislike={() => handleToggleDislike(item)}
+              onToggleParticipants={() => handleToggleParticipants(item.shopping_item_id)}
+              onToggleChecked={!isOnline ? () => handleToggleChecked(item) : undefined}
+              likes={itemLikes[item.shopping_item_id] || 0}
+              dislikes={itemDislikes[item.shopping_item_id] || 0}
+              participants={itemParticipants[item.shopping_item_id] || []}
             />
           ))
         )}

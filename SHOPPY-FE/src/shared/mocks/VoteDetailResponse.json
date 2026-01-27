@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "message": "OK",
+  "data": {
+    "vote_id": 2001,
+    "room_id": 10,
+    "title": "삼겹살 vs 목살",
+    "status": "OPEN",
+    "created_at": "2026-01-19T09:20:00",
+    "closed_at": null,
+    "options": [
+      { "option_id": 3001, "content": "삼겹살", "vote_count": 2 },
+      { "option_id": 3002, "content": "목살", "vote_count": 1 }
+    ],
+    "my_selected_option_id": 3001
+  }
+}

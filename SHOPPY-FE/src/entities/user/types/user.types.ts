@@ -9,7 +9,15 @@ export interface AuthTokens {
   refreshToken?: string;
 }
 
-export interface KakaoAuthResponse {
-  accessToken: string;
-  user?: User;
+export interface KakaoLoginResponse {
+  status: string;
+  message: string;
+  data: {
+    memberId: number;
+    nickname: string;
+    profileImageUrl: string;
+    accessToken: string;
+    refreshToken: string;
+    newMember: boolean;
+  };
 }
