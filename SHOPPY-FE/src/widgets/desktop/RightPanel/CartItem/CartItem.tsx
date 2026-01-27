@@ -1,11 +1,11 @@
 import React from 'react';
-import type { CartItem as CartItemType } from '../../../../entities/cart/types/cart.types';
+import type { ShoppingItem } from '@/entities/shopping/types/shopping.types';
 import CartItemVotes from '../CartItemVotes/CartItemVotes';
 import CartItemParticipants from '../CartItemParticipants/CartItemParticipants';
 import './CartItem.css';
 
 interface CartItemProps {
-  item: CartItemType;
+  item: ShoppingItem;
   cartType: 'online' | 'offline';
   isExpanded: boolean;
   onQuantityDecrease: () => void;
@@ -14,6 +14,10 @@ interface CartItemProps {
   onLike: () => void;
   onDislike: () => void;
   onToggleParticipants: () => void;
+  onToggleChecked?: () => void; // 오프라인 장바구니 체크박스용
+  likes?: number; // UI 전용 상태
+  dislikes?: number; // UI 전용 상태
+  participants?: string[]; // UI 전용 상태
 }
 
 /**
@@ -30,21 +34,46 @@ const CartItem: React.FC<CartItemProps> = ({
   onLike,
   onDislike,
   onToggleParticipants,
+  onToggleChecked,
+  likes = 0,
+  dislikes = 0,
+  participants = [],
 }) => {
-  const quantity = item.quantity || 1;
+  const quantity = item.quantity;
   const isOnline = cartType === 'online';
+  const isChecked = item.is_checked;
 
   return (
     <div className="cart-item">
       {/* 상품 이미지와 정보 */}
       <div className="cart-item-content">
-        {isOnline && (
+        {isOnline && item.product_id && (
           <div className="cart-item-image">
-            <img src={item.image_url} alt={item.name} />
+            {/* TODO: product_id로 상품 이미지 가져오기 */}
+            <div className="cart-item-image-placeholder">이미지</div>
           </div>
         )}
         <div className="cart-item-info">
-          <h4 className="cart-item-name">{item.name}</h4>
+          <div className="cart-item-name-wrapper">
+            {/* 오프라인 장바구니일 때 체크박스 표시 */}
+            {!isOnline && onToggleChecked && (
+              <input
+                type="checkbox"
+                className="cart-item-checkbox"
+                checked={isChecked}
+                onChange={onToggleChecked}
+                aria-label={`${item.display_name} 체크`}
+              />
+            )}
+            <div className="cart-item-name-section">
+              <h4 className="cart-item-name">{item.display_name}</h4>
+              {item.added_by_user_id && (
+                <p className="cart-item-added-by">
+                  {item.added_by_user_id}님이 추가한 상품
+                </p>
+              )}
+            </div>
+          </div>
           {/* <p className="cart-item-price">
             {cartType === 'offline' && item.price === 0 
               ? '미정' 
@@ -88,14 +117,14 @@ const CartItem: React.FC<CartItemProps> = ({
       <div className="cart-item-divider"></div>
       <div className="cart-item-footer">
         <CartItemVotes
-          likes={item.likes || 0}
-          dislikes={item.dislikes || 0}
+          likes={likes}
+          dislikes={dislikes}
           onLike={onLike}
           onDislike={onDislike}
         />
         <CartItemParticipants
-          productId={item.product_id}
-          participantCount={item.participants?.length || 0}
+          productId={item.shopping_item_id}
+          participantCount={participants.length}
           isExpanded={isExpanded}
           onToggle={onToggleParticipants}
         />

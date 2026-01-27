@@ -1,0 +1,108 @@
+{
+  "status": "success",
+  "message": "OK",
+  "data": {
+    "items": [
+      {
+        "shopping_item_id": 701,
+        "room_id": 10,
+        "added_by_user_id": 22,
+        "product_id": null,
+        "display_name": "쌈장",
+        "quantity": 1,
+        "is_checked": false,
+        "purchase_type": "online"
+      },
+      {
+        "shopping_item_id": 702,
+        "room_id": 10,
+        "added_by_user_id": 23,
+        "product_id": null,
+        "display_name": "삼겹살",
+        "quantity": 2,
+        "is_checked": true,
+        "purchase_type": "offline"
+      },
+      {
+        "shopping_item_id": 703,
+        "room_id": 10,
+        "added_by_user_id": 22,
+        "product_id": null,
+        "display_name": "마늘",
+        "quantity": 5,
+        "is_checked": false,
+        "purchase_type": "offline"
+      },
+      {
+        "shopping_item_id": 704,
+        "room_id": 10,
+        "added_by_user_id": 24,
+        "product_id": null,
+        "display_name": "상추",
+        "quantity": 1,
+        "is_checked": true,
+        "purchase_type": "offline"
+      },
+      {
+        "shopping_item_id": 705,
+        "room_id": 10,
+        "added_by_user_id": 22,
+        "product_id": null,
+        "display_name": "콜라",
+        "quantity": 3,
+        "is_checked": false,
+        "purchase_type": "online"
+      },
+      {
+        "shopping_item_id": 706,
+        "room_id": 10,
+        "added_by_user_id": 25,
+        "product_id": null,
+        "display_name": "소주",
+        "quantity": 2,
+        "is_checked": false,
+        "purchase_type": "offline"
+      },
+      {
+        "shopping_item_id": 707,
+        "room_id": 10,
+        "added_by_user_id": 23,
+        "product_id": null,
+        "display_name": "휴지",
+        "quantity": 1,
+        "is_checked": true,
+        "purchase_type": "online"
+      },
+      {
+        "shopping_item_id": 708,
+        "room_id": 10,
+        "added_by_user_id": 22,
+        "product_id": null,
+        "display_name": "물티슈",
+        "quantity": 2,
+        "is_checked": false,
+        "purchase_type": "online"
+      },
+      {
+        "shopping_item_id": 709,
+        "room_id": 10,
+        "added_by_user_id": 24,
+        "product_id": null,
+        "display_name": "치즈",
+        "quantity": 1,
+        "is_checked": true,
+        "purchase_type": "offline"
+      },
+      {
+        "shopping_item_id": 710,
+        "room_id": 10,
+        "added_by_user_id": 22,
+        "product_id": null,
+        "display_name": "버섯",
+        "quantity": 2,
+        "is_checked": false,
+        "purchase_type": "offline"
+      }
+    ]
+  }
+}
