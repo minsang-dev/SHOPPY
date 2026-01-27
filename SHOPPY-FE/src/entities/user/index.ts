@@ -1,3 +1,3 @@
-export { getKakaoToken, refreshToken } from './api/authApi';
+export { getKakaoToken, refreshAccessToken } from './api/authApi';
 export { useAuthStore } from './model/useAuthStore';
-export type { User, AuthTokens, KakaoLoginResponse } from './types/user.types';
+export type { User, AuthTokens, KakaoLoginResponse, TokenRefreshResponse } from './types/user.types';
