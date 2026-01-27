@@ -35,7 +35,16 @@ public class SettlementService {
     /**
      * 정산 마스터(Purchase) 생성 및 초기 분배 (모든 멤버 참여)
      */
-    public Purchase createSettlement(Long roomId, Long payerMemberId, BigDecimal totalAmount, List<PurchaseItemDto> itemDtos) {
+    public Purchase createSettlement(Long roomId, Long payerMemberId, BigDecimal totalAmount, List<PurchaseItemDto> itemDtos, Long currentUserId) {
+        // 0. 검증: 요청자(User)가 해당 payerMemberId의 주인인지 확인
+        RoomMemberEntity payerMember = roomMemberRepository.findById(payerMemberId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 멤버입니다."));
+        
+        // userId가 null일 수도 있으므로(게스트 등) null 체크 필요, 여기서는 회원제라 가정
+        if (payerMember.getUserId() == null || !payerMember.getUserId().equals(currentUserId)) {
+             throw new SecurityException("본인의 정산만 생성할 수 있습니다.");
+        }
+
         // 1. Purchase 생성
         Purchase purchase = Purchase.builder()
                 .roomId(roomId)

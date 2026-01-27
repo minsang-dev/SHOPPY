@@ -23,11 +23,16 @@ public class SettlementController {
     public ResponseEntity<Purchase> createSettlement(
             @PathVariable Long roomId,
             @RequestBody SettlementCreateRequest request) {
+        
+        // TODO: 추후 Spring Security의 @AuthenticationPrincipal로 변경 필요
+        Long currentUserId = 1L; // 임시 하드코딩 (RoomController와 동일 패턴)
+
         Purchase purchase = settlementService.createSettlement(
                 roomId,
                 request.getPayerMemberId(),
                 request.getTotalAmount(),
-                request.getItems()
+                request.getItems(),
+                currentUserId
         );
         return ResponseEntity.ok(purchase);
     }
