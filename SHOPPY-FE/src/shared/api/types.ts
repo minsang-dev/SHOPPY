@@ -46,9 +46,7 @@ export type Product = {
   image_url: string;
 };
 
-export type ProductListResponse = {
-  items: Product[];
-};
+export type ProductListResponse = { items: Product[] } | Product[];
 
 export type WebRTCSession = {
   sessionId: string;
