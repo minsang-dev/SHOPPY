@@ -4,12 +4,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ssafy.rtc.shoppy.auth.entity.Member;
+import ssafy.rtc.shoppy.auth.repository.MemberRepository;
 import ssafy.rtc.shoppy.global.exception.BusinessException;
 import ssafy.rtc.shoppy.global.exception.ErrorCode;
 import ssafy.rtc.shoppy.room.domain.Room;
+import ssafy.rtc.shoppy.room.domain.RoomMember;
 import ssafy.rtc.shoppy.room.dto.RoomEventDto;
 import ssafy.rtc.shoppy.room.entity.RoomEntity;
+import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
+import ssafy.rtc.shoppy.room.enums.MemberRole;
 import ssafy.rtc.shoppy.room.enums.SyncMode;
+import ssafy.rtc.shoppy.room.repository.RoomMemberRepository;
 import ssafy.rtc.shoppy.room.repository.RoomRepository;
 
 import java.math.BigDecimal;
@@ -20,14 +26,35 @@ import java.math.BigDecimal;
 public class RoomService {
 
     private final RoomRepository roomRepository;
+    private final RoomMemberRepository roomMemberRepository;
+    private final MemberRepository memberRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public Room createRoom(String roomName, BigDecimal targetBudget, SyncMode syncMode, Long hostId) {
+        // 1. Room 생성
         Room room = Room.create(hostId, roomName, targetBudget, syncMode);
 
         RoomEntity roomEntity = RoomEntity.fromDomain(room);
         RoomEntity savedEntity = roomRepository.save(roomEntity);
+
+        // 2. 호스트의 Member 정보 조회
+        Member hostMember = memberRepository.findById(hostId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+
+        // 3. 호스트의 RoomMember 자동 생성
+        RoomMember hostRoomMember = RoomMember.join(
+                savedEntity.getRoomId(),
+                hostId,
+                hostMember.getNickname(),
+                MemberRole.HOST
+        );
+
+        RoomMemberEntity hostRoomMemberEntity = RoomMemberEntity.fromDomain(
+                hostRoomMember,
+                savedEntity
+        );
+        roomMemberRepository.save(hostRoomMemberEntity);
 
         return savedEntity.toDomain();
     }

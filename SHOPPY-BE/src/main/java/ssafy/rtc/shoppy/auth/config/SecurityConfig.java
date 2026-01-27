@@ -35,9 +35,11 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        // 나머지는 permitAll
                         .requestMatchers(
                                 "/auth/kakao/**",
                                 "/auth/refresh",
+                                "/auth/test/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",

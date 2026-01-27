@@ -4,11 +4,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import ssafy.rtc.shoppy.chat.domain.ChatMessage;
 import ssafy.rtc.shoppy.chat.dto.ChatMessageCreateRequestDto;
@@ -18,6 +20,7 @@ import ssafy.rtc.shoppy.chat.dto.ChatMessageListResponseDto;
 import ssafy.rtc.shoppy.chat.service.ChatService;
 import ssafy.rtc.shoppy.global.response.SuccessResponse;
 
+@Slf4j
 @RestController
 @RequestMapping("/rooms/{roomId}/chat")
 @RequiredArgsConstructor
@@ -29,12 +32,13 @@ public class ChatController {
     @PostMapping
     @Operation(summary = "채팅 메시지 전송", description = "방에 채팅 메시지를 전송합니다.")
     public ResponseEntity<SuccessResponse<ChatMessageDto>> sendMessage(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long roomId,
             @Valid @RequestBody ChatMessageCreateRequestDto request
     ) {
-        Long memberId = 1L;
+        log.info("💬 Sending chat message - UserId from JWT: {}, RoomId: {}", userId, roomId);
 
-        ChatMessage message = chatService.sendMessage(roomId, memberId, request.content());
+        ChatMessage message = chatService.sendMessage(roomId, userId, request.content());
         ChatMessageDto response = ChatMessageDto.from(message);
 
         return ResponseEntity
@@ -45,12 +49,11 @@ public class ChatController {
     @GetMapping
     @Operation(summary = "채팅 히스토리 조회", description = "방의 채팅 히스토리를 조회합니다.")
     public ResponseEntity<SuccessResponse<ChatMessageListResponseDto>> getChatHistory(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long roomId,
             @PageableDefault(size = 50, page = 0) Pageable pageable
     ) {
-        Long memberId = 1L;
-
-        Page<ChatMessage> messagePage = chatService.getChatHistory(roomId, memberId, pageable);
+        Page<ChatMessage> messagePage = chatService.getChatHistory(roomId, userId, pageable);
         ChatMessageListResponseDto response = ChatMessageListResponseDto.from(messagePage);
 
         return ResponseEntity
@@ -61,12 +64,11 @@ public class ChatController {
     @DeleteMapping("/{chatId}")
     @Operation(summary = "채팅 메시지 삭제", description = "채팅 메시지를 삭제합니다. 작성자 또는 방 호스트만 삭제 가능합니다.")
     public ResponseEntity<SuccessResponse<Void>> deleteMessage(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long roomId,
             @PathVariable Long chatId
     ) {
-        Long memberId = 1L;
-
-        chatService.deleteMessage(roomId, chatId, memberId);
+        chatService.deleteMessage(roomId, chatId, userId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -76,13 +78,12 @@ public class ChatController {
     @PatchMapping("/{chatId}")
     @Operation(summary = "채팅 메시지 수정", description = "채팅 메시지를 수정합니다. 작성자만 수정 가능합니다.")
     public ResponseEntity<SuccessResponse<ChatMessageDto>> editMessage(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long roomId,
             @PathVariable Long chatId,
             @Valid @RequestBody ChatMessageEditRequestDto request
     ) {
-        Long memberId = 1L;
-
-        ChatMessage message = chatService.editMessage(roomId, chatId, memberId, request.content());
+        ChatMessage message = chatService.editMessage(roomId, chatId, userId, request.content());
         ChatMessageDto response = ChatMessageDto.from(message);
 
         return ResponseEntity

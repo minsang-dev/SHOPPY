@@ -14,6 +14,7 @@ import ssafy.rtc.shoppy.global.exception.ErrorCode;
 import ssafy.rtc.shoppy.room.domain.RoomMember;
 import ssafy.rtc.shoppy.room.entity.RoomEntity;
 import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
+import ssafy.rtc.shoppy.room.enums.MemberStatus;
 import ssafy.rtc.shoppy.room.repository.RoomMemberRepository;
 import ssafy.rtc.shoppy.room.repository.RoomRepository;
 
@@ -28,16 +29,18 @@ public class ChatService {
     private final ChatEventPublisher eventPublisher;
 
     @Transactional
-    public ChatMessage sendMessage(Long roomId, Long memberId, String content) {
+    public ChatMessage sendMessage(Long roomId, Long userId, String content) {
         RoomEntity room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
-        RoomMemberEntity senderMemberEntity = roomMemberRepository.findById(memberId)
+        RoomMemberEntity senderMemberEntity = roomMemberRepository
+                .findByRoom_RoomIdAndUserIdAndStatus(roomId, userId, MemberStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
         RoomMember senderMember = senderMemberEntity.toDomain();
         senderMember.validateCanSendMessage(roomId);
 
+        Long memberId = senderMemberEntity.getMemberId();
         ChatMessage message = ChatMessage.create(roomId, memberId, content);
         ChatMessageEntity entity = ChatMessageEntity.fromDomain(message, room, senderMemberEntity);
         ChatMessageEntity savedEntity = chatMessageRepository.save(entity);
@@ -48,8 +51,15 @@ public class ChatService {
         return savedMessage;
     }
 
-    public Page<ChatMessage> getChatHistory(Long roomId, Long memberId, Pageable pageable) {
-        RoomMemberEntity roomMemberEntity = roomMemberRepository.findById(memberId)
+    public Page<ChatMessage> getChatHistory(Long roomId, Long userId, Pageable pageable) {
+        if (userId == null) {
+            Page<ChatMessageEntity> messagePage = chatMessageRepository
+                    .findByRoomIdAndIsDeletedFalseOrderByCreatedAtDesc(roomId, pageable);
+            return messagePage.map(ChatMessageEntity::toDomain);
+        }
+
+        RoomMemberEntity roomMemberEntity = roomMemberRepository
+                .findByRoom_RoomIdAndUserIdAndStatus(roomId, userId, MemberStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
         RoomMember roomMember = roomMemberEntity.toDomain();
@@ -62,13 +72,20 @@ public class ChatService {
     }
 
     @Transactional
-    public void deleteMessage(Long roomId, Long chatId, Long requestMemberId) {
+    public void deleteMessage(Long roomId, Long chatId, Long requestUserId) {
         ChatMessageEntity messageEntity = chatMessageRepository
                 .findByChatIdAndRoomRoomId(chatId, roomId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
         RoomEntity room = messageEntity.getRoom();
-        boolean isHost = room.getHostId().equals(requestMemberId);
+
+        // userId로 RoomMember 조회
+        RoomMemberEntity requestMemberEntity = roomMemberRepository
+                .findByRoom_RoomIdAndUserIdAndStatus(roomId, requestUserId, MemberStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+
+        Long requestMemberId = requestMemberEntity.getMemberId();
+        boolean isHost = room.getHostId().equals(requestUserId);
 
         ChatMessage message = messageEntity.toDomain();
         if (!message.canBeDeletedBy(requestMemberId, isHost)) {
@@ -82,10 +99,17 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatMessage editMessage(Long roomId, Long chatId, Long memberId, String newContent) {
+    public ChatMessage editMessage(Long roomId, Long chatId, Long userId, String newContent) {
         ChatMessageEntity messageEntity = chatMessageRepository
                 .findByChatIdAndRoomRoomId(chatId, roomId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+
+        // userId로 RoomMember 조회
+        RoomMemberEntity requestMemberEntity = roomMemberRepository
+                .findByRoom_RoomIdAndUserIdAndStatus(roomId, userId, MemberStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+
+        Long memberId = requestMemberEntity.getMemberId();
 
         ChatMessage message = messageEntity.toDomain();
         ChatMessage editedMessage = message.edit(newContent, memberId);
