@@ -1,7 +1,6 @@
-import { useEffect } from 'react';
 import { useCallback, useState } from 'react';
-import { getProductList } from '@/entities/product/api/productListApi';
-import type { Product } from '@/entities/product/types/desktopProductList';
+import { getProductList } from '../../../../entities/product/api/productListApi';
+import type { Product } from '../../../../entities/product/types/desktopProductList';
 
 interface UseProductListState {
   products: Product[];
@@ -21,17 +20,14 @@ export const useProductList = (): UseProductListState => {
       setLoading(true);
       const data = await getProductList(keyword);
       setProducts(data);
+      setError(null);
     } catch (err) {
-      setError('ìƒí’ˆ ëª©ë¡ì„ ë¶ˆëŸ¬ì˜¤ëŠ”ë° ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.');
-      console.error(err);
+      setError('»óÇ° ¸ñ·ÏÀ» ºÒ·¯¿À´Âµ¥ ½ÇÆÐÇß½À´Ï´Ù.');
+      console.error('Error fetching products:', err);
     } finally {
       setLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
 
   const search = useCallback(
     async (keyword: string) => {

@@ -30,7 +30,6 @@ export const useChat = (roomId: number | string | null) => {
 
   useEffect(() => {
     fetchChats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 
   return { messages, loading, error, fetchChats, send };

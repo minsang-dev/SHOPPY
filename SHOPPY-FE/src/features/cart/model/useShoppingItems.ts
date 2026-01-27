@@ -63,7 +63,6 @@ export const useShoppingItems = (roomId: number | string | null) => {
 
   useEffect(() => {
     fetchItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 
   return { items, loading, error, fetchItems, addItem, updateItem, removeItem };

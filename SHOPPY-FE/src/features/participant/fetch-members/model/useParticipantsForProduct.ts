@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { getRoomMembers } from '@/entities/room/api/room';
-import type { RoomMember } from '@/entities/room/types/room.types';
-import { useSettlementStore, type ParticipantSelectionStatus } from '@/entities/settlement/model/useSettlementStore';
+import { getMemberList } from '../../../../entities/participant/api/memberListApi';
+import type { Participant, ParticipantSelectionStatus } from '../../../../entities/participant/types/participant.types';
+import { useSettlementStore } from '../../../../entities/settlement/model/useSettlementStore';
 
 interface UseParticipantsForProductResult {
-  participants: RoomMember[];
+  participants: Participant[];
   loading: boolean;
   error: string | null;
   getParticipantStatus: (productId: number, memberId: number) => ParticipantSelectionStatus;
@@ -17,10 +16,7 @@ export const useParticipantsForProduct = (
   productId: number,
   isExpanded: boolean,
 ): UseParticipantsForProductResult => {
-  // /rooms/:roomId 페이지에서 이 훅을 사용하면 URL의 roomId를 
-  // 자동으로 가져와서 해당 방의 참여자 목록을 조회
-  const { roomId } = useParams<{ roomId: string }>();
-  const [participants, setParticipants] = useState<RoomMember[]>([]);
+  const [participants, setParticipants] = useState<Participant[]>([]);
   const [hasFetched, setHasFetched] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,19 +28,19 @@ export const useParticipantsForProduct = (
   } = useSettlementStore();
 
   useEffect(() => {
-    if (!isExpanded || hasFetched || !roomId) {
+    if (!isExpanded || hasFetched) {
       return;
     }
 
     let cancelled = false;
 
-    getRoomMembers(roomId)
+    getMemberList()
       .then((data) => {
         if (cancelled) {
           return;
         }
         setParticipants(data);
-        const memberIds = data.map((participant) => participant.memberId);
+        const memberIds = data.map((participant) => participant.member_id);
         initializeParticipantSelections(productId, memberIds);
         setError(null);
       })
@@ -52,8 +48,8 @@ export const useParticipantsForProduct = (
         if (cancelled) {
           return;
         }
-        setError('참여자 목록을 불러오는데 실패했습니다.');
-        console.error('참여자 목록 조회 실패:', err);
+        setError('?????? ????? ???????? ??????????.');
+        console.error('?????? ??? ??? ????:', err);
       })
       .finally(() => {
         if (!cancelled) {
@@ -64,7 +60,7 @@ export const useParticipantsForProduct = (
     return () => {
       cancelled = true;
     };
-  }, [hasFetched, initializeParticipantSelections, isExpanded, productId, roomId]);
+  }, [hasFetched, initializeParticipantSelections, isExpanded, productId]);
 
   const loading = useMemo(() => isExpanded && !hasFetched, [hasFetched, isExpanded]);
 

@@ -1,9 +1,9 @@
 import React from 'react';
-import type { RoomMember } from '@/entities/room/types/room.types';
+import type { Participant } from '../../../../../entities/participant/types/participant.types';
 import './ParticipantCard.css';
 
 interface ParticipantCardProps {
-  participant: RoomMember;
+  participant: Participant;
 }
 
 const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant }) => {
@@ -12,7 +12,7 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant }) => {
     return name.charAt(0);
   };
 
-  const isActive = participant.isCameraOn; // 향후 음성 발화 감지로 변경
+  const isActive = participant.is_camera_on; // 향후 음성 발화 감지로 변경
   const isHost = participant.role === 'HOST';
 
   return (
@@ -20,14 +20,14 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant }) => {
       {/* 아바타 */}
       <div className="participant-card-avatar">
         <div className={`participant-card-avatar-inner ${isActive ? 'active' : ''}`}>
-          {getInitial(participant.nickname)}
+          {getInitial(participant.name)}
         </div>
       </div>
 
       {/* 참여자 정보 */}
       <div className="participant-card-info">
         <div className="participant-card-name">
-          <span>{participant.nickname}</span>
+          <span>{participant.name}</span>
           {isHost && (
             <i className="ri-vip-crown-fill participant-crown-icon" aria-label="호스트"></i>
           )}

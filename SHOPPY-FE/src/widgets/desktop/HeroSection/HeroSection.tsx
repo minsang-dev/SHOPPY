@@ -37,7 +37,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ className = '' }) => {
           </div>
           <div className="hero-image">
             <img
-              src="/images/shoppingMall_main_laptop.png"
+              src="images/shoppingMall_main_laptop.png"
               alt="실시간 쇼핑 히어로"
               className="laptop-image"
             />

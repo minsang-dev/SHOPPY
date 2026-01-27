@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { getRoomMembers } from '@/entities/room/api/room';
-import type { RoomMember } from '@/entities/room/types/room.types';
+import { getMemberList } from '../../../../entities/participant/api/memberListApi';
+import type { Participant } from '../../../../entities/participant/types/participant.types';
 import ParticipantCard from './ParticipantCard/ParticipantCard';
 import './ParticipantsPanel.css';
 
@@ -9,18 +8,16 @@ import './ParticipantsPanel.css';
  * 참여자 목록 패널 컴포넌트
  */
 const ParticipantsPanel: React.FC = () => {
-  const { roomId } = useParams<{ roomId: string }>();
-  const [participants, setParticipants] = useState<RoomMember[]>([]);
+  const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchParticipants = async () => {
-      if (!roomId) return;
       try {
         setLoading(true);
         setError(null);
-        const data = await getRoomMembers(roomId);
+        const data = await getMemberList();
         setParticipants(data);
       } catch (err) {
         console.error('참여자 목록 조회 실패:', err);
@@ -31,7 +28,7 @@ const ParticipantsPanel: React.FC = () => {
     };
 
     fetchParticipants();
-  }, [roomId]);
+  }, []);
 
   return (
     <div className="panel-content">
@@ -51,7 +48,7 @@ const ParticipantsPanel: React.FC = () => {
       ) : (
         <div className="participants-list">
           {participants.map((participant) => (
-            <ParticipantCard key={participant.memberId} participant={participant} />
+            <ParticipantCard key={participant.member_id} participant={participant} />
           ))}
         </div>
       )}

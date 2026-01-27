@@ -26,7 +26,6 @@ interface UseShoppingItemsState {
 }
 
 const toUiItems = (items: ShoppingItem[]): UiCartItem[] =>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (items as any[]).map((item) => ({
     id: item.shoppingItemId ?? item.shopping_item_id,
     name: item.name ?? item.display_name ?? '',
@@ -50,7 +49,7 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
       setError(null);
     } catch (err) {
       console.error('Failed to load shopping list:', err);
-      setError('ï¿½ï¿½Ù±ï¿½ï¿½Ï¸ï¿½ ï¿½Ò·ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ß½ï¿½ï¿½Ï´ï¿½.');
+      setError('Àå¹Ù±¸´Ï¸¦ ºÒ·¯¿ÀÁö ¸øÇß½À´Ï´Ù.');
     } finally {
       setLoading(false);
     }
@@ -78,7 +77,7 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
         await reload();
       } catch (err) {
         console.error('Failed to add shopping item:', err);
-        setError('ï¿½ï¿½Ç° ï¿½ß°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ß½ï¿½ï¿½Ï´ï¿½.');
+        setError('»óÇ° Ãß°¡¿¡ ½ÇÆÐÇß½À´Ï´Ù.');
       } finally {
         setLoading(false);
       }
@@ -93,14 +92,13 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
       }
       try {
         setLoading(true);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await updateShoppingItem(roomId, id, { quantity } as any);
         setItems((prev) =>
           prev.map((item) => (item.id === id ? { ...item, quantity } : item)),
         );
       } catch (err) {
         console.error('Failed to update quantity:', err);
-        setError('ï¿½ï¿½Ç° ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ß½ï¿½ï¿½Ï´ï¿½.');
+        setError('»óÇ° ¼öÁ¤¿¡ ½ÇÆÐÇß½À´Ï´Ù.');
       } finally {
         setLoading(false);
       }
@@ -115,14 +113,13 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
       }
       try {
         setLoading(true);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await updateShoppingItem(roomId, id, { checked, is_checked: checked } as any);
         setItems((prev) =>
           prev.map((item) => (item.id === id ? { ...item, checked } : item)),
         );
       } catch (err) {
         console.error('Failed to update checked state:', err);
-        setError('ï¿½ï¿½Ç° ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ß½ï¿½ï¿½Ï´ï¿½.');
+        setError('»óÇ° ¼öÁ¤¿¡ ½ÇÆÐÇß½À´Ï´Ù.');
       } finally {
         setLoading(false);
       }
@@ -141,7 +138,7 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
         setItems((prev) => prev.filter((item) => item.id !== id));
       } catch (err) {
         console.error('Failed to delete item:', err);
-        setError('ï¿½ï¿½Ç° ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ß½ï¿½ï¿½Ï´ï¿½.');
+        setError('»óÇ° »èÁ¦¿¡ ½ÇÆÐÇß½À´Ï´Ù.');
       } finally {
         setLoading(false);
       }
