@@ -1,8 +1,37 @@
 ### Room API Test
 
-### 방 생성 (POST /rooms)
+### 환경 변수 설정
+# @no-cookie-jar
+# @name variables
+
+### 1. 호스트 테스트 사용자 생성
+POST http://localhost:8080/api/auth/test/create-test-user?nickname=호스트
+Content-Type: application/json
+
+> {%
+    client.global.set("HOST_USER_ID", response.body.data.userId);
+    client.global.set("HOST_JWT", response.body.data.accessToken);
+    client.log("호스트 UserId: " + response.body.data.userId);
+    client.log("호스트 JWT: " + response.body.data.accessToken);
+%}
+
+###
+
+### 2. 로그인 사용자 생성
+POST http://localhost:8080/api/auth/test/create-test-user?nickname=로그인유저
+Content-Type: application/json
+
+> {%
+    client.global.set("USER_JWT", response.body.data.accessToken);
+    client.log("로그인유저 JWT: " + response.body.data.accessToken);
+%}
+
+###
+
+### 3. 방 생성 (POST /rooms) - 호스트
 POST http://localhost:8080/api/rooms
 Content-Type: application/json
+Authorization: Bearer {{HOST_JWT}}
 
 {
   "roomName": "함께하는 쇼핑",
@@ -16,44 +45,68 @@ Content-Type: application/json
   }
 }
 
-###
+> {%
+    client.global.set("ROOM_ID", response.body.data.roomId);
+    client.global.set("ROOM_CODE", response.body.data.roomCode);
+    client.log("Room ID: " + response.body.data.roomId);
+    client.log("Room Code: " + response.body.data.roomCode);
+%}
 
 ###
 
-### 방 조회 - ID로 조회 (GET /rooms/{roomId})
+
+### 4. 방 조회 - ID로 조회 (GET /rooms/{roomId})
 GET http://localhost:8080/api/rooms/1
 
 ###
 
-### 방 조회 - 초대 코드로 조회 (GET /rooms/code/{roomCode})
-GET http://localhost:8080/api/rooms/code/4CE6A8F3
+### 5. 방 조회 - 초대 코드로 조회 (GET /rooms/code/{roomCode})
+GET http://localhost:8080/api/rooms/code/ED4C89B7
 
 ###
 
-### 방 입장
+### 6. 로그인 사용자 방 입장 (POST /rooms/join)
 POST http://localhost:8080/api/rooms/join
 Content-Type: application/json
+Authorization: Bearer {{USER_JWT}}
 
 {
-  "roomCode": "4CE6A8F3",
-  "nickname": "게스트2"
+  "roomCode": "ED4C89B7"
 }
 
 ###
 
-### 참여자 목록 조회 (GET /rooms/{roomId}/members)
+### 7. 게스트 방 입장 (POST /rooms/join/guest)
+POST http://localhost:8080/api/rooms/join/guest
+Content-Type: application/json
+
+{
+  "roomCode": "ED4C89B7",
+  "nickname": "게스트1"
+}
+
+> {%
+    client.global.set("GUEST_JWT", response.body.data.accessToken);
+    client.log("게스트 JWT: " + response.body.data.accessToken);
+%}
+
+###
+
+### 8. 참여자 목록 조회 (GET /rooms/{roomId}/members)
 GET http://localhost:8080/api/rooms/1/members
 
 ###
 
-### 방 나가기 (DELETE /rooms/{roomId}/members/{memberId})
-DELETE http://localhost:8080/api/rooms/1/members/1
+### 9. 방 나가기 (DELETE /rooms/{roomId}/leave) - 로그인 사용자
+DELETE http://localhost:8080/api/rooms/1/leave
+Authorization: Bearer {{USER_JWT}}
 
 ###
 
-### 동기화 모드 변경 (PATCH /rooms/{roomId}/sync-mode) - 호스트만 가능
+### 10. 동기화 모드 변경 (PATCH /rooms/{roomId}/sync-mode) - 호스트만 가능
 PATCH http://localhost:8080/api/rooms/1/sync-mode
 Content-Type: application/json
+Authorization: Bearer {{HOST_JWT}}
 
 {
   "syncMode": "FREE"
@@ -61,19 +114,21 @@ Content-Type: application/json
 
 ###
 
-### 호스트 URL 업데이트 (PATCH /rooms/{roomId}/host-url) - FOLLOW 모드
+### 11. 호스트 URL 업데이트 (PATCH /rooms/{roomId}/host-url) - FOLLOW 모드, 호스트만 가능
 PATCH http://localhost:8080/api/rooms/1/host-url
 Content-Type: application/json
+Authorization: Bearer {{HOST_JWT}}
 
 {
-  "currentUrl": "https://example.com"
+  "currentUrl": "https://example.com/product/123"
 }
 
 ###
 
-### 참여자 상태 업데이트 (PATCH /rooms/{roomId}/members/{memberId})
-PATCH http://localhost:8080/api/rooms/1/members/17
+### 12. 내 상태 업데이트 (PATCH /rooms/{roomId}/my-state) - 호스트
+PATCH http://localhost:8080/api/rooms/1/my-state
 Content-Type: application/json
+Authorization: Bearer {{HOST_JWT}}
 
 {
   "isCameraOn": true
@@ -81,7 +136,18 @@ Content-Type: application/json
 
 ###
 
-### 방 종료 (POST /rooms/{roomId}/close) - 호스트만 가능
-POST http://localhost:8080/api/rooms/4/close
+### 13. 내 상태 업데이트 (PATCH /rooms/{roomId}/my-state) - 게스트
+PATCH http://localhost:8080/api/rooms/1/my-state
+Content-Type: application/json
+Authorization: Bearer {{GUEST_JWT}}
 
+{
+  "isCameraOn": false
+}
+
+###
+
+### 14. 방 종료 (POST /rooms/{roomId}/close) - 호스트만 가능
+POST http://localhost:8080/api/rooms/1/close
+Authorization: Bearer {{HOST_JWT}}
 ###

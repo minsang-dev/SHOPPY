@@ -4,7 +4,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import ssafy.rtc.shoppy.ai.llm.dto.AiRoomCreateRequestDto;
 import ssafy.rtc.shoppy.ai.llm.dto.AiRoomCreateResponseDto;
@@ -18,6 +20,7 @@ import ssafy.rtc.shoppy.room.service.RoomService;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/rooms")
 @RequiredArgsConstructor
@@ -31,9 +34,10 @@ public class RoomController {
     @PostMapping
     @Operation(summary = "방 생성", description = "새로운 쇼핑 방을 생성합니다.")
     public ResponseEntity<SuccessResponse<RoomCreateResponseDto>> createRoom(
+            @AuthenticationPrincipal Long hostId,
             @Valid @RequestBody RoomCreateRequestDto request
     ) {
-        Long hostId = 1L;
+        log.info("🏠 Creating room - HostId from JWT: {}, RoomName: {}", hostId, request.roomName());
 
         Room room = roomService.createRoom(
                 request.roomName(),
@@ -51,9 +55,9 @@ public class RoomController {
     @PostMapping("/ai/LLM")
     @Operation(summary = "AI 방 생성", description = "AI 체크리스트용 방을 생성합니다.")
     public ResponseEntity<SuccessResponse<AiRoomCreateResponseDto>> createAiRoom(
+            @AuthenticationPrincipal Long hostId,
             @Valid @RequestBody AiRoomCreateRequestDto request
     ) {
-        Long hostId = 1L;
         AiRoomCreateResponseDto response = aiRoomService.createRoomWithChecklist(request, hostId);
         return ResponseEntity.ok(SuccessResponse.of(response));
     }
@@ -81,13 +85,29 @@ public class RoomController {
     }
 
     @PostMapping("/join")
-    @Operation(summary = "게스트 방 입장", description = "초대 코드로 게스트가 방에 입장합니다.")
-    public ResponseEntity<SuccessResponse<RoomMemberDto>> joinRoom(
-            @Valid @RequestBody RoomMemberJoinRequestDto request
+    @Operation(summary = "로그인 사용자 방 입장", description = "JWT 인증된 사용자가 초대 코드로 방에 입장합니다.")
+    public ResponseEntity<SuccessResponse<RoomMemberDto>> joinRoomAsUser(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody UserJoinRequestDto request
     ) {
-        RoomMember member = roomMemberService.joinRoomAsGuest(request.roomCode(), request.nickname());
-
+        RoomMember member = roomMemberService.joinRoomAsUser(request.roomCode(), userId);
         RoomMemberDto response = RoomMemberDto.from(member);
+
+        log.info("👤 User joined - UserId: {}, RoomCode: {}", userId, request.roomCode());
+
+        return ResponseEntity.ok(SuccessResponse.of(response));
+    }
+
+    @PostMapping("/join/guest")
+    @Operation(summary = "게스트 방 입장", description = "게스트가 닉네임과 초대 코드로 방에 입장합니다. JWT 토큰을 발급받습니다.")
+    public ResponseEntity<SuccessResponse<RoomMemberJoinResponseDto>> joinRoomAsGuest(
+            @Valid @RequestBody GuestJoinRequestDto request
+    ) {
+        GuestJoinResult result = roomMemberService.joinRoomAsGuest(request.roomCode(), request.nickname());
+        RoomMemberJoinResponseDto response = RoomMemberJoinResponseDto.from(result);
+
+        log.info("🎫 Guest joined - UserId: {}, RoomCode: {}, JWT issued",
+                result.member().getUserId(), request.roomCode());
 
         return ResponseEntity.ok(SuccessResponse.of(response));
     }
@@ -106,24 +126,23 @@ public class RoomController {
         return ResponseEntity.ok(SuccessResponse.of(response));
     }
 
-    @DeleteMapping("/{roomId}/members/{memberId}")
-    @Operation(summary = "방 나가기", description = "참여자가 방에서 나갑니다.")
+    @DeleteMapping("/{roomId}/leave")
+    @Operation(summary = "방 나가기", description = "현재 사용자가 방에서 나갑니다.")
     public ResponseEntity<SuccessResponse<Void>> leaveRoom(
-            @PathVariable Long roomId,
-            @PathVariable Long memberId
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long roomId
     ) {
-        roomMemberService.leaveRoom(roomId, memberId);
+        roomMemberService.leaveRoomByUserId(roomId, userId);
         return ResponseEntity.ok(SuccessResponse.ok("방에서 나갔습니다."));
     }
 
     @PatchMapping("/{roomId}/sync-mode")
     @Operation(summary = "동기화 모드 변경", description = "호스트가 방 동기화 모드를 변경합니다.")
     public ResponseEntity<SuccessResponse<Void>> updateSyncMode(
+            @AuthenticationPrincipal Long hostId,
             @PathVariable Long roomId,
             @Valid @RequestBody RoomSyncModeUpdateRequestDto request
     ) {
-        Long hostId = 1L;
-
         roomService.updateSyncMode(roomId, hostId, request.syncMode());
         return ResponseEntity.ok(SuccessResponse.ok("동기화 모드가 변경되었습니다."));
     }
@@ -131,33 +150,31 @@ public class RoomController {
     @PatchMapping("/{roomId}/host-url")
     @Operation(summary = "호스트 URL 업데이트", description = "FOLLOW 모드에서 호스트 URL을 업데이트합니다.")
     public ResponseEntity<SuccessResponse<Void>> updateHostUrl(
+            @AuthenticationPrincipal Long hostId,
             @PathVariable Long roomId,
             @Valid @RequestBody RoomHostUrlUpdateRequestDto request
     ) {
-        Long hostId = 1L;
-
         roomService.updateHostCurrentUrl(roomId, hostId, request.currentUrl());
         return ResponseEntity.ok(SuccessResponse.ok("호스트 URL이 업데이트되었습니다."));
     }
 
-    @PatchMapping("/{roomId}/members/{memberId}")
-    @Operation(summary = "참여자 상태 업데이트", description = "참여자의 카메라 상태를 업데이트합니다.")
-    public ResponseEntity<SuccessResponse<Void>> updateMemberState(
+    @PatchMapping("/{roomId}/my-state")
+    @Operation(summary = "내 상태 업데이트", description = "현재 사용자의 카메라 상태를 업데이트합니다.")
+    public ResponseEntity<SuccessResponse<Void>> updateMyState(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long roomId,
-            @PathVariable Long memberId,
             @Valid @RequestBody RoomMemberStateUpdateRequestDto request
     ) {
-        roomMemberService.updateMemberState(roomId, memberId, request.isCameraOn());
+        roomMemberService.updateMemberStateByUserId(roomId, userId, request.isCameraOn());
         return ResponseEntity.ok(SuccessResponse.ok("참여자 상태가 업데이트되었습니다."));
     }
 
     @PostMapping("/{roomId}/close")
     @Operation(summary = "방 종료", description = "호스트가 방을 종료합니다.")
     public ResponseEntity<SuccessResponse<Void>> closeRoom(
+            @AuthenticationPrincipal Long hostId,
             @PathVariable Long roomId
     ) {
-        Long hostId = 1L;
-
         roomService.closeRoom(roomId, hostId);
         return ResponseEntity.ok(SuccessResponse.ok("방이 종료되었습니다."));
     }

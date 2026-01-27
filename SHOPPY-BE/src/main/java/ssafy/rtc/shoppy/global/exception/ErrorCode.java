@@ -48,9 +48,9 @@ public enum ErrorCode {
     ROOM_CLOSED(HttpStatus.BAD_REQUEST, "종료된 방입니다."),
     ROOM_FULL(HttpStatus.CONFLICT, "방 인원이 가득 찼습니다."),
     MEMBER_ALREADY_LEFT(HttpStatus.CONFLICT, "이미 퇴장한 멤버입니다."),
-    ALREADY_DELETED(HttpStatus.CONFLICT, "이미 삭제된 메시지입니다."),
     ALREADY_VOTED(HttpStatus.CONFLICT, "이미 투표에 참여했습니다."),
     VOTE_ALREADY_CLOSED(HttpStatus.CONFLICT, "이미 종료된 투표입니다."),
+    ALREADY_DELETED(HttpStatus.CONFLICT, "이미 삭제된 메시지입니다."),
 
     // 503 Service Unavailable
     MEDIA_SERVER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Media server is unavailable."),

@@ -33,7 +33,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
             Authentication authentication = jwtTokenProvider.getAuthentication(token);
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.debug("Set Authentication to security context for member id: {}", authentication.getPrincipal());
+            log.info("✅ JWT Authentication Success - UserId: {}, Path: {}",
+                    authentication.getPrincipal(), request.getRequestURI());
+        } else if (StringUtils.hasText(token)) {
+            log.warn("❌ JWT Token Invalid - Path: {}", request.getRequestURI());
         }
 
         filterChain.doFilter(request, response);

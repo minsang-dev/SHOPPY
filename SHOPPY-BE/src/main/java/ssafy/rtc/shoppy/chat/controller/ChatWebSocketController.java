@@ -9,6 +9,8 @@ import ssafy.rtc.shoppy.chat.domain.ChatMessage;
 import ssafy.rtc.shoppy.chat.dto.ChatMessageWebSocketRequestDto;
 import ssafy.rtc.shoppy.chat.service.ChatService;
 
+import java.security.Principal;
+
 @Slf4j
 @Controller
 @RequiredArgsConstructor
@@ -19,12 +21,19 @@ public class ChatWebSocketController {
     @MessageMapping("/rooms/{roomId}/chat")
     public void handleChatMessage(
             @DestinationVariable Long roomId,
-            ChatMessageWebSocketRequestDto request
+            ChatMessageWebSocketRequestDto request,
+            Principal principal
     ) {
-        Long memberId = 1L;
+        if (principal == null) {
+            log.error("WebSocket message without authentication");
+            return;
+        }
 
-        ChatMessage savedMessage = chatService.sendMessage(roomId, memberId, request.content());
+        Long userId = Long.parseLong(principal.getName());
 
-        log.info("WebSocket message sent to room: {}, messageId: {}", roomId, savedMessage.getChatId());
+        ChatMessage savedMessage = chatService.sendMessage(roomId, userId, request.content());
+
+        log.info("WebSocket message sent to room: {}, messageId: {}, userId: {}",
+                roomId, savedMessage.getChatId(), userId);
     }
 }
