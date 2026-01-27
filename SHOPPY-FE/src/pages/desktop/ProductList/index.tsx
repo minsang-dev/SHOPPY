@@ -1,3 +1,4 @@
+import { useParams } from 'react-router-dom';
 import { useAddToCart } from '@/features/cart/add-to-cart/model/useAddToCart';
 import { useProductList } from '@/features/product/fetch-products/model/useProductList';
 import Header from '@/widgets/desktop/Header/Header';
@@ -7,8 +8,9 @@ import SortOptions from '@/widgets/desktop/SortOptions/SortOptions';
 import './styles.css';
 
 const DesktopProductList = () => {
+  const { roomId } = useParams<{ roomId?: string }>();
   const { products, loading, error, search } = useProductList();
-  const addToCart = useAddToCart();
+  const addToCart = useAddToCart(roomId || null);
 
   const handleSearch = (keyword: string) => {
     void search(keyword);
