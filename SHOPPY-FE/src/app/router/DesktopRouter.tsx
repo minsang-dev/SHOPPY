@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 
 // 메인 페이지
-import DesktopMainPage from '@/pages/desktop/Main';
+import DesktopMainPage from '@/pages/desktop/main';
 
 // 화상채팅
 import DesktopVideoChatPage from '@/pages/desktop/VideoChat';

@@ -6,6 +6,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ssafy.rtc.shoppy.ai.llm.dto.AiRoomCreateRequestDto;
+import ssafy.rtc.shoppy.ai.llm.dto.AiRoomCreateResponseDto;
+import ssafy.rtc.shoppy.ai.llm.service.AiRoomService;
 import ssafy.rtc.shoppy.global.response.SuccessResponse;
 import ssafy.rtc.shoppy.room.domain.Room;
 import ssafy.rtc.shoppy.room.domain.RoomMember;
@@ -23,6 +26,7 @@ public class RoomController {
 
     private final RoomService roomService;
     private final RoomMemberService roomMemberService;
+    private final AiRoomService aiRoomService;
 
     @PostMapping
     @Operation(summary = "방 생성", description = "새로운 쇼핑 방을 생성합니다.")
@@ -41,6 +45,16 @@ public class RoomController {
         RoomMetaDto responseMeta = RoomMetaDto.copyWithBudgetMax(request.roomMeta(), request.targetBudget());
         RoomCreateResponseDto response = RoomCreateResponseDto.from(room, responseMeta);
 
+        return ResponseEntity.ok(SuccessResponse.of(response));
+    }
+
+    @PostMapping("/ai/LLM")
+    @Operation(summary = "AI 방 생성", description = "AI 체크리스트용 방을 생성합니다.")
+    public ResponseEntity<SuccessResponse<AiRoomCreateResponseDto>> createAiRoom(
+            @Valid @RequestBody AiRoomCreateRequestDto request
+    ) {
+        Long hostId = 1L;
+        AiRoomCreateResponseDto response = aiRoomService.createRoomWithChecklist(request, hostId);
         return ResponseEntity.ok(SuccessResponse.of(response));
     }
 

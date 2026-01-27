@@ -11,8 +11,8 @@ out/
 
 ### Application secrets ###
 **/application-local.yaml
-docs/
-.claude/*
+SHOPPY-BE/docs/
+SHOPPY-BE/.claude/*
 
 ### Local development ###
 docker-compose.openvidu.yml
@@ -52,3 +52,8 @@ dist-ssr
 .env
 .env.local
 .env.*
+
+
+# AI experimental / local-only
+SHOPPY-BE/src/main/java/ssafy/rtc/shoppy/ai/direciton/
+SHOPPY-BE/src/main/java/ssafy/rtc/shoppy/ai/direction/

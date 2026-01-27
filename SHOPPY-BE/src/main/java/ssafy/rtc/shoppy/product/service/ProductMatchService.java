@@ -3,7 +3,7 @@ package ssafy.rtc.shoppy.product.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ssafy.rtc.shoppy.ai.dto.ProductMatchDto;
+import ssafy.rtc.shoppy.ai.imagerecognition.dto.ProductMatchDto;
 import ssafy.rtc.shoppy.product.model.ProductMasterEntity;
 import ssafy.rtc.shoppy.product.repository.ProductMasterRepository;
 
