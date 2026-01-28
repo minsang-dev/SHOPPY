@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { normalizeApiError } from '../../../shared/api/error';
-import { getRoomMembers, joinRoomAsUser, joinRoomAsGuest } from '../../../shared/api/rooms';
+import { getRoomMembers, joinRoomAsUser, joinRoomAsGuest } from '../../../entities/room/api/room';
+import type { RoomMember } from '../../../entities/room/types/room.types';
 import { createWebRtcSession } from '../../../shared/api/webrtc';
-import type { Member, WebRTCSession } from '../../../shared/api/types';
+import type { WebRTCSession } from '../../../shared/api/types';
 import { useSessionStore } from '../../../entities/session/model/useSessionStore';
 
 type JoinRoomPayload =
@@ -10,7 +11,7 @@ type JoinRoomPayload =
   | { roomCode: string; nickname: string; isLoggedIn: false };
 
 export const useJoinRoom = () => {
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<RoomMember[]>([]);
   const [session, setSession] = useState<WebRTCSession | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ReturnType<typeof normalizeApiError> | null>(null);
@@ -23,20 +24,27 @@ export const useJoinRoom = () => {
       let roomId: number;
 
       if (payload.isLoggedIn) {
+        // 로그인 사용자: POST /rooms/join
         const joinRes = await joinRoomAsUser({ roomCode: payload.roomCode });
         roomId = joinRes.roomId;
       } else {
-        const joinRes = await joinRoomAsGuest({ roomCode: payload.roomCode, nickname: payload.nickname });
+        // 게스트: POST /rooms/join/guest
+        const joinRes = await joinRoomAsGuest({ 
+          roomCode: payload.roomCode, 
+          nickname: payload.nickname 
+        });
         roomId = joinRes.member.roomId;
         // 게스트 토큰 저장
-        localStorage.setItem('accessToken', joinRes.accessToken);
+        if (joinRes.accessToken) {
+          localStorage.setItem('accessToken', joinRes.accessToken);
+        }
       }
 
       if (!roomId) {
         throw new Error('roomId not found in join response');
       }
 
-      const memberRes = await getRoomMembers(roomId);
+      const memberRes = await getRoomMembers(String(roomId));
       setMembers(memberRes);
 
       const sessionRes = await createWebRtcSession(roomId);

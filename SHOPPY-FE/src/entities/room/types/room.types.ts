@@ -3,6 +3,15 @@ export interface JoinRoomRequest {
   nickname: string;
 }
 
+export interface JoinRoomAsUserRequest {
+  roomCode: string;
+}
+
+export interface JoinRoomAsGuestRequest {
+  roomCode: string;
+  nickname: string;
+}
+
 export interface JoinRoomResponse {
   memberId: number;
   roomId: number;
@@ -12,6 +21,11 @@ export interface JoinRoomResponse {
   status: string;
   isCameraOn: boolean;
   joinedAt: string;
+}
+
+export interface JoinRoomAsGuestResponse {
+  member: JoinRoomResponse;
+  accessToken: string;
 }
 
 export interface RoomResponse {
@@ -47,7 +61,7 @@ export interface RoomMeta {
 export interface CreateRoomRequest {
   roomName: string;
   targetBudget: number;
-  syncMode: 'FOLLOW' | 'LEAD';
+  syncMode: 'FOLLOW' | 'FREE';
   roomMeta: RoomMeta;
 }
 

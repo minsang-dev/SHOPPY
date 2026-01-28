@@ -3,11 +3,11 @@ import productList from './productList.json';
 // import participantList from './ParticipantList.json';
 // import roomCreateResponse from './RoomCreateResponse.json';
 // import roomJoinResponse from './RoomJoinresponse.json';
-import kakaoLoginResponse from './kakaoLoginResponse.json';
+// import kakaoLoginResponse from './kakaoLoginResponse.json';
 import shoppingCartResponse from './ShoppingCartResponse.json';
 // import chatListResponse from './ChatList.json';
 // import voteListResponse from './VoteListResponse.json';
-import voteDetailResponse from './VoteDetailResponse.json';
+// import voteDetailResponse from './VoteDetailResponse.json';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -191,12 +191,13 @@ export const handlers = [
   }),
 
   // 6. 카카오 로그인 콜백: GET /api/auth/kakao/callback
-  http.get(`${API_URL}/api/auth/kakao/callback`, ({ request }) => {
-    const url = new URL(request.url);
-    const code = url.searchParams.get('code');
-    console.log('MSW: 카카오 로그인 콜백 요청 받음 (code:', code, ')');
-    return HttpResponse.json(kakaoLoginResponse);
-  }),
+  // 주석 처리 - 실제 백엔드에서 JWT 발급받아야 함
+  // http.get(`${API_URL}/api/auth/kakao/callback`, ({ request }) => {
+  //   const url = new URL(request.url);
+  //   const code = url.searchParams.get('code');
+  //   console.log('MSW: 카카오 로그인 콜백 요청 받음 (code:', code, ')');
+  //   return HttpResponse.json(kakaoLoginResponse);
+  // }),
 
   // // 7. 토큰 갱신: POST /api/auth/refresh
   // http.post(`${API_URL}/api/auth/refresh`, async ({ request }) => {
@@ -422,66 +423,69 @@ export const handlers = [
   //   });
   // }),
 
-  // 10. 투표 상세 조회: GET /api/rooms/:roomId/votes/:voteId
-  http.get(`${API_URL}/api/rooms/:roomId/votes/:voteId`, ({ params }) => {
-    const roomId = String(params.roomId);
-    const voteId = String(params.voteId);
-    console.log(`MSW: 투표 상세 조회 요청 받음 (roomId: ${roomId}, voteId: ${voteId})`);
-    return HttpResponse.json(voteDetailResponse);
-  }),
+  // ============================================================
+  // 투표 관련 - 주석 처리 (실제 백엔드 연결)
+  // ============================================================
+  // // 10. 투표 상세 조회: GET /api/rooms/:roomId/votes/:voteId
+  // http.get(`${API_URL}/api/rooms/:roomId/votes/:voteId`, ({ params }) => {
+  //   const roomId = String(params.roomId);
+  //   const voteId = String(params.voteId);
+  //   console.log(`MSW: 투표 상세 조회 요청 받음 (roomId: ${roomId}, voteId: ${voteId})`);
+  //   return HttpResponse.json(voteDetailResponse);
+  // }),
 
-  // 11. 투표 참여: POST /api/rooms/:roomId/votes/:voteId/participants
-  http.post(
-    `${API_URL}/api/rooms/:roomId/votes/:voteId/participants`,
-    async ({ params, request }) => {
-      const roomId = String(params.roomId);
-      const voteId = String(params.voteId);
-      const body = await request.json();
-      console.log(
-        `MSW: 투표 참여 요청 받음 (roomId: ${roomId}, voteId: ${voteId}, optionId: ${(body as { option_id: number }).option_id})`,
-      );
+  // // 11. 투표 참여: POST /api/rooms/:roomId/votes/:voteId/participants
+  // http.post(
+  //   `${API_URL}/api/rooms/:roomId/votes/:voteId/participants`,
+  //   async ({ params, request }) => {
+  //     const roomId = String(params.roomId);
+  //     const voteId = String(params.voteId);
+  //     const body = await request.json();
+  //     console.log(
+  //       `MSW: 투표 참여 요청 받음 (roomId: ${roomId}, voteId: ${voteId}, optionId: ${(body as { option_id: number }).option_id})`,
+  //     );
 
-      return HttpResponse.json({
-        status: 'success',
-        message: 'OK',
-        data: {
-          vote_participant_id: 4001,
-          vote_id: Number(voteId),
-          option_id: (body as { option_id: number }).option_id,
-          user_id: 1,
-        },
-      });
-    },
-  ),
+  //     return HttpResponse.json({
+  //       status: 'success',
+  //       message: 'OK',
+  //       data: {
+  //         vote_participant_id: 4001,
+  //         vote_id: Number(voteId),
+  //         option_id: (body as { option_id: number }).option_id,
+  //         user_id: 1,
+  //       },
+  //     });
+  //   },
+  // ),
 
-  // 12. 투표 생성: POST /api/rooms/:roomId/votes
-  http.post(`${API_URL}/api/rooms/:roomId/votes`, async ({ params, request }) => {
-    const roomId = String(params.roomId);
-    const body = await request.json();
-    console.log(
-      `MSW: 투표 생성 요청 받음 (roomId: ${roomId}, title: ${(body as { title: string }).title})`,
-    );
+  // // 12. 투표 생성: POST /api/rooms/:roomId/votes
+  // http.post(`${API_URL}/api/rooms/:roomId/votes`, async ({ params, request }) => {
+  //   const roomId = String(params.roomId);
+  //   const body = await request.json();
+  //   console.log(
+  //     `MSW: 투표 생성 요청 받음 (roomId: ${roomId}, title: ${(body as { title: string }).title})`,
+  //   );
 
-    const createBody = body as { title: string; options: string[] };
-    const newVoteId = 2004;
-    const options = createBody.options.map((content, index) => ({
-      option_id: 3003 + index,
-      content,
-    }));
+  //   const createBody = body as { title: string; options: string[] };
+  //   const newVoteId = 2004;
+  //   const options = createBody.options.map((content, index) => ({
+  //     option_id: 3003 + index,
+  //     content,
+  //   }));
 
-    return HttpResponse.json({
-      status: 'success',
-      message: 'OK',
-      data: {
-        vote_id: newVoteId,
-        room_id: Number(roomId),
-        title: createBody.title,
-        status: 'OPEN',
-        created_at: new Date().toISOString(),
-        closed_at: null,
-        options,
-      },
-    });
-  }),
+  //   return HttpResponse.json({
+  //     status: 'success',
+  //     message: 'OK',
+  //     data: {
+  //       vote_id: newVoteId,
+  //       room_id: Number(roomId),
+  //       title: createBody.title,
+  //       status: 'OPEN',
+  //       created_at: new Date().toISOString(),
+  //       closed_at: null,
+  //       options,
+  //     },
+  //   });
+  // }),
 ];
 
