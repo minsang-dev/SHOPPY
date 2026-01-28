@@ -53,7 +53,7 @@ const MobileMainPage: React.FC = () => {
       return;
     }
 
-    const response = await run({ roomCode, nickname: trimmedNickname });
+    const response = await run({ roomCode, nickname: trimmedNickname, isLoggedIn: false });
 
     const query = new URLSearchParams({
       room_id: String(response.roomId),
