@@ -1,28 +1,28 @@
 export type VoteStatus = 'OPEN' | 'CLOSED';
 
 export interface Vote {
-  vote_id: number;
+  voteId: number;
   title: string;
   status: VoteStatus;
-  created_at: string;
-  closed_at: string | null;
+  createdAt: string;
+  closedAt: string | null;
 }
 
 export interface VoteOption {
-  option_id: number;
+  optionId: number;
   content: string;
-  vote_count: number;
+  voteCount: number;
 }
 
 export interface VoteDetail {
-  vote_id: number;
-  room_id: number;
+  voteId: number;
+  roomId: number;
   title: string;
   status: VoteStatus;
-  created_at: string;
-  closed_at: string | null;
+  createdAt: string;
+  closedAt: string | null;
   options: VoteOption[];
-  my_selected_option_id: number | null;
+  mySelectedOptionId: number | null;
 }
 
 export interface VoteListResponse {
@@ -38,10 +38,10 @@ export interface VoteParticipantRequest {
 }
 
 export interface VoteParticipantResponse {
-  vote_participant_id: number;
-  vote_id: number;
-  option_id: number;
-  user_id: number;
+  voteParticipantId: number;
+  voteId: number;
+  optionId: number;
+  userId: number;
 }
 
 export interface CreateVoteRequest {
@@ -50,14 +50,14 @@ export interface CreateVoteRequest {
 }
 
 export interface CreateVoteResponse {
-  vote_id: number;
-  room_id: number;
+  voteId: number;
+  roomId: number;
   title: string;
   status: VoteStatus;
-  created_at: string;
-  closed_at: string | null;
+  createdAt: string;
+  closedAt: string | null;
   options: Array<{
-    option_id: number;
+    optionId: number;
     content: string;
   }>;
 }
