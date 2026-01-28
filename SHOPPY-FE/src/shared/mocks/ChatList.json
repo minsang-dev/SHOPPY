@@ -1,0 +1,62 @@
+{
+  "status": "success",
+  "message": "OK",
+  "data": {
+    "messages": [
+      {
+        "chatId": 1,
+        "roomId": 1,
+        "senderMemberId": 1,
+        "content": "안녕하세요! 첫 번째 메시지입니다.",
+        "isDeleted": false,
+        "isEdited": false,
+        "createdAt": "2026-01-26T15:25:15.994033",
+        "editedAt": null
+      },
+      {
+        "chatId": 2,
+        "roomId": 1,
+        "senderMemberId": 2,
+        "content": "안녕하세요 🙂 반갑습니다!",
+        "isDeleted": false,
+        "isEdited": false,
+        "createdAt": "2026-01-26T15:26:10.112345",
+        "editedAt": null
+      },
+      {
+        "chatId": 3,
+        "roomId": 1,
+        "senderMemberId": 1,
+        "content": "오늘 회의는 몇 시에 시작하나요?",
+        "isDeleted": false,
+        "isEdited": false,
+        "createdAt": "2026-01-26T15:27:03.456789",
+        "editedAt": null
+      },
+      {
+        "chatId": 4,
+        "roomId": 1,
+        "senderMemberId": 3,
+        "content": "오후 4시에 시작합니다!",
+        "isDeleted": false,
+        "isEdited": true,
+        "createdAt": "2026-01-26T15:28:40.778899",
+        "editedAt": "2026-01-26T15:29:05.123456"
+      },
+      {
+        "chatId": 5,
+        "roomId": 1,
+        "senderMemberId": 2,
+        "content": "네 알겠습니다.",
+        "isDeleted": true,
+        "isEdited": false,
+        "createdAt": "2026-01-26T15:30:12.999111",
+        "editedAt": null
+      }
+    ],
+    "totalElements": 5,
+    "totalPages": 1,
+    "currentPage": 0,
+    "hasNext": false
+  }
+}
