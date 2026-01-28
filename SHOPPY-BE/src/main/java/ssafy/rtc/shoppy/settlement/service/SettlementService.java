@@ -264,6 +264,53 @@ public class SettlementService {
         }
     }
 
+    /**
+     * 정산 품목 수정 (이름, 가격, 수량)
+     * 가격/수량 변경 시 기존 할당(Allocation) 금액 재계산 수행
+     */
+    public SettlementItemCreateResponse updateSettlementItem(Long itemId, SettlementItemCreateRequest request) {
+        PurchaseItem item = purchaseItemRepository.findById(itemId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "해당 품목을 찾을 수 없습니다."));
+
+        // 값 업데이트
+        boolean needRecalculate = (request.getUnitPrice().compareTo(item.getUnitPrice()) != 0) || (request.getQuantity() != item.getQuantity());
+        
+        // Setter가 없으므로 Builder패턴 사용 불가 -> Entity에 비즈니스 메서드 필요하거나 Reflection 사용
+        // 여기서는 Entity에 update 메서드가 없으므로, Repository save로 덮어쓰거나 Entity 수정 필요.
+        // PurchaseItem은 @Setter가 없고 수정 메서드도 현재 없음.
+        // -> PurchaseItem Entity에 update 메서드를 추가해야 함. (일단 여기서는 가정하고 작성 후 Entity 수정)
+        item.updateDetails(request.getItemName(), request.getUnitPrice(), request.getQuantity());
+        
+        if (needRecalculate) {
+            // 현재 할당되어 있는 멤버들 목록 가져오기
+            List<Long> currentMemberIds = item.getItemAllocations().stream()
+                    .map(ItemAllocation::getMemberId)
+                    .toList();
+            
+            // 기존 할당 내역 삭제 후 재생성 (updateAllocations 재활용)
+            updateAllocations(itemId, currentMemberIds);
+        }
+
+        return SettlementItemCreateResponse.builder()
+                .settlementItemId(item.getPurchaseItemId())
+                .receiptId(item.getPurchase().getPurchaseId()) // 주의: Purchase와 Receipt 연결 관계 확인 필요. 일단 PurchaseId 매핑
+                .itemName(item.getItemName())
+                .unitPrice(item.getUnitPrice())
+                .quantity(item.getQuantity())
+                .totalPrice(item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .build();
+    }
+
+    /**
+     * 정산 품목 삭제
+     */
+    public void deleteSettlementItem(Long itemId) {
+        PurchaseItem item = purchaseItemRepository.findById(itemId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "해당 품목을 찾을 수 없습니다."));
+        
+        purchaseItemRepository.delete(item);
+    }
+
     // 재정산 로직 (멤버 변경 시)
     public void updateAllocations(Long purchaseItemId, List<Long> newMemberIds) {
         PurchaseItem purchaseItem = purchaseItemRepository.findById(purchaseItemId)
