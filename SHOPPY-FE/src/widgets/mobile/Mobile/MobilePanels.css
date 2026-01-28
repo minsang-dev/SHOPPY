@@ -432,6 +432,10 @@
   font-size: 1rem;
   font-weight: 700;
   color: #111827;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mobile-panel-header {
@@ -439,11 +443,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-width: 0;
 }
 
 .mobile-panel-header-actions {
   display: inline-flex;
   gap: 8px;
+  min-width: 0;
 }
 
 .mobile-panel-header-button {
@@ -458,6 +464,11 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
+  max-width: 120px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mobile-panel-header-button.is-recording {
@@ -902,6 +913,15 @@
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
 }
 
+.member-card.clickable {
+  cursor: pointer;
+}
+
+.member-card.clickable:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
 .member-avatar {
   width: 44px;
   height: 44px;
@@ -975,15 +995,32 @@
 }
 
 .member-icon {
-  width: 28px;
-  height: 28px;
+  border: none;
+  width: 32px;
+  height: 32px;
   border-radius: 10px;
   display: grid;
   place-items: center;
-  font-size: 0.95rem;
+  font-size: 1rem;
   background: #f3f4f6;
   color: #6b7280;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  line-height: 1;
 }
+
+.member-icon i {
+  display: block;
+  line-height: 1;
+}
+
+.member-icon:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 
 .member-icon.on {
   background: #dcfce7;

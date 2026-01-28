@@ -25,7 +25,11 @@
 }
 
 .mobile-bottom-nav-item i {
-  font-size: 1rem;
+  font-size: 1.2rem;
+}
+
+.mobile-bottom-nav-item span {
+  display: none;
 }
 
 .mobile-bottom-nav-item.active {

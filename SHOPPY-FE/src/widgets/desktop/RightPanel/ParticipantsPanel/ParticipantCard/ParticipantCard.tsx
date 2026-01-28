@@ -4,9 +4,10 @@ import './ParticipantCard.css';
 
 interface ParticipantCardProps {
   participant: RoomMember;
+  onSelect?: (participant: RoomMember) => void;
 }
 
-const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant }) => {
+const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, onSelect }) => {
   // 초성 추출 (첫 글자)
   const getInitial = (name: string): string => {
     return name.charAt(0);
@@ -16,7 +17,21 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant }) => {
   const isHost = participant.role === 'HOST';
 
   return (
-    <div className={`participant-card ${isActive ? 'active' : 'inactive'}`}>
+    <div
+      className={`participant-card ${isActive ? 'active' : 'inactive'} ${onSelect ? 'clickable' : ''}`}
+      role={onSelect ? 'button' : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onClick={() => onSelect?.(participant)}
+      onKeyDown={(event) => {
+        if (!onSelect) {
+          return;
+        }
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onSelect(participant);
+        }
+      }}
+    >
       {/* 아바타 */}
       <div className="participant-card-avatar">
         <div className={`participant-card-avatar-inner ${isActive ? 'active' : ''}`}>

@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getRoomMembers } from '@/entities/room/api/room';
 import type { RoomMember } from '@/entities/room/types/room.types';
 import ParticipantCard from './ParticipantCard/ParticipantCard';
+import ParticipantVolumeModal from '@/shared/ui/ParticipantVolumeModal';
 import './ParticipantsPanel.css';
 
 /**
@@ -13,6 +14,8 @@ const ParticipantsPanel: React.FC = () => {
   const [participants, setParticipants] = useState<RoomMember[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [volumeStates, setVolumeStates] = useState<Record<number, number>>({});
+  const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchParticipants = async () => {
@@ -24,7 +27,7 @@ const ParticipantsPanel: React.FC = () => {
         setParticipants(data);
       } catch (err) {
         console.error('참여자 목록 조회 실패:', err);
-        setError('참여자 목록을 불러오는데 실패했습니다.');
+        setError('참여자 목록을 불러오는 데 실패했습니다.');
       } finally {
         setLoading(false);
       }
@@ -32,6 +35,15 @@ const ParticipantsPanel: React.FC = () => {
 
     fetchParticipants();
   }, [roomId]);
+
+  const selectedParticipant = useMemo(
+    () => participants.find((p) => p.memberId === selectedParticipantId) ?? null,
+    [participants, selectedParticipantId],
+  );
+
+  const selectedVolume = selectedParticipant
+    ? volumeStates[selectedParticipant.memberId] ?? 100
+    : 100;
 
   return (
     <div className="panel-content">
@@ -51,9 +63,28 @@ const ParticipantsPanel: React.FC = () => {
       ) : (
         <div className="participants-list">
           {participants.map((participant) => (
-            <ParticipantCard key={participant.memberId} participant={participant} />
+            <ParticipantCard
+              key={participant.memberId}
+              participant={participant}
+              onSelect={(p) => setSelectedParticipantId(p.memberId)}
+            />
           ))}
         </div>
+      )}
+
+      {selectedParticipant && (
+        <ParticipantVolumeModal
+          isOpen={true}
+          participantName={selectedParticipant.nickname}
+          volume={selectedVolume}
+          onChange={(value) =>
+            setVolumeStates((prev) => ({
+              ...prev,
+              [selectedParticipant.memberId]: value,
+            }))
+          }
+          onClose={() => setSelectedParticipantId(null)}
+        />
       )}
     </div>
   );

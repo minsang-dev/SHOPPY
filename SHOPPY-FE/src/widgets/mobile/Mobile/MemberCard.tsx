@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import './MobilePanels.css';
 
 interface MemberCardProps {
@@ -6,7 +6,8 @@ interface MemberCardProps {
   role: string;
   online?: boolean;
   micOn?: boolean;
-  camOn?: boolean;
+  onToggleMic?: () => void;
+  onSelect?: () => void;
 }
 
 const MemberCard: React.FC<MemberCardProps> = ({
@@ -14,12 +15,27 @@ const MemberCard: React.FC<MemberCardProps> = ({
   role,
   online = false,
   micOn = true,
-  camOn = true,
+  onToggleMic,
+  onSelect,
 }) => {
-  const roleLabel = role === 'HOST' ? '호스트' : '쇼핑';
+  const roleLabel = role === 'HOST' ? '호스트' : '게스트';
 
   return (
-    <div className="member-card">
+    <div
+      className={`member-card ${onSelect ? 'clickable' : ''}`}
+      role={onSelect ? 'button' : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (!onSelect) {
+          return;
+        }
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onSelect();
+        }
+      }}
+    >
       <div className="member-avatar" aria-hidden="true">
         {name.slice(0, 1)}
       </div>
@@ -36,12 +52,19 @@ const MemberCard: React.FC<MemberCardProps> = ({
         </div>
       </div>
       <div className="member-actions">
-        <span className={`member-icon ${camOn ? 'on' : 'off'}`} aria-label="카메라">
-          <i className={camOn ? 'ri-video-on-fill' : 'ri-video-off-fill'} />
-        </span>
-        <span className={`member-icon ${micOn ? 'on' : 'off'}`} aria-label="마이크">
+        <button
+          type="button"
+          className={`member-icon ${micOn ? 'on' : 'off'}`}
+          aria-label="마이크"
+          aria-pressed={micOn}
+          onClick={(event) => {
+            event.stopPropagation();
+            onToggleMic?.();
+          }}
+          disabled={!onToggleMic}
+        >
           <i className={micOn ? 'ri-mic-fill' : 'ri-mic-off-fill'} />
-        </span>
+        </button>
       </div>
     </div>
   );

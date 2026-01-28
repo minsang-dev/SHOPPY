@@ -7,6 +7,7 @@ export default function MobileRouter() {
   return (
     <Routes>
       <Route index element={<MobileMainPage />} />
+      <Route path="room/:roomId" element={<MobileVideoChatPage />} />
       <Route path="room" element={<MobileVideoChatPage />} />
       <Route path="settlement" element={<MobileSettlementPage />} />
       <Route path="*" element={<Navigate to="." replace />} />

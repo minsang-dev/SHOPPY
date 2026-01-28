@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useState } from 'react';
 import {
   addShoppingItem,
   deleteShoppingItem,
@@ -50,7 +50,7 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
       setError(null);
     } catch (err) {
       console.error('Failed to load shopping list:', err);
-      setError('��ٱ��ϸ� �ҷ����� ���߽��ϴ�.');
+      setError('Failed to load shopping list.');
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,7 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
         await reload();
       } catch (err) {
         console.error('Failed to add shopping item:', err);
-        setError('��ǰ �߰��� �����߽��ϴ�.');
+        setError('Failed to add shopping item.');
       } finally {
         setLoading(false);
       }
@@ -92,7 +92,6 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
         return;
       }
       try {
-        setLoading(true);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await updateShoppingItem(roomId, id, { quantity } as any);
         setItems((prev) =>
@@ -100,9 +99,7 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
         );
       } catch (err) {
         console.error('Failed to update quantity:', err);
-        setError('��ǰ ������ �����߽��ϴ�.');
-      } finally {
-        setLoading(false);
+        setError('Failed to update quantity.');
       }
     },
     [roomId],
@@ -114,16 +111,13 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
         return;
       }
       try {
-        setLoading(true);
         await updateShoppingItem(roomId, id, { checked });
         setItems((prev) =>
           prev.map((item) => (item.id === id ? { ...item, checked } : item)),
         );
       } catch (err) {
         console.error('Failed to update checked state:', err);
-        setError('��ǰ ������ �����߽��ϴ�.');
-      } finally {
-        setLoading(false);
+        setError('Failed to update checked state.');
       }
     },
     [roomId],
@@ -135,14 +129,11 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
         return;
       }
       try {
-        setLoading(true);
         await deleteShoppingItem(roomId, id);
         setItems((prev) => prev.filter((item) => item.id !== id));
       } catch (err) {
         console.error('Failed to delete item:', err);
-        setError('��ǰ ������ �����߽��ϴ�.');
-      } finally {
-        setLoading(false);
+        setError('Failed to delete item.');
       }
     },
     [roomId],
