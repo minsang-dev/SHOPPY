@@ -41,4 +41,10 @@ public class PurchaseItem {
         this.itemAllocations.add(allocation);
         allocation.setPurchaseItem(this);
     }
+
+    public void updateDetails(String itemName, BigDecimal unitPrice, int quantity) {
+        this.itemName = itemName;
+        this.unitPrice = unitPrice;
+        this.quantity = quantity;
+    }
 }

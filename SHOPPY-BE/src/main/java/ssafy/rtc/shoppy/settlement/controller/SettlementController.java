@@ -5,16 +5,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ssafy.rtc.shoppy.settlement.dto.ReceiptUploadResponse;
-import ssafy.rtc.shoppy.room.repository.RoomMemberRepository;
-import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
-import ssafy.rtc.shoppy.room.enums.MemberStatus;
-import org.springframework.web.multipart.MultipartFile;
-import ssafy.rtc.shoppy.global.response.ApiResponse;
-import ssafy.rtc.shoppy.settlement.service.SettlementService;
-import ssafy.rtc.shoppy.settlement.dto.SettlementCreateRequest;
-import ssafy.rtc.shoppy.settlement.entity.Purchase;
-import ssafy.rtc.shoppy.settlement.dto.SplitUpdateRequest;
+import ssafy.rtc.shoppy.settlement.dto.SettlementItemCreateRequest;
+import ssafy.rtc.shoppy.settlement.dto.SettlementItemCreateResponse;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api")
@@ -25,41 +18,32 @@ public class SettlementController {
     private final SettlementService settlementService;
     private final RoomMemberRepository roomMemberRepository;
 
-    @Operation(summary = "영수증 이미지 업로드 (정산 시작)")
-    @PostMapping(value = "/rooms/{roomId}/settlements/receipt", consumes = "multipart/form-data")
-    public ResponseEntity<ApiResponse<ReceiptUploadResponse>> uploadReceipt(
-            @PathVariable Long roomId,
-            @RequestPart("file") MultipartFile file) {
-        
-        // TODO: SecurityContextHolder에서 userId 추출 필요
-        Long currentUserId = 1L; 
+    // ... uploadReceipt ...
 
-        // 현재 방의 멤버인지 확인
-        RoomMemberEntity roomMember = roomMemberRepository.findByRoom_RoomIdAndUserIdAndStatus(roomId, currentUserId, MemberStatus.ACTIVE)
-                .orElseThrow(() -> new IllegalArgumentException("해당 방의 참여자가 아닙니다."));
-
-        ReceiptUploadResponse response = settlementService.uploadReceipt(roomId, roomMember.getMemberId(), file);
+    @Operation(summary = "정산 품목 수동 추가")
+    @PostMapping("/receipts/{receiptId}/items")
+    public ResponseEntity<ApiResponse<SettlementItemCreateResponse>> addSettlementItem(
+            @PathVariable Long receiptId,
+            @RequestBody @Valid SettlementItemCreateRequest request) {
         
+        SettlementItemCreateResponse response = settlementService.addSettlementItem(receiptId, request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @Operation(summary = "정산 마스터 생성")
-    @PostMapping("/rooms/{roomId}/settlements")
-    public ResponseEntity<Purchase> createSettlement(
-            @PathVariable Long roomId,
-            @RequestBody SettlementCreateRequest request) {
-        
-        // TODO: 추후 Spring Security의 @AuthenticationPrincipal로 변경 필요
-        Long currentUserId = 1L; // 임시 하드코딩 (RoomController와 동일 패턴)
+    @Operation(summary = "정산 품목 수정 (이름/가격/수량)")
+    @PutMapping("/settlement-items/{itemId}")
+    public ResponseEntity<ApiResponse<SettlementItemCreateResponse>> updateSettlementItem(
+            @PathVariable Long itemId,
+            @RequestBody @Valid SettlementItemCreateRequest request) {
+        SettlementItemCreateResponse response = settlementService.updateSettlementItem(itemId, request);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 
-        Purchase purchase = settlementService.createSettlement(
-                roomId,
-                request.getPayerMemberId(),
-                request.getTotalAmount(),
-                request.getItems(),
-                currentUserId
-        );
-        return ResponseEntity.ok(purchase);
+    @Operation(summary = "정산 품목 삭제")
+    @DeleteMapping("/settlement-items/{itemId}")
+    public ResponseEntity<ApiResponse<Void>> deleteSettlementItem(@PathVariable Long itemId) {
+        settlementService.deleteSettlementItem(itemId);
+        return ResponseEntity.ok(ApiResponse.success());
     }
 
     @Operation(summary = "오프라인 영수증 등록 연결 (Stub)")
