@@ -199,3 +199,116 @@
 .vote-back-button:active {
   background-color: #dee2e6;
 }
+
+/* 투표 상세 액션 버튼 영역 */
+.vote-detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vote-close-button {
+  width: 100%;
+  padding: 12px 20px;
+  background-color: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.vote-close-button:hover {
+  background-color: #c82333;
+}
+
+.vote-close-button:active {
+  background-color: #bd2130;
+}
+
+.vote-close-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* 투표 마감 확인 모달 */
+.vote-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.vote-modal {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 360px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.vote-modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 16px 0;
+}
+
+.vote-modal-message {
+  font-size: 0.875rem;
+  color: #666;
+  line-height: 1.5;
+  margin: 0 0 24px 0;
+}
+
+.vote-modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.vote-modal-cancel,
+.vote-modal-confirm {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.vote-modal-cancel {
+  background-color: #f5f5f5;
+  color: #000;
+  border: 1px solid #e9ecef;
+}
+
+.vote-modal-cancel:hover {
+  background-color: #e9ecef;
+}
+
+.vote-modal-confirm {
+  background-color: #dc3545;
+  color: #fff;
+  border: none;
+}
+
+.vote-modal-confirm:hover {
+  background-color: #c82333;
+}
+
+.vote-modal-confirm:disabled,
+.vote-modal-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -4,6 +4,7 @@ import { useVoteList } from '@/features/vote/fetch-vote-list/model/useVoteList';
 import { useVoteDetail } from '@/features/vote/fetch-vote-detail/model/useVoteDetail';
 import { useVoteParticipant } from '@/features/vote/participate-vote/model/useVoteParticipant';
 import { useCreateVote } from '@/features/vote/create-vote/model/useCreateVote';
+import { closeVote } from '@/entities/vote/api/voteApi';
 import CreateVoteModal from '@/features/vote/create-vote/ui/CreateVoteModal';
 import './VotePanel.css';
 
@@ -14,7 +15,9 @@ const VotePanel: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const [selectedVoteId, setSelectedVoteId] = useState<number | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  
+  const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+  const [closeLoading, setCloseLoading] = useState(false);
+
   const { data: votes, loading, error, refetch: refetchVoteList } = useVoteList(roomId, 'OPEN');
   const { data: voteDetail, loading: detailLoading, error: detailError, refetch: refetchVoteDetail } = useVoteDetail(
     roomId,
@@ -63,10 +66,29 @@ const VotePanel: React.FC = () => {
     }
   };
 
+  const handleCloseVote = async () => {
+    if (!roomId || !selectedVoteId || closeLoading) {
+      return;
+    }
+
+    try {
+      setCloseLoading(true);
+      await closeVote(roomId, selectedVoteId);
+      setIsCloseModalOpen(false);
+      setSelectedVoteId(null);
+      await refetchVoteList();
+    } catch (error) {
+      console.error('투표 마감 실패:', error);
+      // TODO: 에러 처리 (토스트 메시지 등)
+    } finally {
+      setCloseLoading(false);
+    }
+  };
+
   // 투표 상세 화면
   if (selectedVoteId !== null) {
     const totalVotes = voteDetail
-      ? voteDetail.options.reduce((sum, option) => sum + option.vote_count, 0)
+      ? voteDetail.options.reduce((sum, option) => sum + option.voteCount, 0)
       : 0;
 
     return (
@@ -92,28 +114,28 @@ const VotePanel: React.FC = () => {
           <>
             <div className="vote-detail-options">
               {voteDetail.options.map((option) => {
-                const percentage = totalVotes > 0 ? (option.vote_count / totalVotes) * 100 : 0;
-                const isSelected = voteDetail.my_selected_option_id === option.option_id;
+                const percentage = totalVotes > 0 ? (option.voteCount / totalVotes) * 100 : 0;
+                const isSelected = voteDetail.mySelectedOptionId === option.optionId;
                 const isClosed = voteDetail.status === 'CLOSED';
-                
+
                 return (
                   <div
-                    key={option.option_id}
+                    key={option.optionId}
                     className={`vote-detail-option ${isSelected ? 'selected' : ''} ${isClosed ? 'disabled' : ''}`}
-                    onClick={() => !isClosed && handleOptionClick(option.option_id)}
+                    onClick={() => !isClosed && handleOptionClick(option.optionId)}
                     role={isClosed ? 'presentation' : 'button'}
                     tabIndex={isClosed ? -1 : 0}
                     onKeyDown={(e) => {
                       if (!isClosed && (e.key === 'Enter' || e.key === ' ')) {
                         e.preventDefault();
-                        handleOptionClick(option.option_id);
+                        handleOptionClick(option.optionId);
                       }
                     }}
                   >
                     <div className="vote-option-row">
                       <span className="vote-option-content">{option.content}</span>
                       <span className="vote-option-count">
-                        {option.vote_count}표 ({Math.round(percentage)}%)
+                        {option.voteCount}표 ({Math.round(percentage)}%)
                       </span>
                     </div>
                     <div className="vote-progress-bar">
@@ -127,9 +149,49 @@ const VotePanel: React.FC = () => {
               })}
             </div>
 
-            <button className="vote-back-button" onClick={handleBackToList}>
-              투표목록으로 가기
-            </button>
+            <div className="vote-detail-actions">
+              {voteDetail.status === 'OPEN' && (
+                <button
+                  className="vote-close-button"
+                  onClick={() => setIsCloseModalOpen(true)}
+                  disabled={closeLoading}
+                >
+                  투표 마감하기
+                </button>
+              )}
+              <button className="vote-back-button" onClick={handleBackToList}>
+                투표목록으로 가기
+              </button>
+            </div>
+
+            {/* 투표 마감 확인 모달 */}
+            {isCloseModalOpen && (
+              <div className="vote-modal-overlay" onClick={() => setIsCloseModalOpen(false)}>
+                <div className="vote-modal" onClick={(e) => e.stopPropagation()}>
+                  <h4 className="vote-modal-title">투표 마감</h4>
+                  <p className="vote-modal-message">
+                    정말 이 투표를 마감하시겠습니까?<br />
+                    마감 후에는 더 이상 투표할 수 없습니다.
+                  </p>
+                  <div className="vote-modal-actions">
+                    <button
+                      className="vote-modal-cancel"
+                      onClick={() => setIsCloseModalOpen(false)}
+                      disabled={closeLoading}
+                    >
+                      취소
+                    </button>
+                    <button
+                      className="vote-modal-confirm"
+                      onClick={handleCloseVote}
+                      disabled={closeLoading}
+                    >
+                      {closeLoading ? '마감 중...' : '마감하기'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         ) : null}
       </div>
@@ -159,14 +221,14 @@ const VotePanel: React.FC = () => {
             ) : (
               votes.map((vote) => (
                 <div
-                  key={vote.vote_id}
+                  key={vote.voteId}
                   className="vote-card"
-                  onClick={() => handleVoteCardClick(vote.vote_id)}
+                  onClick={() => handleVoteCardClick(vote.voteId)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      handleVoteCardClick(vote.vote_id);
+                      handleVoteCardClick(vote.voteId);
                     }
                   }}
                 >
