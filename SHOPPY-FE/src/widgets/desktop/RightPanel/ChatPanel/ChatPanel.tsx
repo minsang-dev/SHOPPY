@@ -80,6 +80,14 @@ const ChatPanel: React.FC = () => {
     }
   };
 
+  // textarea 높이 자동 조절
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputContent(e.target.value);
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 96)}px`; // max-height: 6rem (96px)
+  };
+
   // 스크롤을 맨 아래로
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -187,7 +195,7 @@ const ChatPanel: React.FC = () => {
         <textarea
           className="chat-input"
           value={inputContent}
-          onChange={(e) => setInputContent(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="메시지를 입력하세요..."
           rows={1}
