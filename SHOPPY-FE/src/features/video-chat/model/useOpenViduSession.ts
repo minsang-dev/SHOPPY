@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { OpenVidu, Publisher, Session, StreamManager } from 'openvidu-browser';
 import { joinWebrtcSession } from '../../../entities/room/api/webrtc';
 
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
+
 interface OpenViduProfile {
   nickname?: string;
   profileColor?: string;
@@ -58,6 +60,13 @@ export const useOpenViduSession = ({
       },
       accessToken,
     );
+
+    // Mock 모드: 실제 OpenVidu 연결 없이 연결 상태만 설정
+    if (USE_MOCK) {
+      console.log('[Mock] OpenVidu session connected:', sessionInfo);
+      setIsConnected(true);
+      return;
+    }
 
     const ov = new OpenVidu();
     if (sessionInfo.iceServers?.length) {

@@ -1,20 +1,29 @@
 import { useState } from 'react';
 import { normalizeApiError } from '../../../shared/api/error';
-import { getRoomMembers, joinRoom } from '../../../shared/api/rooms';
+import { getRoomMembers, joinRoomAsUser, joinRoomAsGuest } from '../../../shared/api/rooms';
 import { createWebRtcSession } from '../../../shared/api/webrtc';
 import type { Member, WebRTCSession } from '../../../shared/api/types';
+import { useSessionStore } from '../../../entities/session/model/useSessionStore';
+
+type JoinRoomPayload =
+  | { roomCode: string; isLoggedIn: true }
+  | { roomCode: string; nickname: string; isLoggedIn: false };
 
 export const useJoinRoom = () => {
   const [members, setMembers] = useState<Member[]>([]);
   const [session, setSession] = useState<WebRTCSession | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ReturnType<typeof normalizeApiError> | null>(null);
+  const setSessionStore = useSessionStore((state) => state.setSession);
 
-  const run = async (payload: { roomCode: string; nickname: string }) => {
+  const run = async (payload: JoinRoomPayload) => {
     setLoading(true);
     setError(null);
     try {
-      const joinRes = await joinRoom(payload);
+      const joinRes = payload.isLoggedIn
+        ? await joinRoomAsUser({ roomCode: payload.roomCode })
+        : await joinRoomAsGuest({ roomCode: payload.roomCode, nickname: payload.nickname });
+
       const roomId = joinRes.roomId;
       if (!roomId) {
         throw new Error('roomId not found in join response');
@@ -25,6 +34,7 @@ export const useJoinRoom = () => {
 
       const sessionRes = await createWebRtcSession(roomId);
       setSession(sessionRes);
+      setSessionStore(roomId, sessionRes);
 
       return { roomId, members: memberRes, session: sessionRes };
     } catch (e) {

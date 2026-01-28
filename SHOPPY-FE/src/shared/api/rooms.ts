@@ -24,8 +24,13 @@ export const getRoom = (roomId: RoomId) =>
 export const getRoomByCode = (roomCode: string) =>
   apiGet<Room>(`/rooms/code/${roomCode}`, undefined, true);
 
-export const joinRoom = (payload: { roomCode: string; nickname: string }) =>
-  apiPost<JoinRoomResponse>('/rooms/join', payload, false);
+// 로그인 사용자 방 참여 (roomCode만 필요)
+export const joinRoomAsUser = (payload: { roomCode: string }) =>
+  apiPost<JoinRoomResponse>('/rooms/join', payload, true);
+
+// 게스트 방 참여 (roomCode + nickname 필요)
+export const joinRoomAsGuest = (payload: { roomCode: string; nickname: string }) =>
+  apiPost<JoinRoomResponse>('/rooms/join/guest', payload, false);
 
 export const getRoomMembers = (roomId: RoomId) =>
   apiGet<Member[]>(`/rooms/${roomId}/members`, undefined, true);
