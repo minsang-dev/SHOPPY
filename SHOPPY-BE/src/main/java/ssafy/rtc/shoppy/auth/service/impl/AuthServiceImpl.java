@@ -157,6 +157,15 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    @Override
+    @Transactional
+    public void logout(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        member.updateRefreshToken(null);
+        log.info("Member logged out: memberId={}", memberId);
+    }
+
     private KakaoUserInfo getKakaoUserInfo(String accessToken) {
         try {
             log.info("Requesting Kakao user info with token: {}...", accessToken.substring(0, Math.min(10, accessToken.length())));
