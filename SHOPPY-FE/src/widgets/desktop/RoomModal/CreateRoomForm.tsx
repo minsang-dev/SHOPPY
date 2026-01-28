@@ -41,18 +41,15 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
   useEffect(() => {
     if (targetBudgetValue >= 1000) {
       // 목표 예산이 1000원 이상일 때만 조정
-      if (formData.minBudget > targetBudgetValue) {
+      if (minBudgetValue > targetBudgetValue) {
         // 목표 예산을 초과하면 목표 예산으로 제한
         const roundedTarget = Math.floor(targetBudgetValue / 1000) * 1000;
         onChange({ ...formData, minBudget: roundedTarget });
       }
-    } else if (targetBudgetValue > 0 && targetBudgetValue < 1000) {
-      // 목표 예산이 1000원 미만이면 최소 예산을 0으로 설정
-      if (formData.minBudget > 0) {
-        onChange({ ...formData, minBudget: 0 });
-      }
     }
-  }, [targetBudgetValue, formData, onChange]);
+    // 목표 예산이 1000원 미만일 때는 최소 예산을 건드리지 않음 (기본값 1000 유지)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetBudgetValue, minBudgetValue]);
 
   const handleParticipantsChange = (delta: number) => {
     const newValue = Math.max(0, formData.participants + delta); // 음수는 허용X

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCreateRoom } from '@/features/room/model/useCreateRoom';
 import { useJoinRoom } from '@/features/room/model/useJoinRoom';
+import { useAuthStore } from '@/entities/user/model/useAuthStore';
 import type {
   DesktopRoomModalProps,
   RoomModalTab,
@@ -16,14 +17,15 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const { run: createRoom } = useCreateRoom();
   const { run: joinRoom } = useJoinRoom();
-  const [activeTab, setActiveTab] = useState<RoomModalTab>('create');
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const [activeTab, setActiveTab] = useState<RoomModalTab>(isLoggedIn ? 'create' : 'join');
   const [createFormData, setCreateFormData] = useState<CreateRoomFormData>({
     title: '',
     purpose: '',
     category: '',
-    participants: 0,
+    participants: 1,
     targetBudget: '',
-    minBudget: 0,
+    minBudget: 1000,
     mode: 'personal',
   });
   const [joinFormData, setJoinFormData] = useState<JoinRoomFormData>({
@@ -53,7 +55,7 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
       // syncMode 변환: personal -> FOLLOW, host -> LEAD
       const syncMode = createFormData.mode === 'personal' ? 'FOLLOW' : 'LEAD';
 
-      const response = await createRoom({
+      const payload = {
         roomName: createFormData.title,
         targetBudget,
         syncMode,
@@ -63,7 +65,9 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
           headcount: createFormData.participants,
           budgetMin: createFormData.minBudget,
         },
-      });
+      };
+      console.log('방 생성 요청 payload:', payload);
+      const response = await createRoom(payload);
 
       // 방 생성 성공 시 /rooms/:roomId로 이동
       navigate(`/rooms/${response.roomId}`);
@@ -77,22 +81,22 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
     try {
       // entryLink에서 roomCode 추출 (URL이면 마지막 부분, 아니면 그대로 사용)
       let roomCode = joinFormData.entryLink.trim();
-      
+
       // URL 형식인 경우 마지막 경로나 쿼리 파라미터에서 코드 추출
       if (roomCode.includes('/')) {
         const urlParts = roomCode.split('/');
         roomCode = urlParts[urlParts.length - 1];
       }
-      
+
       // 쿼리 파라미터가 있는 경우 처리
       if (roomCode.includes('?')) {
         roomCode = roomCode.split('?')[0];
       }
 
-      const response = await joinRoom({
-        roomCode,
-        nickname: joinFormData.nickname,
-      });
+      // 로그인 상태에 따라 다른 API 호출
+      const response = isLoggedIn
+        ? await joinRoom({ roomCode, isLoggedIn: true })
+        : await joinRoom({ roomCode, nickname: joinFormData.nickname, isLoggedIn: false });
 
       // 방 참여 성공 시 /rooms/:roomId로 이동
       navigate(`/rooms/${response.roomId}`);
@@ -127,16 +131,30 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
 
         <div className="room-modal-content">
           {activeTab === 'create' ? (
-            <CreateRoomForm
-              formData={createFormData}
-              onChange={setCreateFormData}
-              onSubmit={handleCreateSubmit}
-            />
+            isLoggedIn ? (
+              <CreateRoomForm
+                formData={createFormData}
+                onChange={setCreateFormData}
+                onSubmit={handleCreateSubmit}
+              />
+            ) : (
+              <div className="login-required-message">
+                <p>방을 만들려면 로그인이 필요합니다.</p>
+                <button
+                  type="button"
+                  className="submit-button"
+                  onClick={() => setActiveTab('join')}
+                >
+                  방 참여하기로 이동
+                </button>
+              </div>
+            )
           ) : (
             <JoinRoomForm
               formData={joinFormData}
               onChange={setJoinFormData}
               onSubmit={handleJoinSubmit}
+              isLoggedIn={isLoggedIn}
             />
           )}
         </div>
