@@ -200,7 +200,6 @@ export const handlers = [
     });
   }),
 
-<<<<<<< HEAD
   // ============================================================
   // 투표 관련 - 주석 처리 (실제 백엔드 테스트)
   // ============================================================
@@ -227,7 +226,6 @@ export const handlers = [
   //   console.log(`MSW: 투표 상세 조회 요청 받음 (roomId: ${roomId}, voteId: ${voteId})`);
   //   return HttpResponse.json(voteDetailResponse);
   // }),
-=======
   // 8-1. 장바구니 아이템 추가: POST /api/rooms/:roomId/shopping-items
   http.post(`${API_URL}/api/rooms/:roomId/shopping-items`, async ({ params, request }) => {
     const roomId = Number(params.roomId);
@@ -319,15 +317,30 @@ export const handlers = [
     },
   ),
 
-  // 9. 투표 목록 조회: GET /api/rooms/:roomId/votes?status=OPEN
-  http.get(`${API_URL}/api/rooms/:roomId/votes`, ({ params, request }) => {
-    const roomId = String(params.roomId);
-    const url = new URL(request.url);
-    const status = url.searchParams.get('status') || 'OPEN';
-    console.log(`MSW: 투표 목록 조회 요청 받음 (roomId: ${roomId}, status: ${status})`);
+  // ============================================================
+  // 투표 관련 - 주석 처리 (실제 백엔드 연결)
+  // ============================================================
+  // // 9. 투표 목록 조회: GET /api/rooms/:roomId/votes?status=OPEN
+  // http.get(`${API_URL}/api/rooms/:roomId/votes`, ({ params, request }) => {
+  //   const roomId = String(params.roomId);
+  //   const url = new URL(request.url);
+  //   const status = url.searchParams.get('status') || 'OPEN';
+  //   console.log(`MSW: 투표 목록 조회 요청 받음 (roomId: ${roomId}, status: ${status})`);
+  //   const filteredItems = voteListResponse.data.items.filter((vote) => vote.status === status);
+  //   return HttpResponse.json({
+  //     status: 'success',
+  //     message: 'OK',
+  //     data: { items: filteredItems },
+  //   });
+  // }),
 
-    const filteredItems = voteListResponse.data.items.filter((vote) => vote.status === status);
->>>>>>> develop
+  // // 10. 투표 상세 조회: GET /api/rooms/:roomId/votes/:voteId
+  // http.get(`${API_URL}/api/rooms/:roomId/votes/:voteId`, ({ params }) => {
+  //   const roomId = String(params.roomId);
+  //   const voteId = String(params.voteId);
+  //   console.log(`MSW: 투표 상세 조회 요청 받음 (roomId: ${roomId}, voteId: ${voteId})`);
+  //   return HttpResponse.json(voteDetailResponse);
+  // }),
 
   // // 11. 투표 참여: POST /api/rooms/:roomId/votes/:voteId/participants
   // http.post(
@@ -352,7 +365,6 @@ export const handlers = [
   //   },
   // ),
 
-<<<<<<< HEAD
   // // 12. 투표 생성: POST /api/rooms/:roomId/votes
   // http.post(`${API_URL}/api/rooms/:roomId/votes`, async ({ params, request }) => {
   //   const roomId = String(params.roomId);
@@ -381,67 +393,3 @@ export const handlers = [
   //   });
   // }),
 ];
-=======
-  // 10. 투표 상세 조회: GET /api/rooms/:roomId/votes/:voteId
-  http.get(`${API_URL}/api/rooms/:roomId/votes/:voteId`, ({ params }) => {
-    const roomId = String(params.roomId);
-    const voteId = String(params.voteId);
-    console.log(`MSW: 투표 상세 조회 요청 받음 (roomId: ${roomId}, voteId: ${voteId})`);
-    return HttpResponse.json(voteDetailResponse);
-  }),
-
-  // 11. 투표 참여: POST /api/rooms/:roomId/votes/:voteId/participants
-  http.post(
-    `${API_URL}/api/rooms/:roomId/votes/:voteId/participants`,
-    async ({ params, request }) => {
-      const roomId = String(params.roomId);
-      const voteId = String(params.voteId);
-      const body = await request.json();
-      console.log(
-        `MSW: 투표 참여 요청 받음 (roomId: ${roomId}, voteId: ${voteId}, optionId: ${(body as { option_id: number }).option_id})`,
-      );
-
-      return HttpResponse.json({
-        status: 'success',
-        message: 'OK',
-        data: {
-          vote_participant_id: 4001,
-          vote_id: Number(voteId),
-          option_id: (body as { option_id: number }).option_id,
-          user_id: 1,
-        },
-      });
-    },
-  ),
-
-  // 12. 투표 생성: POST /api/rooms/:roomId/votes
-  http.post(`${API_URL}/api/rooms/:roomId/votes`, async ({ params, request }) => {
-    const roomId = String(params.roomId);
-    const body = await request.json();
-    console.log(
-      `MSW: 투표 생성 요청 받음 (roomId: ${roomId}, title: ${(body as { title: string }).title})`,
-    );
-
-    const createBody = body as { title: string; options: string[] };
-    const newVoteId = 2004;
-    const options = createBody.options.map((content, index) => ({
-      option_id: 3003 + index,
-      content,
-    }));
-
-    return HttpResponse.json({
-      status: 'success',
-      message: 'OK',
-      data: {
-        vote_id: newVoteId,
-        room_id: Number(roomId),
-        title: createBody.title,
-        status: 'OPEN',
-        created_at: new Date().toISOString(),
-        closed_at: null,
-        options,
-      },
-    });
-  }),
-];
->>>>>>> develop
