@@ -5,12 +5,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ssafy.rtc.shoppy.settlement.dto.ReceiptUploadResponse;
-import ssafy.rtc.shoppy.room.repository.RoomMemberRepository;
-import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
-import ssafy.rtc.shoppy.room.enums.MemberStatus;
-import org.springframework.web.multipart.MultipartFile;
-import ssafy.rtc.shoppy.global.response.ApiResponse;
+import ssafy.rtc.shoppy.settlement.dto.SettlementItemCreateRequest;
+import ssafy.rtc.shoppy.settlement.dto.SettlementItemCreateResponse;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api")
@@ -21,7 +18,18 @@ public class SettlementController {
     private final SettlementService settlementService;
     private final RoomMemberRepository roomMemberRepository;
 
-    @Operation(summary = "영수증 이미지 업로드 (정산 시작)")
+    // ... uploadReceipt ...
+
+    @Operation(summary = "정산 품목 수동 추가")
+    @PostMapping("/receipts/{receiptId}/items")
+    public ResponseEntity<ApiResponse<SettlementItemCreateResponse>> addSettlementItem(
+            @PathVariable Long receiptId,
+            @RequestBody @Valid SettlementItemCreateRequest request) {
+        
+        SettlementItemCreateResponse response = settlementService.addSettlementItem(receiptId, request);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
     @PostMapping(value = "/rooms/{roomId}/settlements/receipt", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<ReceiptUploadResponse>> uploadReceipt(
             @PathVariable Long roomId,
