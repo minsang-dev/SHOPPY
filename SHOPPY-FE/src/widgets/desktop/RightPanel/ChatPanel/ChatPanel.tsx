@@ -205,13 +205,7 @@ const ChatPanel: React.FC = () => {
           onClick={handleSendMessage}
           disabled={!inputContent.trim()}
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
+          <i className="ri-send-plane-line"></i>
             <path
               d="M2 10L18 2L12 18L10 11L2 10Z"
               fill="currentColor"
@@ -220,7 +214,6 @@ const ChatPanel: React.FC = () => {
               strokeLinecap="round"
               strokeLinejoin="round"
             />
-          </svg>
         </button>
       </div>
     </div>
