@@ -22,8 +22,8 @@ const ChatPanel: React.FC = () => {
 
   // 현재 사용자의 memberId 찾기
   const currentMemberId = useMemo(() => {
-    if (!user?.userId) return null;
-    const currentParticipant = participants.find((p) => p.userId === user.userId);
+    if (!user?.id) return null;
+    const currentParticipant = participants.find((p) => p.userId === user.id);
     return currentParticipant?.memberId || null;
   }, [participants, user]);
 
@@ -206,14 +206,6 @@ const ChatPanel: React.FC = () => {
           disabled={!inputContent.trim()}
         >
           <i className="ri-send-plane-line"></i>
-            <path
-              d="M2 10L18 2L12 18L10 11L2 10Z"
-              fill="currentColor"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
         </button>
       </div>
     </div>
