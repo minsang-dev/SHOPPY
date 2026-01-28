@@ -20,11 +20,18 @@ export const useJoinRoom = () => {
     setLoading(true);
     setError(null);
     try {
-      const joinRes = payload.isLoggedIn
-        ? await joinRoomAsUser({ roomCode: payload.roomCode })
-        : await joinRoomAsGuest({ roomCode: payload.roomCode, nickname: payload.nickname });
+      let roomId: number;
 
-      const roomId = joinRes.roomId;
+      if (payload.isLoggedIn) {
+        const joinRes = await joinRoomAsUser({ roomCode: payload.roomCode });
+        roomId = joinRes.roomId;
+      } else {
+        const joinRes = await joinRoomAsGuest({ roomCode: payload.roomCode, nickname: payload.nickname });
+        roomId = joinRes.member.roomId;
+        // 게스트 토큰 저장
+        localStorage.setItem('accessToken', joinRes.accessToken);
+      }
+
       if (!roomId) {
         throw new Error('roomId not found in join response');
       }

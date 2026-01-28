@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from './utils';
-import type { JoinRoomResponse, Member, Room } from './types';
+import type { JoinRoomResponse, JoinRoomGuestResponse, Member, Room } from './types';
 
 type RoomId = string | number;
 
@@ -30,7 +30,7 @@ export const joinRoomAsUser = (payload: { roomCode: string }) =>
 
 // 게스트 방 참여 (roomCode + nickname 필요)
 export const joinRoomAsGuest = (payload: { roomCode: string; nickname: string }) =>
-  apiPost<JoinRoomResponse>('/rooms/join/guest', payload, false);
+  apiPost<JoinRoomGuestResponse>('/rooms/join/guest', payload, false);
 
 export const getRoomMembers = (roomId: RoomId) =>
   apiGet<Member[]>(`/rooms/${roomId}/members`, undefined, true);

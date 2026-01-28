@@ -17,7 +17,7 @@ export type Room = {
   roomMeta: RoomMeta;
 };
 
-export type JoinRoomResponse = {
+export type Member = {
   memberId: number;
   roomId: number;
   userId: number | null;
@@ -28,7 +28,14 @@ export type JoinRoomResponse = {
   joinedAt: string;
 };
 
-export type Member = JoinRoomResponse;
+// 로그인 유저 방 참여 응답
+export type JoinRoomResponse = Member;
+
+// 게스트 방 참여 응답 (accessToken 포함)
+export type JoinRoomGuestResponse = {
+  member: Member;
+  accessToken: string;
+};
 
 export type ShoppingItem = {
   shoppingItemId: number;
