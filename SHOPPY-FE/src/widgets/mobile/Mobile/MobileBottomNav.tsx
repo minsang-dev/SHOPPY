@@ -24,6 +24,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ active, onChange }) =
           type="button"
           className={`mobile-bottom-nav-item ${active === item.id ? 'active' : ''}`}
           onClick={() => onChange(item.id)}
+          aria-label={item.label}
         >
           <i className={item.icon} />
           <span>{item.label}</span>

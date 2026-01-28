@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import MobileBottomNav from '../../../widgets/mobile/Mobile/MobileBottomNav';
 import MobileCameraStage from '../../../widgets/mobile/Mobile/MobileCameraStage';
 import MobilePanelHost from '../../../widgets/mobile/Mobile/MobilePanelHost';
@@ -38,8 +38,12 @@ const MobileVideoChatPage: React.FC = () => {
     Boolean(realtimeConfig.websocketUrl) &&
     Boolean(realtimeConfig.signalingUrl);
 
+  const params = useParams<{ roomId?: string }>();
   const searchParams = useMemo(() => new URLSearchParams(window.location.search), []);
-  const roomId = searchParams.get('room_id') ?? undefined;
+  const roomId =
+    searchParams.get('room_id') ??
+    params.roomId ??
+    (import.meta.env.VITE_USE_MOCK === 'true' ? '1' : undefined);
   const accessToken =
     searchParams.get('access_token') ??
     window.localStorage.getItem('access_token') ??

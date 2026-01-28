@@ -1,6 +1,7 @@
-﻿import React from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import { useRoomMembers } from '../../../features/room/fetch-members/model/useRoomMembers';
 import MemberCard from './MemberCard';
+import ParticipantVolumeModal from '../../../shared/ui/ParticipantVolumeModal';
 import './MobilePanels.css';
 
 interface MobileMembersPanelProps {
@@ -9,6 +10,26 @@ interface MobileMembersPanelProps {
 
 const MobileMembersPanel: React.FC<MobileMembersPanelProps> = ({ roomId }) => {
   const { members, loading, error } = useRoomMembers(roomId);
+  const [micStates, setMicStates] = useState<Record<number, boolean>>({});
+  const [volumeStates, setVolumeStates] = useState<Record<number, number>>({});
+  const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
+
+  const memberMicStates = useMemo(() => {
+    const next: Record<number, boolean> = {};
+    members.forEach((member) => {
+      next[member.memberId] = micStates[member.memberId] ?? true;
+    });
+    return next;
+  }, [members, micStates]);
+
+  const selectedMember = useMemo(
+    () => members.find((member) => member.memberId === selectedMemberId) ?? null,
+    [members, selectedMemberId],
+  );
+
+  const selectedVolume = selectedMember
+    ? volumeStates[selectedMember.memberId] ?? 100
+    : 100;
 
   return (
     <section className="mobile-panel">
@@ -29,13 +50,34 @@ const MobileMembersPanel: React.FC<MobileMembersPanelProps> = ({ roomId }) => {
                 name={member.nickname}
                 role={member.role}
                 online={member.status === 'ACTIVE'}
-                camOn={member.isCameraOn}
-                micOn={true}
+                micOn={memberMicStates[member.memberId]}
+                onToggleMic={() =>
+                  setMicStates((prev) => ({
+                    ...prev,
+                    [member.memberId]: !(prev[member.memberId] ?? true),
+                  }))
+                }
+                onSelect={() => setSelectedMemberId(member.memberId)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {selectedMember && (
+        <ParticipantVolumeModal
+          isOpen={true}
+          participantName={selectedMember.nickname}
+          volume={selectedVolume}
+          onChange={(value) =>
+            setVolumeStates((prev) => ({
+              ...prev,
+              [selectedMember.memberId]: value,
+            }))
+          }
+          onClose={() => setSelectedMemberId(null)}
+        />
+      )}
     </section>
   );
 };

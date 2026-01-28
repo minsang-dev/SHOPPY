@@ -1,0 +1,90 @@
+﻿.participant-volume-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.participant-volume-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.participant-volume-modal-card {
+  position: relative;
+  width: min(100%, 320px);
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+  z-index: 1;
+  display: grid;
+  gap: 12px;
+}
+
+.participant-volume-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.participant-volume-modal-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.participant-volume-modal-close {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.participant-volume-modal-body {
+  display: grid;
+  gap: 10px;
+}
+
+.participant-volume-modal-name {
+  font-weight: 700;
+  color: #111827;
+}
+
+.participant-volume-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.participant-volume-control input[type='range'] {
+  width: 100%;
+}
+
+.participant-volume-value {
+  min-width: 48px;
+  text-align: right;
+  font-weight: 600;
+  color: #374151;
+}
+
+.participant-volume-modal-actions {
+  display: grid;
+}
+
+.participant-volume-modal-button {
+  border: none;
+  background: #10b981;
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 10px 0;
+  font-weight: 700;
+  cursor: pointer;
+}
