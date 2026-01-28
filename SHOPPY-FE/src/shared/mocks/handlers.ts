@@ -1,12 +1,13 @@
-﻿import { http, HttpResponse } from 'msw';
+import { http, HttpResponse } from 'msw';
 import productList from './productList.json';
 // import participantList from './ParticipantList.json';
 // import roomCreateResponse from './RoomCreateResponse.json';
 // import roomJoinResponse from './RoomJoinresponse.json';
-// import kakaoLoginResponse from './kakaoLoginResponse.json';
+import kakaoLoginResponse from './kakaoLoginResponse.json';
 import shoppingCartResponse from './ShoppingCartResponse.json';
+// import chatListResponse from './ChatList.json';
 // import voteListResponse from './VoteListResponse.json';
-// import voteDetailResponse from './VoteDetailResponse.json';
+import voteDetailResponse from './VoteDetailResponse.json';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -38,6 +39,34 @@ const nextShoppingItemId = () =>
   mockShoppingItems.length > 0
     ? Math.max(...mockShoppingItems.map((item) => item.shopping_item_id)) + 1
     : 1;
+
+// 채팅 메시지 mock 데이터
+// type MockChatMessage = {
+//   chatId: number;
+//   roomId: number;
+//   senderMemberId: number;
+//   content: string;
+//   isDeleted: boolean;
+//   isEdited: boolean;
+//   createdAt: string;
+//   editedAt: string | null;
+// };
+
+// const mockChatMessages: MockChatMessage[] = chatListResponse.data.messages.map((msg) => ({
+//   chatId: msg.chatId,
+//   roomId: msg.roomId,
+//   senderMemberId: msg.senderMemberId,
+//   content: msg.content,
+//   isDeleted: msg.isDeleted,
+//   isEdited: msg.isEdited,
+//   createdAt: msg.createdAt,
+//   editedAt: msg.editedAt,
+// }));
+
+// const nextChatId = () =>
+//   mockChatMessages.length > 0
+//     ? Math.max(...mockChatMessages.map((msg) => msg.chatId)) + 1
+//     : 1;
 
 export const handlers = [
   // 1. 전체 상품 목록 조회: GET /api/products
@@ -392,4 +421,67 @@ export const handlers = [
   //     },
   //   });
   // }),
+
+  // 10. 투표 상세 조회: GET /api/rooms/:roomId/votes/:voteId
+  http.get(`${API_URL}/api/rooms/:roomId/votes/:voteId`, ({ params }) => {
+    const roomId = String(params.roomId);
+    const voteId = String(params.voteId);
+    console.log(`MSW: 투표 상세 조회 요청 받음 (roomId: ${roomId}, voteId: ${voteId})`);
+    return HttpResponse.json(voteDetailResponse);
+  }),
+
+  // 11. 투표 참여: POST /api/rooms/:roomId/votes/:voteId/participants
+  http.post(
+    `${API_URL}/api/rooms/:roomId/votes/:voteId/participants`,
+    async ({ params, request }) => {
+      const roomId = String(params.roomId);
+      const voteId = String(params.voteId);
+      const body = await request.json();
+      console.log(
+        `MSW: 투표 참여 요청 받음 (roomId: ${roomId}, voteId: ${voteId}, optionId: ${(body as { option_id: number }).option_id})`,
+      );
+
+      return HttpResponse.json({
+        status: 'success',
+        message: 'OK',
+        data: {
+          vote_participant_id: 4001,
+          vote_id: Number(voteId),
+          option_id: (body as { option_id: number }).option_id,
+          user_id: 1,
+        },
+      });
+    },
+  ),
+
+  // 12. 투표 생성: POST /api/rooms/:roomId/votes
+  http.post(`${API_URL}/api/rooms/:roomId/votes`, async ({ params, request }) => {
+    const roomId = String(params.roomId);
+    const body = await request.json();
+    console.log(
+      `MSW: 투표 생성 요청 받음 (roomId: ${roomId}, title: ${(body as { title: string }).title})`,
+    );
+
+    const createBody = body as { title: string; options: string[] };
+    const newVoteId = 2004;
+    const options = createBody.options.map((content, index) => ({
+      option_id: 3003 + index,
+      content,
+    }));
+
+    return HttpResponse.json({
+      status: 'success',
+      message: 'OK',
+      data: {
+        vote_id: newVoteId,
+        room_id: Number(roomId),
+        title: createBody.title,
+        status: 'OPEN',
+        created_at: new Date().toISOString(),
+        closed_at: null,
+        options,
+      },
+    });
+  }),
 ];
+
