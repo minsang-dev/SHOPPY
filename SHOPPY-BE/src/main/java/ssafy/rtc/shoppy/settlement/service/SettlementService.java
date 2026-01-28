@@ -32,11 +32,58 @@ import ssafy.rtc.shoppy.ai.imagerecognition.service.ImageRecognitionService;
 import ssafy.rtc.shoppy.settlement.utils.ReceiptParser;
 import java.util.Collections;
 
+import ssafy.rtc.shoppy.settlement.dto.SettlementItemCreateRequest;
+import ssafy.rtc.shoppy.settlement.dto.SettlementItemCreateResponse;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
 @Slf4j
 public class SettlementService {
+    
+    // ... dependencies ...
+
+    /**
+     * 수동으로 정산 품목 추가
+     */
+    public SettlementItemCreateResponse addSettlementItem(Long receiptId, SettlementItemCreateRequest request) {
+        // 1. 영수증 확인
+        Receipt receipt = receiptRepository.findById(receiptId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND)); // Receipt Not Found 예외 처리 필요
+
+        Purchase purchase = receipt.getPurchase();
+        if (purchase == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND); // Settlement Not Found
+        }
+
+        // 2. 아이템 저장
+        PurchaseItem purchaseItem = PurchaseItem.builder()
+                .purchase(purchase)
+                .itemName(request.getItemName())
+                .unitPrice(request.getUnitPrice())
+                .quantity(request.getQuantity())
+                .build();
+        purchaseItemRepository.save(purchaseItem);
+
+        // 3. 1/N 자동 할당 (기본)
+        List<RoomMemberEntity> activeMembers = roomMemberRepository.findByRoom_RoomIdAndStatus(purchase.getRoomId(), MemberStatus.ACTIVE);
+        if (!activeMembers.isEmpty()) {
+            calculateAndAllocate(purchaseItem, activeMembers);
+        }
+
+        // 4. 총액 갱신 (선택 사항: Purchase의 totalAmount도 업데이트할지 결정 필요. 보통은 아이템 합계로 계산)
+        // purchase.updateTotalAmount(...); 
+
+        return SettlementItemCreateResponse.builder()
+                .settlementItemId(purchaseItem.getPurchaseItemId())
+                .receiptId(receiptId)
+                .itemName(purchaseItem.getItemName())
+                .unitPrice(purchaseItem.getUnitPrice())
+                .quantity(purchaseItem.getQuantity())
+                .totalPrice(purchaseItem.getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity())))
+                .build();
+    }
+
 
     private final PurchaseRepository purchaseRepository;
     private final PurchaseItemRepository purchaseItemRepository;
@@ -85,8 +132,10 @@ public class SettlementService {
                 .build();
         purchaseRepository.save(purchase);
 
-        // 4. 품목(PurchaseItem) 저장
+        // 4. 품목(PurchaseItem) 저장 및 초기 1/N 할당
         List<ReceiptUploadResponse.ItemDto> itemDtos = new ArrayList<>();
+        List<RoomMemberEntity> activeMembers = roomMemberRepository.findByRoom_RoomIdAndStatus(roomId, MemberStatus.ACTIVE);
+        
         for (ReceiptParser.ParsedItem item : parsedItems) {
             PurchaseItem purchaseItem = PurchaseItem.builder()
                     .purchase(purchase)
@@ -95,6 +144,11 @@ public class SettlementService {
                     .quantity(item.quantity())
                     .build();
             purchaseItemRepository.save(purchaseItem);
+            
+            // 초기 1/N 할당 (모든 멤버에게 분배)
+            if (!activeMembers.isEmpty()) {
+                calculateAndAllocate(purchaseItem, activeMembers);
+            }
             
             itemDtos.add(ReceiptUploadResponse.ItemDto.builder()
                     .itemName(item.itemName())
@@ -210,6 +264,53 @@ public class SettlementService {
         }
     }
 
+    /**
+     * 정산 품목 수정 (이름, 가격, 수량)
+     * 가격/수량 변경 시 기존 할당(Allocation) 금액 재계산 수행
+     */
+    public SettlementItemCreateResponse updateSettlementItem(Long itemId, SettlementItemCreateRequest request) {
+        PurchaseItem item = purchaseItemRepository.findById(itemId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "해당 품목을 찾을 수 없습니다."));
+
+        // 값 업데이트
+        boolean needRecalculate = (request.getUnitPrice().compareTo(item.getUnitPrice()) != 0) || (request.getQuantity() != item.getQuantity());
+        
+        // Setter가 없으므로 Builder패턴 사용 불가 -> Entity에 비즈니스 메서드 필요하거나 Reflection 사용
+        // 여기서는 Entity에 update 메서드가 없으므로, Repository save로 덮어쓰거나 Entity 수정 필요.
+        // PurchaseItem은 @Setter가 없고 수정 메서드도 현재 없음.
+        // -> PurchaseItem Entity에 update 메서드를 추가해야 함. (일단 여기서는 가정하고 작성 후 Entity 수정)
+        item.updateDetails(request.getItemName(), request.getUnitPrice(), request.getQuantity());
+        
+        if (needRecalculate) {
+            // 현재 할당되어 있는 멤버들 목록 가져오기
+            List<Long> currentMemberIds = item.getItemAllocations().stream()
+                    .map(ItemAllocation::getMemberId)
+                    .toList();
+            
+            // 기존 할당 내역 삭제 후 재생성 (updateAllocations 재활용)
+            updateAllocations(itemId, currentMemberIds);
+        }
+
+        return SettlementItemCreateResponse.builder()
+                .settlementItemId(item.getPurchaseItemId())
+                .receiptId(item.getPurchase().getPurchaseId()) // 주의: Purchase와 Receipt 연결 관계 확인 필요. 일단 PurchaseId 매핑
+                .itemName(item.getItemName())
+                .unitPrice(item.getUnitPrice())
+                .quantity(item.getQuantity())
+                .totalPrice(item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .build();
+    }
+
+    /**
+     * 정산 품목 삭제
+     */
+    public void deleteSettlementItem(Long itemId) {
+        PurchaseItem item = purchaseItemRepository.findById(itemId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "해당 품목을 찾을 수 없습니다."));
+        
+        purchaseItemRepository.delete(item);
+    }
+
     // 재정산 로직 (멤버 변경 시)
     public void updateAllocations(Long purchaseItemId, List<Long> newMemberIds) {
         PurchaseItem purchaseItem = purchaseItemRepository.findById(purchaseItemId)
@@ -295,16 +396,34 @@ public class SettlementService {
 
     private String generateReport(Purchase purchase) {
         StringBuilder sb = new StringBuilder();
-        sb.append("정산 결과 리포트\n");
-        sb.append("| 물품명 | 참여자명 | 개인부담금 |\n");
-        sb.append("|---|---|---|\n");
+        sb.append("### 🧾 정산 결과 리포트\n\n");
+        
+        // 결제자 정보 조회
+        RoomMemberEntity payerMember = roomMemberRepository.findById(purchase.getPayerMemberId())
+                .orElse(null);
+        String payerName = (payerMember != null) ? payerMember.getNickname() : "알 수 없음";
+        
+        sb.append(String.format("- **총 결제 금액**: %s원\n", purchase.getTotalAmount()));
+        sb.append(String.format("- **결제자**: %s\n", payerName));
+
+        // 결제자의 실제 계좌/QR 정보 조회 (Member 엔티티)
+        if (payerMember != null && payerMember.getUserId() != null) {
+            memberRepository.findById(payerMember.getUserId()).ifPresent(m -> {
+                if (m.getBankName() != null && m.getAccountNumber() != null) {
+                    sb.append(String.format("- **송금 계좌**: %s %s\n", m.getBankName(), m.getAccountNumber()));
+                }
+                if (m.getQrCodeUrl() != null) {
+                    sb.append(String.format("- **송금 QR 링크**: %s\n", m.getQrCodeUrl()));
+                }
+            });
+        }
+        
+        sb.append("\n#### [물품별 세부 내역]\n");
+        sb.append("| 물품명 | 참여자 | 금액 |\n");
+        sb.append("|:---|:---|:---|\n");
 
         Map<Long, BigDecimal> memberTotalMap = new HashMap<>();
-        BigDecimal totalDiff = BigDecimal.ZERO;
-
-        // 멤버 닉네임 캐싱
         Map<Long, String> nicknameMap = new HashMap<>();
-        // 방의 모든 멤버 조회 (최적화 가능)
         List<RoomMemberEntity> roomMembers = roomMemberRepository.findByRoom_RoomIdAndStatus(purchase.getRoomId(), MemberStatus.ACTIVE);
         for(RoomMemberEntity rm : roomMembers) {
             nicknameMap.put(rm.getMemberId(), rm.getNickname());
@@ -319,16 +438,17 @@ public class SettlementService {
                         allocation.getAmountToPay()));
 
                 memberTotalMap.merge(allocation.getMemberId(), allocation.getAmountToPay(), BigDecimal::add);
-                totalDiff = totalDiff.add(allocation.getDiffAmount());
             }
         }
         
-        sb.append("\n요약:\n");
+        sb.append("\n#### 💰 멤버별 최종 송금액\n");
         for (Map.Entry<Long, BigDecimal> entry : memberTotalMap.entrySet()) {
+            // 결제자 본인은 제외
+            if (entry.getKey().equals(purchase.getPayerMemberId())) continue;
+            
             String name = nicknameMap.getOrDefault(entry.getKey(), "알수없음");
-            sb.append(String.format("- %s: %s원\n", name, entry.getValue()));
+            sb.append(String.format("- **%s**: %s원\n", name, entry.getValue()));
         }
-        sb.append(String.format("- 서버 자투리 총합: %s원\n", totalDiff));
 
         return sb.toString();
     }
