@@ -200,7 +200,6 @@ export const handlers = [
     });
   }),
 
-<<<<<<< HEAD
   // ============================================================
   // 투표 관련 - 주석 처리 (실제 백엔드 테스트)
   // ============================================================
@@ -227,7 +226,6 @@ export const handlers = [
   //   console.log(`MSW: 투표 상세 조회 요청 받음 (roomId: ${roomId}, voteId: ${voteId})`);
   //   return HttpResponse.json(voteDetailResponse);
   // }),
-=======
   // 8-1. 장바구니 아이템 추가: POST /api/rooms/:roomId/shopping-items
   http.post(`${API_URL}/api/rooms/:roomId/shopping-items`, async ({ params, request }) => {
     const roomId = Number(params.roomId);
@@ -327,7 +325,6 @@ export const handlers = [
     console.log(`MSW: 투표 목록 조회 요청 받음 (roomId: ${roomId}, status: ${status})`);
 
     const filteredItems = voteListResponse.data.items.filter((vote) => vote.status === status);
->>>>>>> develop
 
   // // 11. 투표 참여: POST /api/rooms/:roomId/votes/:voteId/participants
   // http.post(
