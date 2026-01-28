@@ -22,7 +22,7 @@
   padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0; /* 간격은 메시지 클래스에서 통일 */
+  gap: 1rem;
 }
 
 .chat-loading,
@@ -33,16 +33,11 @@
   font-size: 0.875rem;
 }
 
-/* 채팅 메시지 그룹(같은 사용자 + 같은 시/분 연속) */
-.chat-message-group {
+/* 채팅 메시지 */
+.chat-message {
   display: flex;
   gap: 0.75rem;
   align-items: flex-start;
-  margin-top: 1rem; /* 그룹 간격 */
-}
-
-.chat-message-group:first-child {
-  margin-top: 0;
 }
 
 .chat-avatar {
@@ -58,18 +53,17 @@
   flex-shrink: 0;
 }
 
-.chat-group-body {
+.chat-message-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0; /* 간격은 header의 margin으로만 관리 */
+  gap: 0.25rem;
 }
 
 .chat-message-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.25rem; /* 메타(이름/시간)와 본문 간격 */
 }
 
 .chat-sender-name {
@@ -83,21 +77,12 @@
   color: #999999;
 }
 
-.chat-lines {
-  display: flex;
-  flex-direction: column;
-}
-
-.chat-line {
+.chat-message-text {
   font-size: 0.875rem;
   color: #000000;
   line-height: 1.5;
   word-wrap: break-word;
   white-space: pre-wrap;
-}
-
-.chat-line + .chat-line {
-  margin-top: 0.35rem; /* 그룹 내(=같은 사용자+같은 분) 메시지 간격: 항상 동일 */
 }
 
 /* 메시지 입력 영역 */
@@ -150,16 +135,12 @@
 .chat-send-button:disabled {
   background-color: #d1d5db;
   cursor: not-allowed;
-  color: #6b7280; /* disabled에서도 아이콘이 확실히 보이도록 조금 진하게 */
+  color: #9ca3af;
 }
 
 .chat-send-button svg {
   width: 1.25rem;
   height: 1.25rem;
-  display: block;
-  flex-shrink: 0;
-  visibility: visible !important;
-  opacity: 1 !important;
 }
 
 /* 스크롤바 스타일링 */

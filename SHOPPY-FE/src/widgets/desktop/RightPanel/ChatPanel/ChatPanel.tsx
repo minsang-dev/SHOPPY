@@ -121,16 +121,6 @@ const ChatPanel: React.FC = () => {
     return `${hours}시 ${minutes}분`;
   };
 
-  // 같은 사용자 + 같은 시/분이면 메타(아바타/이름/시간) 생략
-  const getMinuteKey = (dateString: string): string => {
-    const date = new Date(dateString);
-    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()} ${date.getHours()}:${date.getMinutes()}`;
-  };
-
-  const isSameSenderSameMinute = (a: ChatMessage, b: ChatMessage): boolean => {
-    return a.senderMemberId === b.senderMemberId && getMinuteKey(a.createdAt) === getMinuteKey(b.createdAt);
-  };
-
   // 아바타 색상 생성 (이름 기반)
   const getAvatarColor = (name: string): string => {
     const colors = [
@@ -156,34 +146,6 @@ const ChatPanel: React.FC = () => {
   const today = new Date();
   const todayString = formatDate(today.toISOString());
 
-  const visibleMessages = useMemo(
-    () => messages.filter((message) => !message.isDeleted),
-    [messages],
-  );
-
-  const messageGroups = useMemo(() => {
-    type MessageGroup = {
-      senderMemberId: number;
-      createdAt: string; // 그룹의 대표 시간(첫 메시지)
-      messages: ChatMessage[];
-    };
-
-    const groups: MessageGroup[] = [];
-    for (const msg of visibleMessages) {
-      const last = groups[groups.length - 1];
-      if (last && isSameSenderSameMinute(last.messages[last.messages.length - 1], msg)) {
-        last.messages.push(msg);
-      } else {
-        groups.push({
-          senderMemberId: msg.senderMemberId,
-          createdAt: msg.createdAt,
-          messages: [msg],
-        });
-      }
-    }
-    return groups;
-  }, [visibleMessages]);
-
   return (
     <div className="panel-content chat-panel">
       {/* 날짜 헤더 */}
@@ -193,39 +155,33 @@ const ChatPanel: React.FC = () => {
       <div className="chat-messages-container" ref={messagesContainerRef}>
         {loading ? (
           <div className="chat-loading">로딩 중...</div>
-        ) : visibleMessages.length === 0 ? (
+        ) : messages.length === 0 ? (
           <div className="chat-empty">채팅 메시지가 없습니다.</div>
         ) : (
-          messageGroups.map((group) => {
-            const participant = getParticipant(group.senderMemberId);
-            const senderName = participant?.nickname || `사용자 ${group.senderMemberId}`;
-            const isCurrentUser = currentMemberId !== null && group.senderMemberId === currentMemberId;
+          messages.map((message) => {
+            if (message.isDeleted) return null;
+
+            const participant = getParticipant(message.senderMemberId);
+            const senderName = participant?.nickname || `사용자 ${message.senderMemberId}`;
+            const isCurrentUser = currentMemberId !== null && message.senderMemberId === currentMemberId;
 
             return (
-              <div key={`${group.senderMemberId}-${getMinuteKey(group.createdAt)}`} className="chat-message-group">
+              <div key={message.chatId} className="chat-message">
                 <div
                   className="chat-avatar"
                   style={{ backgroundColor: getAvatarColor(senderName) }}
                 >
                   {getInitial(senderName)}
                 </div>
-
-                <div className="chat-group-body">
+                <div className="chat-message-content">
                   <div className="chat-message-header">
                     <span className="chat-sender-name">
                       {senderName}
                       {isCurrentUser && '(나)'}
                     </span>
-                    <span className="chat-timestamp">{formatTime(group.createdAt)}</span>
+                    <span className="chat-timestamp">{formatTime(message.createdAt)}</span>
                   </div>
-
-                  <div className="chat-lines">
-                    {group.messages.map((m) => (
-                      <div key={m.chatId} className="chat-line">
-                        {m.content}
-                      </div>
-                    ))}
-                  </div>
+                  <div className="chat-message-text">{message.content}</div>
                 </div>
               </div>
             );
@@ -249,19 +205,7 @@ const ChatPanel: React.FC = () => {
           onClick={handleSendMessage}
           disabled={!inputContent.trim()}
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-            focusable="false"
-          >
-            <path
-              d="M19.4 2.6a1 1 0 0 0-1.06-.23L1.9 8.9a1 1 0 0 0 .08 1.9l6.7 2.3 2.3 6.7a1 1 0 0 0 1.9.08l6.53-16.44a1 1 0 0 0-.24-1.06ZM10.9 11.1 3.9 8.7 17.1 4 10.9 11.1Zm.4 1 6.1-7.1-4.7 13.2-2.4-7.1Z"
-            />
-          </svg>
+          <i className="ri-send-plane-line"></i>
         </button>
       </div>
     </div>

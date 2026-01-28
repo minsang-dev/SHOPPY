@@ -5,9 +5,9 @@ import productList from './productList.json';
 // import roomJoinResponse from './RoomJoinresponse.json';
 import kakaoLoginResponse from './kakaoLoginResponse.json';
 import shoppingCartResponse from './ShoppingCartResponse.json';
-import chatListResponse from './ChatList.json';
+// import chatListResponse from './ChatList.json';
 // import voteListResponse from './VoteListResponse.json';
-// import voteDetailResponse from './VoteDetailResponse.json';
+import voteDetailResponse from './VoteDetailResponse.json';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -41,32 +41,32 @@ const nextShoppingItemId = () =>
     : 1;
 
 // 채팅 메시지 mock 데이터
-type MockChatMessage = {
-  chatId: number;
-  roomId: number;
-  senderMemberId: number;
-  content: string;
-  isDeleted: boolean;
-  isEdited: boolean;
-  createdAt: string;
-  editedAt: string | null;
-};
+// type MockChatMessage = {
+//   chatId: number;
+//   roomId: number;
+//   senderMemberId: number;
+//   content: string;
+//   isDeleted: boolean;
+//   isEdited: boolean;
+//   createdAt: string;
+//   editedAt: string | null;
+// };
 
-let mockChatMessages: MockChatMessage[] = chatListResponse.data.messages.map((msg) => ({
-  chatId: msg.chatId,
-  roomId: msg.roomId,
-  senderMemberId: msg.senderMemberId,
-  content: msg.content,
-  isDeleted: msg.isDeleted,
-  isEdited: msg.isEdited,
-  createdAt: msg.createdAt,
-  editedAt: msg.editedAt,
-}));
+// const mockChatMessages: MockChatMessage[] = chatListResponse.data.messages.map((msg) => ({
+//   chatId: msg.chatId,
+//   roomId: msg.roomId,
+//   senderMemberId: msg.senderMemberId,
+//   content: msg.content,
+//   isDeleted: msg.isDeleted,
+//   isEdited: msg.isEdited,
+//   createdAt: msg.createdAt,
+//   editedAt: msg.editedAt,
+// }));
 
-const nextChatId = () =>
-  mockChatMessages.length > 0
-    ? Math.max(...mockChatMessages.map((msg) => msg.chatId)) + 1
-    : 1;
+// const nextChatId = () =>
+//   mockChatMessages.length > 0
+//     ? Math.max(...mockChatMessages.map((msg) => msg.chatId)) + 1
+//     : 1;
 
 export const handlers = [
   // 1. 전체 상품 목록 조회: GET /api/products
@@ -422,109 +422,66 @@ export const handlers = [
   //   });
   // }),
 
-  // ============================================================
-  // 채팅 관련
-  // ============================================================
-  // 13. 채팅 메시지 목록 조회: GET /api/rooms/:roomId/chat?page=0&size=50
-  http.get(`${API_URL}/api/rooms/:roomId/chat`, ({ params, request }) => {
-    const roomId = Number(params.roomId);
-    const url = new URL(request.url);
-    const page = Number(url.searchParams.get('page') || '0');
-    const size = Number(url.searchParams.get('size') || '50');
+  // 10. 투표 상세 조회: GET /api/rooms/:roomId/votes/:voteId
+  http.get(`${API_URL}/api/rooms/:roomId/votes/:voteId`, ({ params }) => {
+    const roomId = String(params.roomId);
+    const voteId = String(params.voteId);
+    console.log(`MSW: 투표 상세 조회 요청 받음 (roomId: ${roomId}, voteId: ${voteId})`);
+    return HttpResponse.json(voteDetailResponse);
+  }),
 
-    console.log(`MSW: 채팅 메시지 목록 조회 요청 받음 (roomId: ${roomId}, page: ${page}, size: ${size})`);
+  // 11. 투표 참여: POST /api/rooms/:roomId/votes/:voteId/participants
+  http.post(
+    `${API_URL}/api/rooms/:roomId/votes/:voteId/participants`,
+    async ({ params, request }) => {
+      const roomId = String(params.roomId);
+      const voteId = String(params.voteId);
+      const body = await request.json();
+      console.log(
+        `MSW: 투표 참여 요청 받음 (roomId: ${roomId}, voteId: ${voteId}, optionId: ${(body as { option_id: number }).option_id})`,
+      );
 
-    // 해당 roomId의 메시지만 필터링
-    const roomMessages = mockChatMessages.filter((msg) => msg.roomId === roomId && !msg.isDeleted);
+      return HttpResponse.json({
+        status: 'success',
+        message: 'OK',
+        data: {
+          vote_participant_id: 4001,
+          vote_id: Number(voteId),
+          option_id: (body as { option_id: number }).option_id,
+          user_id: 1,
+        },
+      });
+    },
+  ),
 
-    // 페이지네이션 처리
-    const startIndex = page * size;
-    const endIndex = startIndex + size;
-    const paginatedMessages = roomMessages.slice(startIndex, endIndex);
-    const totalElements = roomMessages.length;
-    const totalPages = Math.ceil(totalElements / size);
-    const hasNext = page < totalPages - 1;
+  // 12. 투표 생성: POST /api/rooms/:roomId/votes
+  http.post(`${API_URL}/api/rooms/:roomId/votes`, async ({ params, request }) => {
+    const roomId = String(params.roomId);
+    const body = await request.json();
+    console.log(
+      `MSW: 투표 생성 요청 받음 (roomId: ${roomId}, title: ${(body as { title: string }).title})`,
+    );
+
+    const createBody = body as { title: string; options: string[] };
+    const newVoteId = 2004;
+    const options = createBody.options.map((content, index) => ({
+      option_id: 3003 + index,
+      content,
+    }));
 
     return HttpResponse.json({
       status: 'success',
       message: 'OK',
       data: {
-        messages: paginatedMessages,
-        totalElements,
-        totalPages,
-        currentPage: page,
-        hasNext,
+        vote_id: newVoteId,
+        room_id: Number(roomId),
+        title: createBody.title,
+        status: 'OPEN',
+        created_at: new Date().toISOString(),
+        closed_at: null,
+        options,
       },
     });
   }),
-
-  // 14. 채팅 메시지 전송: POST /api/rooms/:roomId/chat
-  http.post(`${API_URL}/api/rooms/:roomId/chat`, async ({ params, request }) => {
-    const roomId = Number(params.roomId);
-    const body = (await request.json()) as { content: string };
-    console.log(`MSW: 채팅 메시지 전송 요청 받음 (roomId: ${roomId}, content: ${body.content})`);
-
-    const newMessage: MockChatMessage = {
-      chatId: nextChatId(),
-      roomId,
-      senderMemberId: 1, // TODO: 실제 senderMemberId 가져오기
-      content: body.content,
-      isDeleted: false,
-      isEdited: false,
-      createdAt: new Date().toISOString(),
-      editedAt: null,
-    };
-
-    mockChatMessages = [...mockChatMessages, newMessage];
-
-    return HttpResponse.json({
-      status: 'success',
-      message: 'OK',
-      data: newMessage,
-    });
-  }),
-
-  // 15. 채팅 메시지 수정: PATCH /api/rooms/:roomId/chat/:chatId
-  http.patch(`${API_URL}/api/rooms/:roomId/chat/:chatId`, async ({ params, request }) => {
-    const roomId = Number(params.roomId);
-    const chatId = Number(params.chatId);
-    const body = (await request.json()) as { content: string };
-    console.log(`MSW: 채팅 메시지 수정 요청 받음 (roomId: ${roomId}, chatId: ${chatId})`);
-
-    mockChatMessages = mockChatMessages.map((msg) =>
-      msg.chatId === chatId && msg.roomId === roomId
-        ? {
-            ...msg,
-            content: body.content,
-            isEdited: true,
-            editedAt: new Date().toISOString(),
-          }
-        : msg,
-    );
-
-    const updated = mockChatMessages.find((msg) => msg.chatId === chatId && msg.roomId === roomId);
-
-    return HttpResponse.json({
-      status: 'success',
-      message: 'OK',
-      data: updated ?? null,
-    });
-  }),
-
-  // 16. 채팅 메시지 삭제: DELETE /api/rooms/:roomId/chat/:chatId
-  http.delete(`${API_URL}/api/rooms/:roomId/chat/:chatId`, ({ params }) => {
-    const roomId = Number(params.roomId);
-    const chatId = Number(params.chatId);
-    console.log(`MSW: 채팅 메시지 삭제 요청 받음 (roomId: ${roomId}, chatId: ${chatId})`);
-
-    mockChatMessages = mockChatMessages.map((msg) =>
-      msg.chatId === chatId && msg.roomId === roomId ? { ...msg, isDeleted: true } : msg,
-    );
-
-    return HttpResponse.json({
-      status: 'success',
-      message: 'OK',
-      data: null,
-    });
-  }),
 ];
+
