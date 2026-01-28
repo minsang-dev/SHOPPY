@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import ssafy.rtc.shoppy.auth.dto.KakaoLoginUrlResponse;
 import ssafy.rtc.shoppy.auth.dto.LoginResponse;
@@ -43,5 +44,13 @@ public class AuthController {
             @Valid @RequestBody TokenRefreshRequest request) {
         TokenRefreshResponse response = authService.refreshToken(request.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "로그아웃", description = "현재 사용자를 로그아웃 처리합니다. Refresh Token이 무효화됩니다.")
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @AuthenticationPrincipal Long memberId) {
+        authService.logout(memberId);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

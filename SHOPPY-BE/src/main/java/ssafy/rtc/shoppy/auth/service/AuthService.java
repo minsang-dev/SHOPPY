@@ -11,4 +11,6 @@ public interface AuthService {
     LoginResponse kakaoLogin(String code);
 
     TokenRefreshResponse refreshToken(String refreshToken);
+
+    void logout(Long memberId);
 }

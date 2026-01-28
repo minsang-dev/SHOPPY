@@ -38,6 +38,7 @@ public enum ErrorCode {
     ROOM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "방 참여자를 찾을 수 없습니다."),
     INVALID_ROOM_MEMBER(HttpStatus.BAD_REQUEST, "해당 방의 참여자가 아닙니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다."),
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."),
     VOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "투표를 찾을 수 없습니다."),
     VOTE_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "투표 항목을 찾을 수 없습니다."),
