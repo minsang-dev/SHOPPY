@@ -5,6 +5,7 @@ import type { ChatMessage } from '@/entities/chat/types/chat.types';
 import { getRoomMembers } from '@/entities/room/api/room';
 import type { RoomMember } from '@/entities/room/types/room.types';
 import { useAuthStore } from '@/entities/user/model/useAuthStore';
+import ChatMessageRow from './ChatMessageRow';
 import './ChatPanel.css';
 
 /**
@@ -121,20 +122,33 @@ const ChatPanel: React.FC = () => {
     return `${hours}시 ${minutes}분`;
   };
 
-  // 아바타 색상 생성 (이름 기반)
-  const getAvatarColor = (name: string): string => {
-    const colors = [
-      '#6366f1', // indigo
-      '#8b5cf6', // purple
-      '#ec4899', // pink
-      '#f59e0b', // amber
-      '#10b981', // emerald
-      '#3b82f6', // blue
-      '#ef4444', // red
-      '#14b8a6', // teal
+  // 동일 시/분인지 확인하는 함수
+  const isSameMinute = (dateString1: string, dateString2: string): boolean => {
+    const date1 = new Date(dateString1);
+    const date2 = new Date(dateString2);
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate() &&
+      date1.getHours() === date2.getHours() &&
+      date1.getMinutes() === date2.getMinutes()
+    );
+  };
+
+  // 아바타 그라데이션 생성 
+  const getAvatarGradient = (name: string): string => {
+    const gradients = [
+      'linear-gradient(135deg, #a855f7, #3b82f6)', // 밝은 보라 → 파랑
+      'linear-gradient(135deg, #6366f1, #8b5cf6)', // 인디고 → 밝은 보라
+      'linear-gradient(135deg, #3b82f6, #a855f7)', // 파랑 → 밝은 보라
+      'linear-gradient(135deg, #7c3aed, #2563eb)', // 진한 보라 → 진한 파랑
+      'linear-gradient(135deg, #9333ea, #60a5fa)', // 보라 → 밝은 파랑
+      'linear-gradient(135deg, #4f46e5, #a855f7)', // 진한 인디고 → 밝은 보라
+      'linear-gradient(135deg, #2563eb, #8b5cf6)', // 진한 파랑 → 보라
+      'linear-gradient(135deg, #a855f7, #60a5fa)', // 밝은 보라 → 밝은 파랑
     ];
-    const index = name.charCodeAt(0) % colors.length;
-    return colors[index];
+    const index = name.charCodeAt(0) % gradients.length;
+    return gradients[index];
   };
 
   // 이름의 첫 글자 추출
@@ -145,6 +159,69 @@ const ChatPanel: React.FC = () => {
   // 오늘 날짜 표시
   const today = new Date();
   const todayString = formatDate(today.toISOString());
+
+  // 같은 시/분, 같은 발신자의 메시지를 하나의 그룹으로 묶기
+  const messageGroups = useMemo(() => {
+    const groups: {
+      id: string;
+      senderMemberId: number;
+      createdAt: string;
+      messages: ChatMessage[];
+    }[] = [];
+
+    let currentGroup:
+      | {
+          id: string;
+          senderMemberId: number;
+          createdAt: string;
+          messages: ChatMessage[];
+        }
+      | null = null;
+
+    messages.forEach((message) => {
+      if (message.isDeleted) return;
+
+      if (!currentGroup) {
+        currentGroup = {
+          id: `${message.senderMemberId}-${message.chatId}`,
+          senderMemberId: message.senderMemberId,
+          createdAt: message.createdAt,
+          messages: [message],
+        };
+        groups.push(currentGroup);
+        return;
+      }
+
+      const sameSender = currentGroup.senderMemberId === message.senderMemberId;
+      const sameMinute = isSameMinute(currentGroup.createdAt, message.createdAt);
+
+      if (sameSender && sameMinute) {
+        currentGroup.messages.push(message);
+      } else {
+        currentGroup = {
+          id: `${message.senderMemberId}-${message.chatId}`,
+          senderMemberId: message.senderMemberId,
+          createdAt: message.createdAt,
+          messages: [message],
+        };
+        groups.push(currentGroup);
+      }
+    });
+
+    return groups;
+  }, [messages]);
+
+  // 단일 메시지 업데이트 시 상태 반영
+  const handleMessageUpdated = (updated: ChatMessage) => {
+    setMessages((prev) =>
+      prev.map((msg) => (msg.chatId === updated.chatId ? updated : msg)),
+    );
+  };
+
+  // 메시지 삭제 시 상태에서 제거
+  const handleMessageDeleted = (chatId: number) => {
+    setMessages((prev) => prev.filter((msg) => msg.chatId !== chatId));
+  };
 
   return (
     <div className="panel-content chat-panel">
@@ -158,18 +235,16 @@ const ChatPanel: React.FC = () => {
         ) : messages.length === 0 ? (
           <div className="chat-empty">채팅 메시지가 없습니다.</div>
         ) : (
-          messages.map((message) => {
-            if (message.isDeleted) return null;
-
-            const participant = getParticipant(message.senderMemberId);
-            const senderName = participant?.nickname || `사용자 ${message.senderMemberId}`;
-            const isCurrentUser = currentMemberId !== null && message.senderMemberId === currentMemberId;
+          messageGroups.map((group) => {
+            const participant = getParticipant(group.senderMemberId);
+            const senderName = participant?.nickname || `사용자 ${group.senderMemberId}`;
+            const isCurrentUser = currentMemberId !== null && group.senderMemberId === currentMemberId;
 
             return (
-              <div key={message.chatId} className="chat-message">
+              <div key={group.id} className="chat-message-group">
                 <div
                   className="chat-avatar"
-                  style={{ backgroundColor: getAvatarColor(senderName) }}
+                  style={{ background: getAvatarGradient(senderName) }}
                 >
                   {getInitial(senderName)}
                 </div>
@@ -179,9 +254,16 @@ const ChatPanel: React.FC = () => {
                       {senderName}
                       {isCurrentUser && '(나)'}
                     </span>
-                    <span className="chat-timestamp">{formatTime(message.createdAt)}</span>
+                    <span className="chat-timestamp">{formatTime(group.createdAt)}</span>
                   </div>
-                  <div className="chat-message-text">{message.content}</div>
+                  {group.messages.map((message) => (
+                    <ChatMessageRow
+                      key={message.chatId}
+                      message={message}
+                      onMessageUpdated={handleMessageUpdated}
+                      onMessageDeleted={handleMessageDeleted}
+                    />
+                  ))}
                 </div>
               </div>
             );

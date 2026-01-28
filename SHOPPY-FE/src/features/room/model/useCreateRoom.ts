@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { normalizeApiError } from '../../../shared/api/error';
-import { createRoom, getRoomMembers, type CreateRoomRequest } from '../../../shared/api/rooms';
+import { createRoom, getRoomMembers } from '../../../entities/room/api/room';
+import type { CreateRoomRequest, CreateRoomResponse, RoomMember } from '../../../entities/room/types/room.types';
 import { createWebRtcSession } from '../../../shared/api/webrtc';
-import type { Member, Room, WebRTCSession } from '../../../shared/api/types';
+import type { WebRTCSession } from '../../../shared/api/types';
 import { useSessionStore } from '../../../entities/session/model/useSessionStore';
 
 export const useCreateRoom = () => {
-  const [data, setData] = useState<Room | null>(null);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [data, setData] = useState<CreateRoomResponse | null>(null);
+  const [members, setMembers] = useState<RoomMember[]>([]);
   const [session, setSession] = useState<WebRTCSession | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ReturnType<typeof normalizeApiError> | null>(null);
@@ -21,7 +22,7 @@ export const useCreateRoom = () => {
       setData(res);
 
       const roomId = res.roomId;
-      const memberRes = await getRoomMembers(roomId);
+      const memberRes = await getRoomMembers(String(roomId));
       setMembers(memberRes);
 
       const sessionRes = await createWebRtcSession(roomId);

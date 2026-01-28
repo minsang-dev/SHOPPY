@@ -1,18 +1,10 @@
-import axios from 'axios';
+import { apiRequest } from '@/shared/api/http';
 import type {
   ChatMessage,
   ChatMessagesResponse,
   SendChatMessageRequest,
   UpdateChatMessageRequest,
 } from '../types/chat.types';
-
-interface ApiResponse<T> {
-  status: string;
-  message: string;
-  data: T;
-}
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 
 /**
  * 채팅 메시지 목록 조회 API
@@ -26,16 +18,11 @@ export const getChatMessages = async (
   page: number = 0,
   size: number = 50,
 ): Promise<ChatMessagesResponse> => {
-  const response = await axios.get<ApiResponse<ChatMessagesResponse>>(
-    `${API_BASE_URL}/api/rooms/${roomId}/chat`,
-    {
-      params: {
-        page,
-        size,
-      },
-    },
-  );
-  return response.data.data;
+  return apiRequest<ChatMessagesResponse>({
+    method: 'GET',
+    url: `/rooms/${roomId}/chat`,
+    params: { page, size },
+  });
 };
 
 /**
@@ -48,11 +35,11 @@ export const sendChatMessage = async (
   roomId: number,
   payload: SendChatMessageRequest,
 ): Promise<ChatMessage> => {
-  const response = await axios.post<ApiResponse<ChatMessage>>(
-    `${API_BASE_URL}/api/rooms/${roomId}/chat`,
-    payload,
-  );
-  return response.data.data;
+  return apiRequest<ChatMessage>({
+    method: 'POST',
+    url: `/rooms/${roomId}/chat`,
+    data: payload,
+  });
 };
 
 /**
@@ -67,11 +54,11 @@ export const updateChatMessage = async (
   chatId: number,
   payload: UpdateChatMessageRequest,
 ): Promise<ChatMessage> => {
-  const response = await axios.patch<ApiResponse<ChatMessage>>(
-    `${API_BASE_URL}/api/rooms/${roomId}/chat/${chatId}`,
-    payload,
-  );
-  return response.data.data;
+  return apiRequest<ChatMessage>({
+    method: 'PATCH',
+    url: `/rooms/${roomId}/chat/${chatId}`,
+    data: payload,
+  });
 };
 
 /**
@@ -83,7 +70,8 @@ export const deleteChatMessage = async (
   roomId: number,
   chatId: number,
 ): Promise<void> => {
-  await axios.delete<ApiResponse<null>>(
-    `${API_BASE_URL}/api/rooms/${roomId}/chat/${chatId}`,
-  );
+  await apiRequest<null>({
+    method: 'DELETE',
+    url: `/rooms/${roomId}/chat/${chatId}`,
+  });
 };
