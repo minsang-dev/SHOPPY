@@ -4,36 +4,36 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
-import ssafy.rtc.shoppy.room.enums.MemberStatus;
-import ssafy.rtc.shoppy.room.repository.RoomMemberRepository;
-import ssafy.rtc.shoppy.settlement.entity.ItemAllocation;
-import ssafy.rtc.shoppy.settlement.entity.Purchase;
-import ssafy.rtc.shoppy.settlement.entity.PurchaseItem;
-import ssafy.rtc.shoppy.settlement.repository.ItemAllocationRepository;
-import ssafy.rtc.shoppy.settlement.repository.PurchaseItemRepository;
-import ssafy.rtc.shoppy.settlement.repository.PurchaseRepository;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import ssafy.rtc.shoppy.settlement.dto.ReceiptUploadResponse;
-import ssafy.rtc.shoppy.settlement.entity.Receipt;
-import ssafy.rtc.shoppy.settlement.repository.ReceiptRepository;
 import org.springframework.web.multipart.MultipartFile;
-
 import ssafy.rtc.shoppy.ai.imagerecognition.dto.ImageRecognitionRequestDto;
 import ssafy.rtc.shoppy.ai.imagerecognition.dto.ImageRecognitionResponseDto;
 import ssafy.rtc.shoppy.ai.imagerecognition.service.ImageRecognitionService;
-import ssafy.rtc.shoppy.settlement.utils.ReceiptParser;
-import java.util.Collections;
-
+import ssafy.rtc.shoppy.auth.repository.MemberRepository;
+import ssafy.rtc.shoppy.global.exception.BusinessException;
+import ssafy.rtc.shoppy.global.exception.ErrorCode;
+import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
+import ssafy.rtc.shoppy.room.enums.MemberStatus;
+import ssafy.rtc.shoppy.room.repository.RoomMemberRepository;
+import ssafy.rtc.shoppy.settlement.dto.ReceiptUploadResponse;
 import ssafy.rtc.shoppy.settlement.dto.SettlementItemCreateRequest;
 import ssafy.rtc.shoppy.settlement.dto.SettlementItemCreateResponse;
+import ssafy.rtc.shoppy.settlement.entity.ItemAllocation;
+import ssafy.rtc.shoppy.settlement.entity.Purchase;
+import ssafy.rtc.shoppy.settlement.entity.PurchaseItem;
+import ssafy.rtc.shoppy.settlement.entity.Receipt;
+import ssafy.rtc.shoppy.settlement.repository.ItemAllocationRepository;
+import ssafy.rtc.shoppy.settlement.repository.PurchaseItemRepository;
+import ssafy.rtc.shoppy.settlement.repository.PurchaseRepository;
+import ssafy.rtc.shoppy.settlement.repository.ReceiptRepository;
+import ssafy.rtc.shoppy.settlement.utils.ReceiptParser;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -41,7 +41,14 @@ import ssafy.rtc.shoppy.settlement.dto.SettlementItemCreateResponse;
 @Slf4j
 public class SettlementService {
     
-    // ... dependencies ...
+    private final PurchaseRepository purchaseRepository;
+    private final PurchaseItemRepository purchaseItemRepository;
+    private final ItemAllocationRepository itemAllocationRepository;
+    private final RoomMemberRepository roomMemberRepository;
+    private final ReceiptRepository receiptRepository;
+    private final FileStorageService fileStorageService;
+    private final ImageRecognitionService imageRecognitionService;
+    private final MemberRepository memberRepository;
 
     /**
      * 수동으로 정산 품목 추가
@@ -49,11 +56,11 @@ public class SettlementService {
     public SettlementItemCreateResponse addSettlementItem(Long receiptId, SettlementItemCreateRequest request) {
         // 1. 영수증 확인
         Receipt receipt = receiptRepository.findById(receiptId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND)); // Receipt Not Found 예외 처리 필요
+                .orElseThrow(() -> new BusinessException(ErrorCode.RECEIPT_NOT_FOUND));
 
         Purchase purchase = receipt.getPurchase();
         if (purchase == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND); // Settlement Not Found
+            throw new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND); 
         }
 
         // 2. 아이템 저장
@@ -71,9 +78,6 @@ public class SettlementService {
             calculateAndAllocate(purchaseItem, activeMembers);
         }
 
-        // 4. 총액 갱신 (선택 사항: Purchase의 totalAmount도 업데이트할지 결정 필요. 보통은 아이템 합계로 계산)
-        // purchase.updateTotalAmount(...); 
-
         return SettlementItemCreateResponse.builder()
                 .settlementItemId(purchaseItem.getPurchaseItemId())
                 .receiptId(receiptId)
@@ -83,15 +87,6 @@ public class SettlementService {
                 .totalPrice(purchaseItem.getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity())))
                 .build();
     }
-
-
-    private final PurchaseRepository purchaseRepository;
-    private final PurchaseItemRepository purchaseItemRepository;
-    private final ItemAllocationRepository itemAllocationRepository;
-    private final RoomMemberRepository roomMemberRepository;
-    private final ReceiptRepository receiptRepository;
-    private final FileStorageService fileStorageService;
-    private final ImageRecognitionService imageRecognitionService;
 
     /**
      * 영수증 이미지 업로드 및 정산(Purchase) 초기 생성
@@ -181,11 +176,11 @@ public class SettlementService {
     public Purchase createSettlement(Long roomId, Long payerMemberId, BigDecimal totalAmount, List<PurchaseItemDto> itemDtos, Long currentUserId) {
         // 0. 검증: 요청자(User)가 해당 payerMemberId의 주인인지 확인
         RoomMemberEntity payerMember = roomMemberRepository.findById(payerMemberId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 멤버입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
         
         // userId가 null일 수도 있으므로(게스트 등) null 체크 필요, 여기서는 회원제라 가정
         if (payerMember.getUserId() == null || !payerMember.getUserId().equals(currentUserId)) {
-             throw new SecurityException("본인의 정산만 생성할 수 있습니다.");
+             throw new BusinessException(ErrorCode.UNAUTHORIZED_MEMBER);
         }
 
         // 1. Purchase 생성
@@ -200,7 +195,7 @@ public class SettlementService {
         // 2. 방의 모든 활성 멤버 조회
         List<RoomMemberEntity> members = roomMemberRepository.findByRoom_RoomIdAndStatus(roomId, MemberStatus.ACTIVE);
         if (members.isEmpty()) {
-            throw new IllegalStateException("정산할 멤버가 없습니다.");
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
         }
 
         // 3. 각 아이템별 처리
@@ -227,7 +222,6 @@ public class SettlementService {
     }
 
     private void calculateAndAllocate(PurchaseItem purchaseItem, List<RoomMemberEntity> members) {
-        // entity list -> memberId list 로직 분리 가능하나, 여기서는 직접 사용
         BigDecimal totalItemPrice = purchaseItem.getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity()));
         int participantCount = members.size();
 
@@ -270,15 +264,11 @@ public class SettlementService {
      */
     public SettlementItemCreateResponse updateSettlementItem(Long itemId, SettlementItemCreateRequest request) {
         PurchaseItem item = purchaseItemRepository.findById(itemId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "해당 품목을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.ITEM_NOT_FOUND));
 
         // 값 업데이트
         boolean needRecalculate = (request.getUnitPrice().compareTo(item.getUnitPrice()) != 0) || (request.getQuantity() != item.getQuantity());
         
-        // Setter가 없으므로 Builder패턴 사용 불가 -> Entity에 비즈니스 메서드 필요하거나 Reflection 사용
-        // 여기서는 Entity에 update 메서드가 없으므로, Repository save로 덮어쓰거나 Entity 수정 필요.
-        // PurchaseItem은 @Setter가 없고 수정 메서드도 현재 없음.
-        // -> PurchaseItem Entity에 update 메서드를 추가해야 함. (일단 여기서는 가정하고 작성 후 Entity 수정)
         item.updateDetails(request.getItemName(), request.getUnitPrice(), request.getQuantity());
         
         if (needRecalculate) {
@@ -293,7 +283,7 @@ public class SettlementService {
 
         return SettlementItemCreateResponse.builder()
                 .settlementItemId(item.getPurchaseItemId())
-                .receiptId(item.getPurchase().getPurchaseId()) // 주의: Purchase와 Receipt 연결 관계 확인 필요. 일단 PurchaseId 매핑
+                .receiptId(item.getPurchase().getPurchaseId())
                 .itemName(item.getItemName())
                 .unitPrice(item.getUnitPrice())
                 .quantity(item.getQuantity())
@@ -306,7 +296,7 @@ public class SettlementService {
      */
     public void deleteSettlementItem(Long itemId) {
         PurchaseItem item = purchaseItemRepository.findById(itemId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "해당 품목을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.ITEM_NOT_FOUND));
         
         purchaseItemRepository.delete(item);
     }
@@ -314,7 +304,7 @@ public class SettlementService {
     // 재정산 로직 (멤버 변경 시)
     public void updateAllocations(Long purchaseItemId, List<Long> newMemberIds) {
         PurchaseItem purchaseItem = purchaseItemRepository.findById(purchaseItemId)
-                .orElseThrow(() -> new IllegalArgumentException("Item not found"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.ITEM_NOT_FOUND));
         
         // 기존 Allocation 삭제
         List<ItemAllocation> oldAllocations = itemAllocationRepository.findByPurchaseItem_PurchaseItemId(purchaseItemId);
@@ -353,40 +343,10 @@ public class SettlementService {
     @Transactional(readOnly = true)
     public Purchase getSettlement(Long settlementId) {
         return purchaseRepository.findById(settlementId)
-                .orElseThrow(() -> new IllegalArgumentException("Settlement not found"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
     }
     
     // 정산 완료 및 리포트 생성
-    public String completeSettlement(Long settlementId) {
-        Purchase purchase = getSettlement(settlementId);
-        
-        // 상태 변경 (Setter가 없으므로 Reflection이나 Builder 재사용 혹은 Entity에 로직 메소드 추가 필요. 
-        // 여기서는 Entity를 직접 수정하지 못하므로, 더티 체킹을 위해 필드를 변경해야 하나 
-        // Entity @Builder만 있고 Setter가 없음. -> 간단히 Reflection이나 Setter 추가가 원칙이나
-        // 이번에는 Purchase Entity에 updateStatus 메소드가 없으므로 추가해야 하지만
-        // 이전 단계에서 이미 코드를 작성했으므로, 다시 파일 수정이 번거로울 수 있음.
-        // 하지만 JPA 더티체킹을 위해선 Entity 메소드 호출이 필수.
-        // 여기서는 @Setter가 없으므로 컴파일 에러가 날 것임. 
-        // -> Purchase.java에 updateStatus 메소드를 추가하거나 @Setter를 추가해야 함.
-        // 이미 Purchase.java 수정을 했으니, 이 Service 코드에서는 updateStatus를 호출한다고 가정하고
-        // 다음 단계(혹은 이 파일 쓰기 전에) Purchase.java를 수정하는 것이 맞음.
-        // 일단 여기서는 컴파일이 되도록 작성해야 하므로, Purchase 객체를 다시 빌더로 만들 순 없음 (ID 유지).
-        // 따라서, 별도 툴 호출로 Purchase.java에 updateStatus 메소드를 추가해야 함.
-        // Service 코드는 그것을 사용하도록 작성.
-        
-        // **중요**: 이 파일 쓰기 전에 Purchase.java 수정이 먼저 이루어졌어야 하지만,
-        // 순서상 이 파일을 덮어쓰고 있으므로, Purchase Entity 수정이 누락되면 에러 발생.
-        // 방금 전 `replace` 툴로 `status` 필드만 추가함. 메소드는 없음.
-        // 따라서 이 파일에서 `purchase.setStatus("COMPLETE")` 등을 쓰려면 Setter나 메소드가 필요.
-        // Lombok @Builder만 있으므로 Setter 없음.
-        // 해결책: Service 코드 작성 시 리포트 생성만 하고, 상태 변경은 나중에? 
-        // 아니면 이 파일 작성 후 Purchase 수정?
-        // 가장 안전한 방법: Purchase에 @Setter를 추가하거나 updateStatus 메소드를 추가하는 `replace`를 한 번 더 수행.
-        
-        return generateReport(purchase);
-    }
-    
-    // 이 메소드는 Purchase Entity 수정 후 호출 가능하도록 설계
     public String completeAndGetReport(Long settlementId) {
         Purchase purchase = getSettlement(settlementId);
         purchase.updateStatus("COMPLETE");

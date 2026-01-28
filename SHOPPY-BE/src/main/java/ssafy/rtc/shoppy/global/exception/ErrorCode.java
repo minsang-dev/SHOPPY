@@ -31,6 +31,7 @@ public enum ErrorCode {
     // 403 Forbidden
     FORBIDDEN(HttpStatus.FORBIDDEN, "권한이 없습니다."),
     HOST_ONLY(HttpStatus.FORBIDDEN, "호스트만 수행할 수 있습니다."),
+    UNAUTHORIZED_MEMBER(HttpStatus.FORBIDDEN, "권한이 없는 멤버입니다."),
 
     // 404 Not Found
     NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다."),
@@ -42,6 +43,9 @@ public enum ErrorCode {
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."),
     VOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "투표를 찾을 수 없습니다."),
     VOTE_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "투표 항목을 찾을 수 없습니다."),
+    RECEIPT_NOT_FOUND(HttpStatus.NOT_FOUND, "영수증을 찾을 수 없습니다."),
+    SETTLEMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "정산 내역을 찾을 수 없습니다."),
+    ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "물품을 찾을 수 없습니다."),
 
     // 409 Conflict
     CONFLICT(HttpStatus.CONFLICT, "리소스 충돌이 발생했습니다."),
