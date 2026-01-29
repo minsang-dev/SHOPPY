@@ -53,7 +53,7 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
         .filter(cat => cat.length > 0);
 
       // syncMode 변환: personal -> FOLLOW, host -> FREE
-      const syncMode = createFormData.mode === 'personal' ? 'FOLLOW' : 'FREE';
+      const syncMode: 'FOLLOW' | 'FREE' = createFormData.mode === 'personal' ? 'FOLLOW' : 'FREE';
 
       const payload = {
         roomName: createFormData.title,

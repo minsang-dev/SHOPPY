@@ -1,12 +1,12 @@
 export interface ShoppingItem {
-  shopping_item_id: number;
-  room_id: number;
-  added_by_user_id: number | null;
-  product_id: number | null;
-  display_name: string;
+  shoppingItemId: number;
+  roomId: number;
+  addedByUserId: number | null;
+  productId: number | null;
+  displayName: string;
   quantity: number;
-  is_checked: boolean;
-  purchase_type: string | null;
+  isChecked: boolean;
+  purchaseType: string | null;
 }
 
 export interface ShoppingListResponse {
@@ -29,12 +29,12 @@ export interface ShoppingItemUpdateRequest {
 }
 
 export interface ShoppingItemUpdateResponse {
-  shopping_item_id: number;
+  shoppingItemId: number;
   quantity: number;
-  is_checked: boolean;
-  product_id: number | null;
+  isChecked: boolean;
+  productId: number | null;
 }
 
 export interface ShoppingItemDeleteResponse {
-  shopping_item_id: number;
+  shoppingItemId: number;
 }

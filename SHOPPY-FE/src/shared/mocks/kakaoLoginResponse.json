@@ -4,7 +4,7 @@
   "data": {
     "memberId": 1,
     "nickname": "추지인",
-    "profileImageUrl": "https://k.kakaocdn.net/dn/dgSxc9/btsQdPOUmTb/nfqErAgkvATA0G5jRTdJ2k/img_640x640.jpg",
+    "profileImageUrl": "abc.jpg",
     "accessToken": "eyJhbGciOiJIUzUxMiJ9.mock-access-token",
     "refreshToken": "eyJhbGciOiJIUzUxMiJ9.mock-refresh-token",
     "isNewMember": true

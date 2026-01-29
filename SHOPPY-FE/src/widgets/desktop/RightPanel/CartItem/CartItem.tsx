@@ -41,15 +41,15 @@ const CartItem: React.FC<CartItemProps> = ({
 }) => {
   const quantity = item.quantity;
   const isOnline = cartType === 'online';
-  const isChecked = item.is_checked;
+  const isChecked = item.isChecked;
 
   return (
     <div className="cart-item">
       {/* 상품 이미지와 정보 */}
       <div className="cart-item-content">
-        {isOnline && item.product_id && (
+        {isOnline && item.productId && (
           <div className="cart-item-image">
-            {/* TODO: product_id로 상품 이미지 가져오기 */}
+            {/* TODO: productId로 상품 이미지 가져오기 */}
             <div className="cart-item-image-placeholder">이미지</div>
           </div>
         )}
@@ -62,14 +62,14 @@ const CartItem: React.FC<CartItemProps> = ({
                 className="cart-item-checkbox"
                 checked={isChecked}
                 onChange={onToggleChecked}
-                aria-label={`${item.display_name} 체크`}
+                aria-label={`${item.displayName} 체크`}
               />
             )}
             <div className="cart-item-name-section">
-              <h4 className="cart-item-name">{item.display_name}</h4>
-              {item.added_by_user_id && (
+              <h4 className="cart-item-name">{item.displayName}</h4>
+              {item.addedByUserId && (
                 <p className="cart-item-added-by">
-                  {item.added_by_user_id}님이 추가한 상품
+                  {item.addedByUserId}님이 추가한 상품
                 </p>
               )}
             </div>
@@ -123,7 +123,7 @@ const CartItem: React.FC<CartItemProps> = ({
           onDislike={onDislike}
         />
         <CartItemParticipants
-          productId={item.shopping_item_id}
+          productId={item.shoppingItemId}
           participantCount={participants.length}
           isExpanded={isExpanded}
           onToggle={onToggleParticipants}
