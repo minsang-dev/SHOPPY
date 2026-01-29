@@ -15,10 +15,10 @@ services:
             - ${OPENVIDU_RECORDING_PATH}:${OPENVIDU_RECORDING_PATH}
             - ${OPENVIDU_RECORDING_CUSTOM_LAYOUT}:${OPENVIDU_RECORDING_CUSTOM_LAYOUT}
             - ${OPENVIDU_CDR_PATH}:${OPENVIDU_CDR_PATH}
-        env_file:
+            - /opt/openvidu/owncert:/opt/openvidu/owncert:ro
             - .env
         environment:
-            - SERVER_SSL_ENABLED=false
+            - SERVER_SSL_ENABLED=true
             - SERVER_PORT=5443
             - KMS_URIS=["ws://localhost:8888/kurento"]
             - COTURN_IP=${COTURN_IP:-auto-ipv4}
