@@ -14,6 +14,19 @@ java {
 	}
 }
 
+sourceSets {
+	main {
+		resources {
+			srcDir 'src/main/resources'
+			srcDir 'src/main/java'
+			include '**/*.yaml'
+			include '**/*.yml'
+			include '**/*.properties'
+			include '**/*.json'
+		}
+	}
+}
+
 configurations {
 	compileOnly {
 		extendsFrom annotationProcessor
@@ -60,4 +73,9 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	enabled = project.hasProperty('runTests')
+}
+
+tasks.named('processResources') {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

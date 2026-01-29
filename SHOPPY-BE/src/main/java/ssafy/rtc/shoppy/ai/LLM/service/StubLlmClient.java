@@ -1,6 +1,5 @@
 package ssafy.rtc.shoppy.ai.llm.service;
 
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import ssafy.rtc.shoppy.ai.llm.domain.AiChecklistCodes;
 import ssafy.rtc.shoppy.ai.llm.service.model.AiChecklistInput;
@@ -16,7 +15,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-@Primary
 public class StubLlmClient implements LlmClient {
 
     @Override
@@ -29,7 +27,7 @@ public class StubLlmClient implements LlmClient {
         for (String code : AiChecklistCodes.CHECKLIST_CATEGORY_ORDER) {
             List<ChecklistItemDraft> items = grouped.getOrDefault(code, List.of()).stream()
                     .limit(5)
-                    .map(candidate -> new ChecklistItemDraft(candidate.itemName(), "Suggested based on room context."))
+                    .map(candidate -> new ChecklistItemDraft(candidate.itemName(), "방 정보에 기반한 추천입니다."))
                     .toList();
             if (!items.isEmpty()) {
                 categories.add(new ChecklistCategoryDraft(code, items));

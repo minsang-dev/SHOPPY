@@ -30,12 +30,23 @@ public class RecommendationTemplateEntity {
     @Column(name = "category_code", nullable = false, length = 30)
     private String categoryCode;
 
+    @Column(name = "new_category_code", length = 50)
+    private String newCategoryCode;
+
     @Column(name = "item_name", nullable = false, length = 255)
     private String itemName;
 
     @Convert(converter = JsonStringListConverter.class)
     @Column(name = "trait_excludes", columnDefinition = "json")
     private List<String> traitExcludes;
+
+    @Convert(converter = JsonStringListConverter.class)
+    @Column(name = "ban_traits", columnDefinition = "json")
+    private List<String> banTraits;
+
+    @Convert(converter = JsonStringListConverter.class)
+    @Column(name = "template_tags", columnDefinition = "json")
+    private List<String> templateTags;
 
     @Column(name = "priority", nullable = false)
     private int priority;
@@ -66,5 +77,45 @@ public class RecommendationTemplateEntity {
             int priority
     ) {
         return new RecommendationTemplateEntity(null, categoryCode, itemName, traitExcludes, priority, true);
+    }
+
+    public Long getTemplateId() {
+        return templateId;
+    }
+
+    public String getPurposeCode() {
+        return purposeCode;
+    }
+
+    public String getCategoryCode() {
+        return categoryCode;
+    }
+
+    public String getNewCategoryCode() {
+        return newCategoryCode;
+    }
+
+    public String getItemName() {
+        return itemName;
+    }
+
+    public List<String> getTraitExcludes() {
+        return traitExcludes;
+    }
+
+    public List<String> getBanTraits() {
+        return banTraits;
+    }
+
+    public List<String> getTemplateTags() {
+        return templateTags;
+    }
+
+    public int getPriority() {
+        return priority;
+    }
+
+    public boolean isActive() {
+        return isActive;
     }
 }
