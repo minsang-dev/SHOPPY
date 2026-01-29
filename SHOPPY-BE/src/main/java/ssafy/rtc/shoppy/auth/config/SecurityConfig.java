@@ -44,6 +44,7 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
                                 "/ws/**",
+                                "/api/ws/**",
                                 "/rooms/**",
                                 "/webrtc/**",
                                 "/shopping/**",
