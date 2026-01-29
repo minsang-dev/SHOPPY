@@ -7,6 +7,7 @@ import ssafy.rtc.shoppy.product.entity.Product;
 import ssafy.rtc.shoppy.product.repository.ProductRepository;
 import ssafy.rtc.shoppy.shopping.dto.*;
 import ssafy.rtc.shoppy.shopping.entity.ShoppingItem;
+import ssafy.rtc.shoppy.shopping.event.ShoppingEventPublisher;
 import ssafy.rtc.shoppy.shopping.repository.ShoppingItemRepository;
 import ssafy.rtc.shoppy.shopping.service.ShoppingService;
 
@@ -20,6 +21,7 @@ public class ShoppingServiceImpl implements ShoppingService {
 
     private final ShoppingItemRepository shoppingItemRepository;
     private final ProductRepository productRepository;
+    private final ShoppingEventPublisher eventPublisher;
 
     @Override
     public void addShoppingItem(Long roomId, ShoppingItemAddRequestDto requestDto) {
@@ -45,6 +47,7 @@ public class ShoppingServiceImpl implements ShoppingService {
         if (existingItem != null) {
             // 이미 있으면 수량 증가
             existingItem.addQuantity(requestDto.getQuantity());
+            eventPublisher.publishItemUpdated(roomId, ShoppingItemResponseDto.from(existingItem));
         } else {
             // 없으면 새로 생성
             Product product = null;
@@ -69,7 +72,8 @@ public class ShoppingServiceImpl implements ShoppingService {
                     .expectedUnitPrice(requestDto.getExpectedUnitPrice())
                     .build();
 
-            shoppingItemRepository.save(newItem);
+            ShoppingItem savedItem = shoppingItemRepository.save(newItem);
+            eventPublisher.publishItemAdded(roomId, ShoppingItemResponseDto.from(savedItem));
         }
     }
 
@@ -102,6 +106,8 @@ public class ShoppingServiceImpl implements ShoppingService {
         
         item.update(requestDto.getQuantity(), requestDto.getIsChecked(), product);
 
+        eventPublisher.publishItemUpdated(roomId, ShoppingItemResponseDto.from(item));
+
         return ShoppingItemUpdateResponseDto.from(item);
     }
 
@@ -118,6 +124,8 @@ public class ShoppingServiceImpl implements ShoppingService {
         // TODO: 권한 체크 (호스트만 가능 등)
 
         shoppingItemRepository.delete(item);
+
+        eventPublisher.publishItemDeleted(roomId, shoppingItemId);
 
         return new ShoppingItemDeleteResponseDto(shoppingItemId);
     }
