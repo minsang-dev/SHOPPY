@@ -16,14 +16,14 @@ public final class AiChecklistCodes {
     );
 
     public static final Set<String> INTEREST_CATEGORY_CODES = Set.of(
-            "FOOD",
-            "MEAT",
-            "VEGETABLE",
-            "FRESH",
-            "DRINK",
+            "FOOD_READY",
+            "MEAT_RAW",
+            "VEGETABLE_RAW",
+            "FRESH_READY",
+            "DRINK_NON_ALCOHOL",
             "ALCOHOL",
             "SNACK",
-            "COOKING",
+            "COOKING_TOOL",
             "SUPPLY"
     );
 
@@ -32,6 +32,7 @@ public final class AiChecklistCodes {
             "PREMIUM",
             "BULK",
             "MINIMAL",
+            "BALANCED",
             "ALCOHOL_YES",
             "ALCOHOL_NO",
             "EASY_COOK",
@@ -39,8 +40,15 @@ public final class AiChecklistCodes {
             "VEGGIE",
             "OUTDOOR",
             "INDOOR",
+            "COOKING_OK",
             "COOKING_AVAILABLE",
-            "NO_COOKING"
+            "NO_COOKING",
+            "MEAL_MAIN",
+            "SNACK_MAIN",
+            "VARIETY_OK",
+            "CONSUMABLE",
+            "EQUIPMENT",
+            "TOOL"
     );
 
     public static final List<TraitPair> MUTEX_TRAITS = List.of(
@@ -48,28 +56,31 @@ public final class AiChecklistCodes {
             new TraitPair("BULK", "MINIMAL"),
             new TraitPair("ALCOHOL_YES", "ALCOHOL_NO"),
             new TraitPair("OUTDOOR", "INDOOR"),
+            new TraitPair("COOKING_OK", "NO_COOKING"),
             new TraitPair("COOKING_AVAILABLE", "NO_COOKING")
     );
 
     public static final Map<String, String> CHECKLIST_CATEGORY_LABELS = Map.of(
-            "MEAT_PROTEIN", "Meat/Protein",
-            "VEGETABLE", "Vegetables",
-            "FRESH", "Fresh",
-            "DRINK", "Drinks",
+            "FOOD_READY", "Ready Meals",
+            "MEAT_RAW", "Raw Meat",
+            "VEGETABLE_RAW", "Raw Vegetables",
+            "FRESH_READY", "Fresh Ready",
+            "DRINK_NON_ALCOHOL", "Drinks",
             "ALCOHOL", "Alcohol",
             "SNACK", "Snacks",
-            "COOKING", "Cooking",
+            "COOKING_TOOL", "Cooking Tools",
             "SUPPLY", "Supply"
     );
 
     public static final List<String> CHECKLIST_CATEGORY_ORDER = List.of(
-            "MEAT_PROTEIN",
-            "VEGETABLE",
-            "FRESH",
-            "DRINK",
+            "FOOD_READY",
+            "MEAT_RAW",
+            "VEGETABLE_RAW",
+            "FRESH_READY",
+            "DRINK_NON_ALCOHOL",
             "ALCOHOL",
             "SNACK",
-            "COOKING",
+            "COOKING_TOOL",
             "SUPPLY"
     );
 
