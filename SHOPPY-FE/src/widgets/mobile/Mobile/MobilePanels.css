@@ -65,7 +65,7 @@
 
 .mobile-cart-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 120px 32px;
+  grid-template-columns: 20px minmax(0, 1fr) 32px;
   align-items: center;
   padding: 12px 14px;
   border-radius: 14px;
@@ -74,6 +74,35 @@
   font-size: 0.95rem;
   gap: 12px;
   position: relative;
+}
+
+.mobile-cart-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  background: #ffffff;
+  cursor: pointer;
+  position: relative;
+}
+
+.mobile-cart-checkbox:checked {
+  background: #10b981;
+  border-color: #10b981;
+}
+
+.mobile-cart-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .mobile-cart-item-button {

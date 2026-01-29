@@ -130,7 +130,7 @@ export const useOpenViduSession = ({
     ovRef.current = ov;
     sessionRef.current = session;
     setIsConnected(true);
-  }, [accessToken, isConnected, localVideoRef, profile, role, roomId]);
+  }, [accessToken, isConnected, localVideoRef, profile, role, roomId, videoFacingMode]);
 
   const disconnect = useCallback(() => {
     sessionRef.current?.disconnect();

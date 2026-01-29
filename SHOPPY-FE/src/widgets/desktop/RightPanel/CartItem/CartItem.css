@@ -55,7 +55,7 @@
 
 .cart-item-name-wrapper {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.75rem;
 }
 
@@ -144,6 +144,70 @@
   text-align: center;
   font-weight: 600;
   font-size: 0.9rem;
+}
+
+/* 오프라인 상단 아이콘 버튼 (돋보기, 삭제) - 동일 높이 정렬 */
+.cart-item-icon-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background-color: transparent;
+  color: #000000;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.cart-item-icon-btn.search-btn:hover {
+  background-color: #e8f4fd;
+  color: #007bff;
+}
+
+/* 검색 버튼 툴팁 래퍼 */
+.cart-item-search-btn-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.cart-item-search-btn-wrap .cart-item-tooltip {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translate(-50%, 0.25rem);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #fff;
+  background: linear-gradient(135deg, #6b9bd1 0%, #5a8bc7 100%);
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 2px 8px rgba(90, 139, 199, 0.35);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.cart-item-search-btn-wrap .cart-item-tooltip::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-bottom-color: #5a8bc7;
+}
+
+.cart-item-search-btn-wrap:hover .cart-item-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0.5rem);
 }
 
 /* 삭제 버튼 */

@@ -1,27 +1,33 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getShoppingList, updateShoppingItem, deleteShoppingItem, addShoppingItem } from '@/entities/shopping/api/shopping';
 import type { ShoppingItem, ShoppingItemAddRequest } from '@/entities/shopping/types/shopping.types';
+import { getProductList } from '@/entities/product/api/productListApi';
 import CartTypeToggle from '../CartTypeToggle/CartTypeToggle';
 import CartItem from '../CartItem/CartItem';
 import OfflineCartInput from '@/features/cart/add-offline-item/ui/OfflineCartInput';
 import ManualInputModal from '@/features/cart/add-offline-item/ui/ManualInputModal';
 import './CartPanel.css';
 
+export type ProductMetaMap = Record<number, { imageUrl: string; price: number }>;
+
 
 const CartPanel: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
+  const navigate = useNavigate();
   const [cartType, setCartType] = useState<'online' | 'offline'>('online');
   const [expandedParticipants, setExpandedParticipants] = useState<Record<number, boolean>>({});
   const [isManualInputModalOpen, setIsManualInputModalOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  // UI 전용 상태 (likes, dislikes, participants)
-  const [itemLikes, setItemLikes] = useState<Record<number, number>>({});
-  const [itemDislikes, setItemDislikes] = useState<Record<number, number>>({});
+  // UI 전용 상태 (participants)
   const [itemParticipants] = useState<Record<number, string[]>>({});
 
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
+  const [productMetaMap, setProductMetaMap] = useState<ProductMetaMap>({});
   const [, setLoading] = useState(false);
+
+  // 온라인 상품 여부 판별 헬퍼
+  const isOnlineItem = (item: ShoppingItem) => item.purchaseType === 'online';
 
   // 데이터 로드
   const loadItems = useCallback(async () => {
@@ -30,6 +36,23 @@ const CartPanel: React.FC = () => {
     try {
       const response = await getShoppingList(roomId);
       setShoppingItems(response.items);
+      const onlineIds = response.items
+        .filter((i) => isOnlineItem(i) && i.productId != null)
+        .map((i) => i.productId as number);
+      if (onlineIds.length > 0) {
+        try {
+          const products = await getProductList();
+          const map: ProductMetaMap = {};
+          products.forEach((p) => {
+            map[p.product_id] = { imageUrl: p.image_url, price: p.price };
+          });
+          setProductMetaMap(map);
+        } catch {
+          setProductMetaMap({});
+        }
+      } else {
+        setProductMetaMap({});
+      }
     } catch (error) {
       console.error('장바구니 데이터 로드 실패:', error);
     } finally {
@@ -41,12 +64,23 @@ const CartPanel: React.FC = () => {
     loadItems();
   }, [loadItems]);
 
-  // purchaseType에 따라 필터링
+  // 장바구니 갱신 이벤트 리스닝
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      loadItems();
+    };
+    window.addEventListener('cart-updated', handleCartUpdate);
+    return () => {
+      window.removeEventListener('cart-updated', handleCartUpdate);
+    };
+  }, [loadItems]);
+
+  // purchaseType에 따라 필터링 (null도 offline으로 처리)
   const currentCartItems = shoppingItems.filter((item) => {
     if (cartType === 'online') {
-      return item.purchaseType === 'online';
+      return isOnlineItem(item);
     } else {
-      return item.purchaseType === 'offline';
+      return !isOnlineItem(item);
     }
   });
 
@@ -76,16 +110,15 @@ const CartPanel: React.FC = () => {
     setIsManualInputModalOpen(true);
   };
 
-  const handleAddOfflineItem = async (productName: string, quantity: number) => {
+  const handleAddOfflineItem = async (productName: string) => {
     if (!roomId) return;
-    
-    // entities/shopping의 API 사용
+
     const payload: ShoppingItemAddRequest = {
       userId: 0, // TODO: 실제 userId 가져오기
       productId: null,
       displayName: productName,
-      quantity,
-      purchaseType: false, // 오프라인
+      quantity: 1,
+      purchaseType: false, // 오프라인 = 0
     };
     await addShoppingItem(roomId, payload);
     await loadItems();
@@ -93,13 +126,26 @@ const CartPanel: React.FC = () => {
 
   const handleUpdateQuantity = async (item: ShoppingItem, newQuantity: number) => {
     if (newQuantity < 1 || !roomId) return;
-    await updateShoppingItem(roomId, item.shoppingItemId, { quantity: newQuantity });
-    await loadItems();
+    // 로컬 상태 먼저 업데이트 (이미지 유지)
+    setShoppingItems((prev) =>
+      prev.map((i) =>
+        i.shoppingItemId === item.shoppingItemId ? { ...i, quantity: newQuantity } : i
+      )
+    );
+    // 서버에 반영 (productId 유지 필수)
+    await updateShoppingItem(roomId, item.shoppingItemId, {
+      quantity: newQuantity,
+      productId: item.productId,
+    });
   };
 
   const handleToggleChecked = async (item: ShoppingItem) => {
     if (!roomId) return;
-    await updateShoppingItem(roomId, item.shoppingItemId, { isChecked: !item.isChecked });
+    await updateShoppingItem(roomId, item.shoppingItemId, {
+      quantity: item.quantity,
+      isChecked: !item.isChecked,
+      productId: item.productId,
+    });
     await loadItems();
   };
 
@@ -109,18 +155,11 @@ const CartPanel: React.FC = () => {
     await loadItems();
   };
 
-  const handleToggleLike = (item: ShoppingItem) => {
-    setItemLikes((prev) => ({
-      ...prev,
-      [item.shoppingItemId]: (prev[item.shoppingItemId] || 0) + 1,
-    }));
-  };
-
-  const handleToggleDislike = (item: ShoppingItem) => {
-    setItemDislikes((prev) => ({
-      ...prev,
-      [item.shoppingItemId]: (prev[item.shoppingItemId] || 0) + 1,
-    }));
+  /** 오프라인 상품명으로 왼쪽 상품 목록에서 검색 (products 페이지로 이동 + keyword 쿼리) */
+  const handleSearchProduct = (productName: string) => {
+    if (!roomId) return;
+    const keyword = encodeURIComponent(productName.trim());
+    navigate(`/rooms/${roomId}/products${keyword ? `?keyword=${keyword}` : ''}`);
   };
 
   return (
@@ -147,16 +186,14 @@ const CartPanel: React.FC = () => {
               key={item.shoppingItemId}
               item={item}
               cartType={cartType}
+              productMeta={isOnline && item.productId != null ? productMetaMap[item.productId] : undefined}
               isExpanded={expandedParticipants[item.shoppingItemId] || false}
               onQuantityDecrease={() => handleUpdateQuantity(item, item.quantity - 1)}
               onQuantityIncrease={() => handleUpdateQuantity(item, item.quantity + 1)}
               onRemove={() => handleRemoveItem(item)}
-              onLike={() => handleToggleLike(item)}
-              onDislike={() => handleToggleDislike(item)}
               onToggleParticipants={() => handleToggleParticipants(item.shoppingItemId)}
               onToggleChecked={!isOnline ? () => handleToggleChecked(item) : undefined}
-              likes={itemLikes[item.shoppingItemId] || 0}
-              dislikes={itemDislikes[item.shoppingItemId] || 0}
+              onSearchClick={!isOnline ? () => handleSearchProduct(item.displayName) : undefined}
               participants={itemParticipants[item.shoppingItemId] || []}
             />
           ))

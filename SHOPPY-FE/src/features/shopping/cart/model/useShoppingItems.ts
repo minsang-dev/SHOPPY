@@ -1,22 +1,18 @@
-﻿import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   addShoppingItem,
   deleteShoppingItem,
   getShoppingList,
   updateShoppingItem,
-} from '../../../../entities/shopping/api/shopping';
-import type {
-  ShoppingItem,
-  ShoppingItemAddRequest,
-  ShoppingItemUpdateRequest,
-} from '../../../../entities/shopping/types/shopping.types';
+} from '@/entities/shopping/api/shopping';
+import type { ShoppingItem, ShoppingItemAddRequest } from '@/entities/shopping/types/shopping.types';
 
 export interface UiCartItem {
   id: number;
   name: string;
   quantity: number;
   checked: boolean;
-  purchaseType?: string | null;
+  purchaseType: 'online' | 'offline' | null;
 }
 
 interface UseShoppingItemsState {
@@ -33,10 +29,10 @@ interface UseShoppingItemsState {
 const toUiItems = (items: ShoppingItem[]): UiCartItem[] =>
   items.map((item) => ({
     id: item.shoppingItemId,
-    name: item.displayName ?? '',
+    name: item.displayName,
     quantity: item.quantity ?? 0,
     checked: Boolean(item.isChecked),
-    purchaseType: item.purchaseType ?? null,
+    purchaseType: item.purchaseType,
   }));
 
 export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
@@ -50,8 +46,8 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
     }
     try {
       setLoading(true);
-      const response = await getShoppingList(roomId);
-      setItems(toUiItems(response.items));
+      const data = await getShoppingList(roomId);
+      setItems(toUiItems(data.items));
       setError(null);
     } catch (err) {
       console.error('Failed to load shopping list:', err);
@@ -98,8 +94,7 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
         return;
       }
       try {
-        const payload: ShoppingItemUpdateRequest = { quantity };
-        await updateShoppingItem(roomId, id, payload);
+        await updateShoppingItem(roomId, id, { quantity });
         setItems((prev) =>
           prev.map((item) => (item.id === id ? { ...item, quantity } : item)),
         );
@@ -117,8 +112,7 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
         return;
       }
       try {
-        const payload: ShoppingItemUpdateRequest = { isChecked: checked };
-        await updateShoppingItem(roomId, id, payload);
+        await updateShoppingItem(roomId, id, { isChecked: checked });
         setItems((prev) =>
           prev.map((item) => (item.id === id ? { ...item, checked } : item)),
         );
