@@ -2,6 +2,7 @@
 import { useParams } from 'react-router-dom';
 import { getRoomMembers } from '@/entities/room/api/room';
 import type { RoomMember } from '@/entities/room/types/room.types';
+import { useRoomInfo } from '@/features/room/fetch-room/model/useRoomInfo';
 import ParticipantCard from './ParticipantCard/ParticipantCard';
 import ParticipantVolumeModal from '@/shared/ui/ParticipantVolumeModal';
 import './ParticipantsPanel.css';
@@ -16,6 +17,19 @@ const ParticipantsPanel: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [volumeStates, setVolumeStates] = useState<Record<number, number>>({});
   const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(null);
+  const [copySuccess, setCopySuccess] = useState<boolean>(false);
+  const { room } = useRoomInfo(roomId);
+
+  const handleCopyInviteCode = async () => {
+    if (!room?.inviteCode) return;
+    try {
+      await navigator.clipboard.writeText(room.inviteCode);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('초대코드 복사 실패:', err);
+    }
+  };
 
   useEffect(() => {
     const fetchParticipants = async () => {
@@ -71,6 +85,14 @@ const ParticipantsPanel: React.FC = () => {
           ))}
         </div>
       )}
+
+      <button
+        className="invite-code-button"
+        onClick={handleCopyInviteCode}
+        disabled={!room?.inviteCode}
+      >
+        {copySuccess ? '복사 완료!' : '초대코드 복사'}
+      </button>
 
       {selectedParticipant && (
         <ParticipantVolumeModal

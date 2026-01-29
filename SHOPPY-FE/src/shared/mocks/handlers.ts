@@ -139,30 +139,31 @@ export const handlers = [
   //   return HttpResponse.json(kakaoLoginResponse);
   // }),
   // 5-1. 방 조회: GET /api/rooms/:roomId
-  http.get(`${API_URL}/api/rooms/:roomId`, ({ params }) => {
-    const roomId = Number(params.roomId);
-    console.log('MSW: 방 조회 요청 받음 (roomId:', roomId, ')');
-    return HttpResponse.json({
-      status: 'success',
-      message: 'OK',
-      data: {
-        roomId,
-        hostId: 1,
-        roomName: '테스트 방',
-        inviteCode: 'ABCD1234',
-        roomStatus: 'OPEN',
-        targetBudget: 500000,
-        syncMode: 'FOLLOW',
-        hostCurrentUrl: null,
-        roomMeta: {
-          shoppingPurpose: '모바일 테스트',
-          interestCategories: ['디지털', '패션'],
-          headcount: 4,
-          budgetMin: 100000,
-        },
-      },
-    });
-  }),
+  // 주석 처리 - 실제 백엔드에서 inviteCode를 받아야 함
+  // http.get(`${API_URL}/api/rooms/:roomId`, ({ params }) => {
+  //   const roomId = Number(params.roomId);
+  //   console.log('MSW: 방 조회 요청 받음 (roomId:', roomId, ')');
+  //   return HttpResponse.json({
+  //     status: 'success',
+  //     message: 'OK',
+  //     data: {
+  //       roomId,
+  //       hostId: 1,
+  //       roomName: '테스트 방',
+  //       inviteCode: 'ABCD1234',
+  //       roomStatus: 'OPEN',
+  //       targetBudget: 500000,
+  //       syncMode: 'FOLLOW',
+  //       hostCurrentUrl: null,
+  //       roomMeta: {
+  //         shoppingPurpose: '모바일 테스트',
+  //         interestCategories: ['디지털', '패션'],
+  //         headcount: 4,
+  //         budgetMin: 100000,
+  //       },
+  //     },
+  //   });
+  // }),
 
   // 5-2. 방 코드 조회: GET /api/rooms/code/:roomCode
   http.get(`${API_URL}/api/rooms/code/:roomCode`, ({ params }) => {

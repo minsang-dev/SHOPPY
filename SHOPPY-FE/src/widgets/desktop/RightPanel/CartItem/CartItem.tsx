@@ -14,16 +14,13 @@ interface CartItemProps {
   onLike: () => void;
   onDislike: () => void;
   onToggleParticipants: () => void;
-  onToggleChecked?: () => void; // 오프라인 장바구니 체크박스용
-  likes?: number; // UI 전용 상태
-  dislikes?: number; // UI 전용 상태
-  participants?: string[]; // UI 전용 상태
+  onToggleChecked?: () => void; // 오프라인 장바구니 체크박스
+  likes?: number; 
+  dislikes?: number; 
+  participants?: string[]; 
 }
 
-/**
- * 개별 장바구니 아이템 컴포넌트
- * 상품 정보, 수량 조절, 삭제, 투표, 참여자 기능을 포함
- */
+
 const CartItem: React.FC<CartItemProps> = ({
   item,
   cartType,
@@ -74,11 +71,6 @@ const CartItem: React.FC<CartItemProps> = ({
               )}
             </div>
           </div>
-          {/* <p className="cart-item-price">
-            {cartType === 'offline' && item.price === 0 
-              ? '미정' 
-              : `${item.price.toLocaleString()}원`}
-          </p> */}
           
           <div className="cart-item-controls">
             {/* 수량 조절 */}
