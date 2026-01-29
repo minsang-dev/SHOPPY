@@ -26,6 +26,9 @@ public class AiRoomController {
             @AuthenticationPrincipal Long hostId,
             @Valid @RequestBody AiRoomCreateRequestDto request
     ) {
+        if (hostId == null) {
+            hostId = 1L;
+        }
         AiRoomCreateResponseDto response = aiRoomService.createRoomWithChecklist(request, hostId);
         return ResponseEntity.ok(SuccessResponse.of(response));
     }
