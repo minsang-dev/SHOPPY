@@ -1,70 +1,34 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
+import { useVoteRealtime } from '@/features/vote/model/useVoteRealtime';
 import './MobilePanels.css';
 
-export interface VoteOption {
-  optionId: number;
-  content: string;
-  votes?: number;
-}
-
-export interface VoteData {
-  voteId: number;
-  title: string;
-  status: 'OPEN' | 'CLOSED';
-  options: VoteOption[];
-}
-
-interface CreateVotePayload {
-  title: string;
-  options: string[];
-}
-
 interface MobileVotePanelProps {
-  vote?: VoteData;
-  totalParticipants?: number;
-  onCreateVote?: (payload: CreateVotePayload) => void;
-  onVote?: (optionId: number) => void;
-  onDeleteVote?: (voteId: number) => void;
+  roomId?: string;
 }
 
-const MobileVotePanel: React.FC<MobileVotePanelProps> = ({
-  vote,
-  totalParticipants,
-  onCreateVote,
-  onVote,
-  onDeleteVote,
-}) => {
+const MobileVotePanel: React.FC<MobileVotePanelProps> = ({ roomId }) => {
   const [showCreateVote, setShowCreateVote] = useState(false);
   const [showVoteModal, setShowVoteModal] = useState(false);
   const [selectedVoteId, setSelectedVoteId] = useState<number | null>(null);
   const [title, setTitle] = useState('');
   const [options, setOptions] = useState(['', '']);
-  const [localVotes, setLocalVotes] = useState<VoteData[]>([]);
-  const [selectedOptions, setSelectedOptions] = useState<Record<number, number>>({});
+  const [participateLoading, setParticipateLoading] = useState(false);
 
-  const voteList = useMemo(() => {
-    if (vote) {
-      return [vote, ...localVotes];
-    }
-    return localVotes;
-  }, [vote, localVotes]);
+  const {
+    votes,
+    voteDetail,
+    loading,
+    detailLoading,
+    error,
+    createVote,
+    participate,
+  } = useVoteRealtime({ roomId, selectedVoteId });
 
-  const selectedVote = useMemo(() => {
-    if (!selectedVoteId) return null;
-    return voteList.find((item) => item.voteId === selectedVoteId) ?? null;
-  }, [selectedVoteId, voteList]);
+  const totalVotes = voteDetail
+    ? voteDetail.options.reduce((sum, option) => sum + option.voteCount, 0)
+    : 0;
 
-  const totalVotes = useMemo(() => {
-    if (!selectedVote) {
-      return 0;
-    }
-    return selectedVote.options.reduce((sum, option) => sum + (option.votes ?? 0), 0);
-  }, [selectedVote]);
-
-  const majorityVotes = totalParticipants ? Math.ceil(totalParticipants / 2) : 0;
-  const isClosed =
-    selectedVote?.status === 'CLOSED' ||
-    (!!totalParticipants && (totalVotes >= totalParticipants || totalVotes >= majorityVotes));
+  const isClosed = voteDetail?.status === 'CLOSED';
 
   const handleAddOption = () => {
     setOptions((prev) => [...prev, '']);
@@ -75,9 +39,7 @@ const MobileVotePanel: React.FC<MobileVotePanelProps> = ({
   };
 
   const handleRemoveOption = (index: number) => {
-    if (options.length <= 2) {
-      return;
-    }
+    if (options.length <= 2) return;
     setOptions((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -96,69 +58,34 @@ const MobileVotePanel: React.FC<MobileVotePanelProps> = ({
     setSelectedVoteId(null);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const payload: CreateVotePayload = {
-      title: title.trim(),
-      options: options.map((option) => option.trim()).filter(Boolean),
-    };
+    if (!roomId) return;
 
-    onCreateVote?.(payload);
+    const trimmedTitle = title.trim();
+    const trimmedOptions = options.map((option) => option.trim()).filter(Boolean);
 
-    if (payload.title && payload.options.length >= 2) {
-      setLocalVotes((prev) => [
-        ...prev,
-        {
-          voteId: Date.now(),
-          title: payload.title,
-          status: 'OPEN',
-          options: payload.options.map((option, index) => ({
-            optionId: index + 1,
-            content: option,
-            votes: 0,
-          })),
-        },
-      ]);
+    if (!trimmedTitle || trimmedOptions.length < 2) return;
+
+    try {
+      await createVote({ title: trimmedTitle, options: trimmedOptions });
+      handleCreateClose();
+    } catch (err) {
+      console.error('투표 생성 실패:', err);
     }
-
-    handleCreateClose();
   };
 
-  const handleVote = (voteId: number, optionId: number) => {
-    if (isClosed) {
-      return;
+  const handleVote = async (optionId: number) => {
+    if (!selectedVoteId || isClosed || participateLoading) return;
+
+    setParticipateLoading(true);
+    try {
+      await participate(selectedVoteId, { optionId });
+    } catch (err) {
+      console.error('투표 실패:', err);
+    } finally {
+      setParticipateLoading(false);
     }
-    const previousOptionId = selectedOptions[voteId];
-    if (previousOptionId === optionId) {
-      return;
-    }
-
-    onVote?.(optionId);
-
-    setSelectedOptions((prev) => ({
-      ...prev,
-      [voteId]: optionId,
-    }));
-
-    setLocalVotes((prev) =>
-      prev.map((item) => {
-        if (item.voteId !== voteId) {
-          return item;
-        }
-        return {
-          ...item,
-          options: item.options.map((option) => {
-            if (option.optionId === optionId) {
-              return { ...option, votes: (option.votes ?? 0) + 1 };
-            }
-            if (previousOptionId && option.optionId === previousOptionId) {
-              return { ...option, votes: Math.max((option.votes ?? 0) - 1, 0) };
-            }
-            return option;
-          }),
-        };
-      }),
-    );
   };
 
   const handleOpenVote = (voteId: number) => {
@@ -166,65 +93,40 @@ const MobileVotePanel: React.FC<MobileVotePanelProps> = ({
     setShowVoteModal(true);
   };
 
-  const handleDeleteVote = (voteId: number) => {
-    onDeleteVote?.(voteId);
-    setLocalVotes((prev) => prev.filter((item) => item.voteId !== voteId));
-    if (selectedVoteId === voteId) {
-      handleVoteModalClose();
-    }
-  };
-
   return (
     <section className="mobile-panel">
       <div className="mobile-panel-pill">투표</div>
       <div className="mobile-panel-card">
         <div className="mobile-panel-title">진행 중인 투표</div>
-        {voteList.length === 0 ? (
+        {loading ? (
+          <div className="mobile-panel-empty">로딩 중...</div>
+        ) : error ? (
+          <div className="mobile-panel-empty">투표 목록을 불러오는데 실패했습니다.</div>
+        ) : votes.length === 0 ? (
           <div className="mobile-panel-empty">현재 진행 중인 투표가 없습니다.</div>
         ) : (
           <div className="mobile-vote-list">
-            {voteList.map((item) => {
-              const itemVotes = item.options.reduce((sum, option) => sum + (option.votes ?? 0), 0);
-              return (
-                <div key={item.voteId} className="mobile-vote-item">
-                  <button
-                    type="button"
-                    className="mobile-vote-item-body"
-                    onClick={() => handleOpenVote(item.voteId)}
-                  >
-                    <div className="mobile-vote-item-title">
-                      {item.title}
-                      <span
-                        className={`mobile-vote-status ${item.status === 'CLOSED' ? 'closed' : ''}`}
-                      >
-                        {item.status === 'CLOSED' ? '투표 종료' : '진행중'}
-                      </span>
-                    </div>
-                    <div className="mobile-vote-item-meta">
-                      선택지 {item.options.length}개 참여 {itemVotes}명
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    className="mobile-vote-item-delete"
-                    onClick={() => handleDeleteVote(item.voteId)}
-                    aria-label="투표 삭제"
-                  >
-                    <i className="ri-delete-bin-line" aria-hidden="true" />
-                  </button>
-                </div>
-              );
-            })}
+            {votes.map((item) => (
+              <div key={item.voteId} className="mobile-vote-item">
+                <button
+                  type="button"
+                  className="mobile-vote-item-body"
+                  onClick={() => handleOpenVote(item.voteId)}
+                >
+                  <div className="mobile-vote-item-title">
+                    {item.title}
+                    <span
+                      className={`mobile-vote-status ${item.status === 'CLOSED' ? 'closed' : ''}`}
+                    >
+                      {item.status === 'CLOSED' ? '투표 종료' : '진행중'}
+                    </span>
+                  </div>
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>
-      <button
-        type="button"
-        className="mobile-panel-action vote-create-button"
-        onClick={() => setShowCreateVote(true)}
-      >
-        <i className="ri-add-line" aria-hidden="true" />새 투표 만들기
-      </button>
 
       {showCreateVote && (
         <div className="mobile-vote-modal">
@@ -289,47 +191,56 @@ const MobileVotePanel: React.FC<MobileVotePanelProps> = ({
         </div>
       )}
 
-      {showVoteModal && selectedVote && (
+      {showVoteModal && selectedVoteId && (
         <div className="mobile-vote-detail-modal">
           <div className="mobile-vote-modal-backdrop" onClick={handleVoteModalClose} />
           <div className="mobile-vote-detail-card">
-            <div className="mobile-vote-modal-header">
-              <h3 className="mobile-vote-modal-title">{selectedVote.title}</h3>
-              <button type="button" className="mobile-vote-modal-close" onClick={handleVoteModalClose}>
-                <i className="ri-close-line" aria-hidden="true" />
-              </button>
-            </div>
-            <div className="mobile-vote-detail-options">
-              {selectedVote.options.map((option) => {
-                const ratio =
-                  totalVotes > 0 ? Math.round(((option.votes ?? 0) / totalVotes) * 100) : 0;
-                return (
-                  <button
-                    key={option.optionId}
-                    type="button"
-                    className="mobile-vote-option"
-                    onClick={() => handleVote(selectedVote.voteId, option.optionId)}
-                    disabled={isClosed}
-                  >
-                    <div className="mobile-vote-option-row">
-                      <span>{option.content}</span>
-                      <span className="mobile-vote-count">
-                        {option.votes ?? 0}명 ({ratio}%)
-                      </span>
-                    </div>
-                    <div className="mobile-vote-bar">
-                      <div className="mobile-vote-bar-fill" style={{ width: `${ratio}%` }} />
-                    </div>
+            {detailLoading ? (
+              <div className="mobile-panel-empty">로딩 중...</div>
+            ) : voteDetail ? (
+              <>
+                <div className="mobile-vote-modal-header">
+                  <h3 className="mobile-vote-modal-title">{voteDetail.title}</h3>
+                  <button type="button" className="mobile-vote-modal-close" onClick={handleVoteModalClose}>
+                    <i className="ri-close-line" aria-hidden="true" />
                   </button>
-                );
-              })}
-            </div>
-            <div className="mobile-vote-detail-footer">
-              총 {totalVotes}명 투표
-              <span className={`mobile-vote-status ${isClosed ? 'closed' : ''}`}>
-                {isClosed ? '투표 종료' : '진행중'}
-              </span>
-            </div>
+                </div>
+                <div className="mobile-vote-detail-options">
+                  {voteDetail.options.map((option) => {
+                    const ratio =
+                      totalVotes > 0 ? Math.round((option.voteCount / totalVotes) * 100) : 0;
+                    const isSelected = voteDetail.mySelectedOptionId === option.optionId;
+                    return (
+                      <button
+                        key={option.optionId}
+                        type="button"
+                        className={`mobile-vote-option ${isSelected ? 'selected' : ''}`}
+                        onClick={() => handleVote(option.optionId)}
+                        disabled={isClosed || participateLoading}
+                      >
+                        <div className="mobile-vote-option-row">
+                          <span>{option.content}</span>
+                          <span className="mobile-vote-count">
+                            {option.voteCount}명 ({ratio}%)
+                          </span>
+                        </div>
+                        <div className="mobile-vote-bar">
+                          <div className="mobile-vote-bar-fill" style={{ width: `${ratio}%` }} />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mobile-vote-detail-footer">
+                  총 {totalVotes}명 투표
+                  <span className={`mobile-vote-status ${isClosed ? 'closed' : ''}`}>
+                    {isClosed ? '투표 종료' : '진행중'}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="mobile-panel-empty">투표를 불러올 수 없습니다.</div>
+            )}
           </div>
         </div>
       )}
