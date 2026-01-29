@@ -4,15 +4,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ssafy.rtc.shoppy.global.response.SuccessResponse;
 import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
 import ssafy.rtc.shoppy.room.enums.MemberStatus;
 import ssafy.rtc.shoppy.room.repository.RoomMemberRepository;
-import ssafy.rtc.shoppy.settlement.dto.ReceiptUploadResponse;
-import ssafy.rtc.shoppy.settlement.dto.SettlementCreateRequest;
-import ssafy.rtc.shoppy.settlement.dto.SplitUpdateRequest;
+import ssafy.rtc.shoppy.settlement.dto.*;
 import ssafy.rtc.shoppy.settlement.entity.Purchase;
 import ssafy.rtc.shoppy.settlement.service.SettlementService;
 
@@ -29,13 +28,11 @@ public class SettlementController {
     @PostMapping(value = "/rooms/{roomId}/settlements/receipt", consumes = "multipart/form-data")
     public ResponseEntity<SuccessResponse<ReceiptUploadResponse>> uploadReceipt(
             @PathVariable Long roomId,
-            @RequestPart("file") MultipartFile file) {
-        
-        // SecurityContextHolder에서 userId 추출 필요
-        Long currentUserId = 1L; 
+            @RequestPart("file") MultipartFile file,
+            @AuthenticationPrincipal Long userId) {
 
         // 현재 방의 멤버인지 확인
-        RoomMemberEntity roomMember = roomMemberRepository.findByRoom_RoomIdAndUserIdAndStatus(roomId, currentUserId, MemberStatus.ACTIVE)
+        RoomMemberEntity roomMember = roomMemberRepository.findByRoom_RoomIdAndUserIdAndStatus(roomId, userId, MemberStatus.ACTIVE)
                 .orElseThrow(() -> new IllegalArgumentException("해당 방의 참여자가 아닙니다."));
 
         ReceiptUploadResponse response = settlementService.uploadReceipt(roomId, roomMember.getMemberId(), file);
@@ -47,19 +44,42 @@ public class SettlementController {
     @PostMapping("/rooms/{roomId}/settlements")
     public ResponseEntity<SuccessResponse<Purchase>> createSettlement(
             @PathVariable Long roomId,
-            @RequestBody SettlementCreateRequest request) {
-        
-        // TODO: 추후 Spring Security의 @AuthenticationPrincipal로 변경 필요
-        Long currentUserId = 1L; // 임시 하드코딩 (RoomController와 동일 패턴)
+            @RequestBody SettlementCreateRequest request,
+            @AuthenticationPrincipal Long userId) {
 
         Purchase purchase = settlementService.createSettlement(
                 roomId,
                 request.getPayerMemberId(),
                 request.getTotalAmount(),
                 request.getItems(),
-                currentUserId
+                userId
         );
         return ResponseEntity.ok(SuccessResponse.of(purchase));
+    }
+
+    @Operation(summary = "영수증에 품목 수동 추가")
+    @PostMapping("/receipts/{receiptId}/items")
+    public ResponseEntity<SuccessResponse<SettlementItemCreateResponse>> addSettlementItem(
+            @PathVariable Long receiptId,
+            @RequestBody SettlementItemCreateRequest request) {
+        SettlementItemCreateResponse response = settlementService.addSettlementItem(receiptId, request);
+        return ResponseEntity.ok(SuccessResponse.of(response));
+    }
+
+    @Operation(summary = "정산 품목 수정")
+    @PutMapping("/settlement-items/{itemId}")
+    public ResponseEntity<SuccessResponse<SettlementItemCreateResponse>> updateSettlementItem(
+            @PathVariable Long itemId,
+            @RequestBody SettlementItemCreateRequest request) {
+        SettlementItemCreateResponse response = settlementService.updateSettlementItem(itemId, request);
+        return ResponseEntity.ok(SuccessResponse.of(response));
+    }
+
+    @Operation(summary = "정산 품목 삭제")
+    @DeleteMapping("/settlement-items/{itemId}")
+    public ResponseEntity<SuccessResponse<Void>> deleteSettlementItem(@PathVariable Long itemId) {
+        settlementService.deleteSettlementItem(itemId);
+        return ResponseEntity.ok(SuccessResponse.ok());
     }
 
     @Operation(summary = "오프라인 영수증 등록 연결 (Stub)")
