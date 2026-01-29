@@ -9,7 +9,6 @@ interface MobileCameraStageProps {
 const MobileCameraStage: React.FC<MobileCameraStageProps> = ({ videoRef, hasVideo }) => {
   return (
     <div className="mobile-camera-stage">
-      <div className="mobile-camera-title">화면 공유 중</div>
       <div className="mobile-camera-frame">
         {hasVideo ? (
           <video ref={videoRef} className="mobile-camera-video" autoPlay playsInline muted />

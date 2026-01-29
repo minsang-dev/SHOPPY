@@ -1,5 +1,6 @@
 import axios, { type AxiosRequestConfig, type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { refreshAccessToken } from '@/entities/user/api/authApi';
+import { useAuthStore } from '@/entities/user/model/useAuthStore';
 
 export type ApiSuccessResponse<T> = {
   status: 'success';
@@ -87,6 +88,7 @@ http.interceptors.response.use(
 
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
+        useAuthStore.getState().setAccessToken(accessToken);
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         processQueue(null, accessToken);

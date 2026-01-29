@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   CreateRoomRequest,
   CreateRoomResponse,
   JoinRoomAsUserRequest,
@@ -11,7 +11,7 @@ import type {
 import { apiRequest } from '@/shared/api/http';
 import { updateMemberState as updateMemberStateApi } from '@/shared/api/rooms';
 
-// 호스트 방 생성
+// 방 생성
 export const createRoom = async (payload: CreateRoomRequest): Promise<CreateRoomResponse> => {
   return apiRequest<CreateRoomResponse>({
     method: 'POST',
@@ -39,7 +39,7 @@ export const joinRoomAsGuest = async (payload: JoinRoomAsGuestRequest): Promise<
   });
 };
 
-// 하위 호환성을 위한 joinRoom (deprecated, nickname이 있으면 게스트, 없으면 로그인 사용자로 처리)
+// 편의 joinRoom (deprecated, nickname이 있으면 게스트, 없으면 로그인 사용자)
 export const joinRoom = async (payload: { roomCode: string; nickname?: string }): Promise<JoinRoomResponse> => {
   if (payload.nickname) {
     const guestRes = await joinRoomAsGuest({ roomCode: payload.roomCode, nickname: payload.nickname });
@@ -49,8 +49,7 @@ export const joinRoom = async (payload: { roomCode: string; nickname?: string })
   }
 };
 
-
-// 호스트 방 조회
+// 방 조회
 export const getRoom = async (roomId: string): Promise<RoomResponse> => {
   return apiRequest<RoomResponse>({
     method: 'GET',
@@ -63,6 +62,14 @@ export const getRoomMembers = async (roomId: string): Promise<RoomMember[]> => {
   return apiRequest<RoomMember[]>({
     method: 'GET',
     url: `/rooms/${roomId}/members`,
+  });
+};
+
+// 방 나가기
+export const leaveRoom = async (roomId: string): Promise<void> => {
+  await apiRequest<void>({
+    method: 'DELETE',
+    url: `/rooms/${roomId}/leave`,
   });
 };
 

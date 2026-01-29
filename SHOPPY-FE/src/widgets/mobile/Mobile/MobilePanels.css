@@ -653,6 +653,9 @@
 .mobile-panel-members {
   display: grid;
   gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .mobile-panel-member-role {
@@ -666,6 +669,7 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  padding-bottom: calc(8px + var(--keyboard-offset, 0px));
 }
 
 .mobile-panel-chat-item {
@@ -684,6 +688,10 @@
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 8px;
+  position: sticky;
+  bottom: var(--keyboard-offset, 0px);
+  background: #ffffff;
+  z-index: 1;
 }
 
 .mobile-panel-chat-input {
@@ -907,6 +915,7 @@
   gap: 12px;
   align-items: center;
   padding: 10px 12px;
+  min-height: 72px;
   border-radius: 14px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
