@@ -67,8 +67,12 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
     await removeItem(id);
   };
 
+  const visibleItems = items.filter(
+    (item) => !item.purchaseType || item.purchaseType === 'offline',
+  );
+
   const handleEndShopping = () => {
-    const hasUnchecked = items.some((item) => !item.checked);
+    const hasUnchecked = visibleItems.some((item) => !item.checked);
     if (hasUnchecked) {
       setShowConfirm(true);
       return;
@@ -120,10 +124,10 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
             <div className="mobile-panel-empty">로딩 중...</div>
           ) : error ? (
             <div className="mobile-panel-empty">{error}</div>
-          ) : items.length === 0 ? (
+          ) : visibleItems.length === 0 ? (
             <div className="mobile-panel-empty">등록된 상품이 없습니다.</div>
           ) : (
-            items.map((item) => (
+            visibleItems.map((item) => (
               <div key={item.id} className={`mobile-cart-item ${item.checked ? 'checked' : ''}`}>
                 <button
                   type="button"

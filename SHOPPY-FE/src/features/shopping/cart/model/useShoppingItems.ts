@@ -2,16 +2,21 @@
 import {
   addShoppingItem,
   deleteShoppingItem,
-  getShoppingItems,
+  getShoppingList,
   updateShoppingItem,
-} from '../../../../shared/api/cart';
-import type { ShoppingItem } from '../../../../shared/api/types';
+} from '../../../../entities/shopping/api/shopping';
+import type {
+  ShoppingItem,
+  ShoppingItemAddRequest,
+  ShoppingItemUpdateRequest,
+} from '../../../../entities/shopping/types/shopping.types';
 
 export interface UiCartItem {
   id: number;
   name: string;
   quantity: number;
   checked: boolean;
+  purchaseType?: string | null;
 }
 
 interface UseShoppingItemsState {
@@ -28,9 +33,10 @@ interface UseShoppingItemsState {
 const toUiItems = (items: ShoppingItem[]): UiCartItem[] =>
   items.map((item) => ({
     id: item.shoppingItemId,
-    name: item.name,
+    name: item.displayName ?? '',
     quantity: item.quantity ?? 0,
-    checked: Boolean(item.checked),
+    checked: Boolean(item.isChecked),
+    purchaseType: item.purchaseType ?? null,
   }));
 
 export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
@@ -44,8 +50,8 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
     }
     try {
       setLoading(true);
-      const data = await getShoppingItems(roomId);
-      setItems(toUiItems(data.items));
+      const response = await getShoppingList(roomId);
+      setItems(toUiItems(response.items));
       setError(null);
     } catch (err) {
       console.error('Failed to load shopping list:', err);
@@ -66,14 +72,15 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
       }
       try {
         setLoading(true);
-        await addShoppingItem(roomId, {
+        const payload: ShoppingItemAddRequest = {
           userId: 1,
           productId: null,
           displayName: name,
           quantity,
           purchaseType: false,
           expectedUnitPrice: null,
-        });
+        };
+        await addShoppingItem(roomId, payload);
         await reload();
       } catch (err) {
         console.error('Failed to add shopping item:', err);
@@ -91,8 +98,8 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
         return;
       }
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await updateShoppingItem(roomId, id, { quantity } as any);
+        const payload: ShoppingItemUpdateRequest = { quantity };
+        await updateShoppingItem(roomId, id, payload);
         setItems((prev) =>
           prev.map((item) => (item.id === id ? { ...item, quantity } : item)),
         );
@@ -110,7 +117,8 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
         return;
       }
       try {
-        await updateShoppingItem(roomId, id, { checked });
+        const payload: ShoppingItemUpdateRequest = { isChecked: checked };
+        await updateShoppingItem(roomId, id, payload);
         setItems((prev) =>
           prev.map((item) => (item.id === id ? { ...item, checked } : item)),
         );
