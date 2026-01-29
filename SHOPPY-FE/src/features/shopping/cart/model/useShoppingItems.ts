@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import {
   addShoppingItem,
   deleteShoppingItem,
@@ -6,6 +6,16 @@ import {
   updateShoppingItem,
 } from '@/entities/shopping/api/shopping';
 import type { ShoppingItem, ShoppingItemAddRequest } from '@/entities/shopping/types/shopping.types';
+import {
+  createRealtimeClient,
+  connectRealtimeClient,
+  disconnectRealtimeClient,
+  subscribeTopic,
+  topicShoppingAdded,
+  topicShoppingUpdated,
+  topicShoppingDeleted,
+} from '@/shared/lib/realtime';
+import { realtimeConfig } from '@/shared/config/realtime';
 
 export interface UiCartItem {
   id: number;
@@ -35,6 +45,27 @@ const toUiItems = (items: ShoppingItem[]): UiCartItem[] =>
     purchaseType: item.purchaseType,
   }));
 
+// 백엔드 웹소켓 응답 타입 (snake_case)
+interface ShoppingItemRaw {
+  shopping_item_id: number;
+  room_id: number;
+  added_by_user_id: number | null;
+  product_id: number | null;
+  display_name: string;
+  quantity: number;
+  is_checked: boolean;
+  purchase_type: 'online' | 'offline' | null;
+}
+
+// snake_case → UiCartItem 변환
+const rawToUiItem = (raw: ShoppingItemRaw): UiCartItem => ({
+  id: raw.shopping_item_id,
+  name: raw.display_name,
+  quantity: raw.quantity ?? 0,
+  checked: Boolean(raw.is_checked),
+  purchaseType: raw.purchase_type,
+});
+
 export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
   const [items, setItems] = useState<UiCartItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -60,6 +91,93 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  // 웹소켓 연결 및 구독
+  const realtimeClientRef = useRef<ReturnType<typeof createRealtimeClient> | null>(null);
+
+  useEffect(() => {
+    // 웹소켓 설정이 비활성화되어 있거나 roomId가 없으면 스킵
+    if (!roomId || !realtimeConfig.enabled || !realtimeConfig.websocketUrl) {
+      return;
+    }
+
+    const token =
+      localStorage.getItem('accessToken') ??
+      localStorage.getItem('access_token') ??
+      undefined;
+    if (!token) {
+      return;
+    }
+
+    const client = createRealtimeClient({ token });
+    realtimeClientRef.current = client;
+    let cancelled = false;
+    const subscriptions: Array<{ unsubscribe: () => void }> = [];
+
+    connectRealtimeClient(client)
+      .then(() => {
+        if (cancelled) return;
+
+        // 1) 아이템 추가 이벤트 구독
+        subscriptions.push(
+          subscribeTopic(client, topicShoppingAdded(roomId), (body) => {
+            try {
+              const raw = JSON.parse(body) as ShoppingItemRaw;
+              const newItem = rawToUiItem(raw);
+              setItems((prev) => {
+                // 중복 방지
+                if (prev.some((i) => i.id === newItem.id)) {
+                  return prev;
+                }
+                return [...prev, newItem];
+              });
+            } catch (err) {
+              console.error('장바구니 추가 이벤트 파싱 실패:', err);
+            }
+          })
+        );
+
+        // 2) 아이템 수정 이벤트 구독
+        subscriptions.push(
+          subscribeTopic(client, topicShoppingUpdated(roomId), (body) => {
+            try {
+              const raw = JSON.parse(body) as ShoppingItemRaw;
+              const updated = rawToUiItem(raw);
+              setItems((prev) =>
+                prev.map((item) => (item.id === updated.id ? updated : item))
+              );
+            } catch (err) {
+              console.error('장바구니 수정 이벤트 파싱 실패:', err);
+            }
+          })
+        );
+
+        // 3) 아이템 삭제 이벤트 구독
+        subscriptions.push(
+          subscribeTopic(client, topicShoppingDeleted(roomId), (body) => {
+            try {
+              const { shopping_item_id } = JSON.parse(body) as { shopping_item_id: number };
+              setItems((prev) => prev.filter((item) => item.id !== shopping_item_id));
+            } catch (err) {
+              console.error('장바구니 삭제 이벤트 파싱 실패:', err);
+            }
+          })
+        );
+      })
+      .catch((err) => {
+        console.error('장바구니 WebSocket 연결 실패:', err);
+      });
+
+    // cleanup: 컴포넌트 언마운트 시 구독 해제 및 연결 종료
+    return () => {
+      cancelled = true;
+      subscriptions.forEach((sub) => sub.unsubscribe());
+      void disconnectRealtimeClient(client);
+      if (realtimeClientRef.current === client) {
+        realtimeClientRef.current = null;
+      }
+    };
+  }, [roomId]);
 
   const addItem = useCallback(
     async (name: string, quantity: number) => {
