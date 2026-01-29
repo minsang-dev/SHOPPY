@@ -26,12 +26,11 @@ interface UseShoppingItemsState {
 }
 
 const toUiItems = (items: ShoppingItem[]): UiCartItem[] =>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (items as any[]).map((item) => ({
-    id: item.shoppingItemId ?? item.shopping_item_id,
-    name: item.name ?? item.display_name ?? '',
+  items.map((item) => ({
+    id: item.shoppingItemId,
+    name: item.name,
     quantity: item.quantity ?? 0,
-    checked: Boolean(item.checked ?? item.is_checked),
+    checked: Boolean(item.checked),
   }));
 
 export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {

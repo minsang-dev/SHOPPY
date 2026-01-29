@@ -41,12 +41,12 @@ const CartPanel: React.FC = () => {
     loadItems();
   }, [loadItems]);
 
-  // purchase_type에 따라 필터링
+  // purchaseType에 따라 필터링
   const currentCartItems = shoppingItems.filter((item) => {
     if (cartType === 'online') {
-      return item.purchase_type === 'online';
+      return item.purchaseType === 'online';
     } else {
-      return item.purchase_type === 'offline';
+      return item.purchaseType === 'offline';
     }
   });
 
@@ -93,33 +93,33 @@ const CartPanel: React.FC = () => {
 
   const handleUpdateQuantity = async (item: ShoppingItem, newQuantity: number) => {
     if (newQuantity < 1 || !roomId) return;
-    await updateShoppingItem(roomId, item.shopping_item_id, { quantity: newQuantity });
+    await updateShoppingItem(roomId, item.shoppingItemId, { quantity: newQuantity });
     await loadItems();
   };
 
   const handleToggleChecked = async (item: ShoppingItem) => {
     if (!roomId) return;
-    await updateShoppingItem(roomId, item.shopping_item_id, { isChecked: !item.is_checked });
+    await updateShoppingItem(roomId, item.shoppingItemId, { isChecked: !item.isChecked });
     await loadItems();
   };
 
   const handleRemoveItem = async (item: ShoppingItem) => {
     if (!roomId) return;
-    await deleteShoppingItem(roomId, item.shopping_item_id);
+    await deleteShoppingItem(roomId, item.shoppingItemId);
     await loadItems();
   };
 
   const handleToggleLike = (item: ShoppingItem) => {
     setItemLikes((prev) => ({
       ...prev,
-      [item.shopping_item_id]: (prev[item.shopping_item_id] || 0) + 1,
+      [item.shoppingItemId]: (prev[item.shoppingItemId] || 0) + 1,
     }));
   };
 
   const handleToggleDislike = (item: ShoppingItem) => {
     setItemDislikes((prev) => ({
       ...prev,
-      [item.shopping_item_id]: (prev[item.shopping_item_id] || 0) + 1,
+      [item.shoppingItemId]: (prev[item.shoppingItemId] || 0) + 1,
     }));
   };
 
@@ -144,20 +144,20 @@ const CartPanel: React.FC = () => {
         ) : (
           currentCartItems.map((item) => (
             <CartItem
-              key={item.shopping_item_id}
+              key={item.shoppingItemId}
               item={item}
               cartType={cartType}
-              isExpanded={expandedParticipants[item.shopping_item_id] || false}
+              isExpanded={expandedParticipants[item.shoppingItemId] || false}
               onQuantityDecrease={() => handleUpdateQuantity(item, item.quantity - 1)}
               onQuantityIncrease={() => handleUpdateQuantity(item, item.quantity + 1)}
               onRemove={() => handleRemoveItem(item)}
               onLike={() => handleToggleLike(item)}
               onDislike={() => handleToggleDislike(item)}
-              onToggleParticipants={() => handleToggleParticipants(item.shopping_item_id)}
+              onToggleParticipants={() => handleToggleParticipants(item.shoppingItemId)}
               onToggleChecked={!isOnline ? () => handleToggleChecked(item) : undefined}
-              likes={itemLikes[item.shopping_item_id] || 0}
-              dislikes={itemDislikes[item.shopping_item_id] || 0}
-              participants={itemParticipants[item.shopping_item_id] || []}
+              likes={itemLikes[item.shoppingItemId] || 0}
+              dislikes={itemDislikes[item.shoppingItemId] || 0}
+              participants={itemParticipants[item.shoppingItemId] || []}
             />
           ))
         )}
