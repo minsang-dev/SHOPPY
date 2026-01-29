@@ -27,7 +27,7 @@ import ssafy.rtc.shoppy.webrtc.quality.WebRtcQualityService;
 import ssafy.rtc.shoppy.webrtc.service.WebRtcSessionService;
 
 @RestController
-@RequestMapping("/api/rooms/{roomId}/webrtc")
+@RequestMapping("/rooms/{roomId}/webrtc")
 @RequiredArgsConstructor
 @Validated
 public class WebRtcController {

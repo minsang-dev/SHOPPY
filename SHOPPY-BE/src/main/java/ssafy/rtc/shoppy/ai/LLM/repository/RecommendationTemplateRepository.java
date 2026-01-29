@@ -13,7 +13,7 @@ public interface RecommendationTemplateRepository extends JpaRepository<Recommen
             select t from RecommendationTemplateEntity t
             where t.isActive = true
               and (t.purposeCode is null or t.purposeCode = :purpose)
-              and t.categoryCode in :categories
+              and t.newCategoryCode in :categories
             order by t.priority asc
             """)
     List<RecommendationTemplateEntity> findActiveCandidates(
