@@ -87,30 +87,6 @@ public class RoomConstraintsEntity {
         return roomId;
     }
 
-    public String getPurposeCode() {
-        return purposeCode;
-    }
-
-    public int getPeopleCount() {
-        return peopleCount;
-    }
-
-    public BigDecimal getMinBudget() {
-        return minBudget;
-    }
-
-    public BigDecimal getTargetBudget() {
-        return targetBudget;
-    }
-
-    public List<String> getInterestCategoryCodes() {
-        return interestCategoryCodes;
-    }
-
-    public List<String> getTraitCodes() {
-        return traitCodes;
-    }
-
     @PrePersist
     public void onCreate() {
         LocalDateTime now = LocalDateTime.now();

@@ -87,35 +87,4 @@ public class RecommendationTemplateEntity {
         return purposeCode;
     }
 
-    public String getCategoryCode() {
-        return categoryCode;
-    }
-
-    public String getNewCategoryCode() {
-        return newCategoryCode;
-    }
-
-    public String getItemName() {
-        return itemName;
-    }
-
-    public List<String> getTraitExcludes() {
-        return traitExcludes;
-    }
-
-    public List<String> getBanTraits() {
-        return banTraits;
-    }
-
-    public List<String> getTemplateTags() {
-        return templateTags;
-    }
-
-    public int getPriority() {
-        return priority;
-    }
-
-    public boolean isActive() {
-        return isActive;
-    }
 }
