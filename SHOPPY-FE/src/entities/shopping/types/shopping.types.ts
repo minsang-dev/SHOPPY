@@ -6,7 +6,7 @@ export interface ShoppingItem {
   displayName: string;
   quantity: number;
   isChecked: boolean;
-  purchaseType: string | null;
+  purchaseType: 'online' | 'offline' | null;
 }
 
 export interface ShoppingListResponse {
@@ -18,7 +18,7 @@ export interface ShoppingItemAddRequest {
   productId: number | null;
   displayName: string;
   quantity: number;
-  purchaseType: boolean | null;
+  purchaseType: boolean; // true=온라인(1), false=오프라인(0)
   expectedUnitPrice?: string | null;
 }
 

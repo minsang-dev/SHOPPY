@@ -1,34 +1,43 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getChatMessages, sendChatMessage } from '@/entities/chat/api/chatApi';
 import type { ChatMessage } from '@/entities/chat/types/chat.types';
 import { getRoomMembers } from '@/entities/room/api/room';
 import type { RoomMember } from '@/entities/room/types/room.types';
 import { useAuthStore } from '@/entities/user/model/useAuthStore';
+import { realtimeConfig } from '@/shared/config/realtime';
+import {
+  appRoomsChat,
+  createRealtimeClient,
+  connectRealtimeClient,
+  disconnectRealtimeClient,
+  publishMessage,
+  subscribeTopic,
+  topicRoomsChat,
+  topicRoomsChatDeleted,
+  topicRoomsChatEdited,
+} from '@/shared/lib/realtime';
 import ChatMessageRow from './ChatMessageRow';
 import './ChatPanel.css';
 
-/**
- * 채팅 패널 컴포넌트
- */
 const ChatPanel: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [participants, setParticipants] = useState<RoomMember[]>([]);
   const [inputContent, setInputContent] = useState('');
   const [loading, setLoading] = useState(false);
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const realtimeClientRef = useRef<ReturnType<typeof createRealtimeClient> | null>(null);
   const { user } = useAuthStore();
 
-  // 현재 사용자의 memberId 찾기
   const currentMemberId = useMemo(() => {
     if (!user?.id) return null;
     const currentParticipant = participants.find((p) => p.userId === user.id);
-    return currentParticipant?.memberId || null;
+    return currentParticipant?.memberId ?? null;
   }, [participants, user]);
 
-  // 참여자 목록 조회
   const loadParticipants = useCallback(async () => {
     if (!roomId) return;
     try {
@@ -39,7 +48,6 @@ const ChatPanel: React.FC = () => {
     }
   }, [roomId]);
 
-  // 채팅 메시지 조회
   const loadMessages = useCallback(async () => {
     if (!roomId) return;
     try {
@@ -58,22 +66,124 @@ const ChatPanel: React.FC = () => {
     loadMessages();
   }, [loadParticipants, loadMessages]);
 
-  // 메시지 전송
+  const upsertMessage = useCallback((incoming: ChatMessage) => {
+    setMessages((prev) => {
+      const exists = prev.find((msg) => msg.chatId === incoming.chatId);
+      if (exists) {
+        return prev.map((msg) => (msg.chatId === incoming.chatId ? incoming : msg));
+      }
+      return [...prev, incoming];
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!roomId || !realtimeConfig.enabled || !realtimeConfig.websocketUrl) {
+      return;
+    }
+    const token =
+      localStorage.getItem('accessToken') ??
+      localStorage.getItem('access_token') ??
+      undefined;
+    if (!token) {
+      return;
+    }
+
+    const client = createRealtimeClient({ token });
+    realtimeClientRef.current = client;
+    let cancelled = false;
+    const subscriptions: Array<{ unsubscribe: () => void }> = [];
+
+    connectRealtimeClient(client)
+      .then(() => {
+        if (cancelled) {
+          return;
+        }
+        setRealtimeConnected(true);
+        subscriptions.push(
+          subscribeTopic(client, topicRoomsChat(roomId), (body) => {
+            try {
+              const payload = JSON.parse(body) as ChatMessage;
+              if (payload?.chatId) {
+                upsertMessage(payload);
+              }
+            } catch (err) {
+              console.error('채팅 메시지 파싱 실패:', err);
+            }
+          }),
+        );
+        subscriptions.push(
+          subscribeTopic(client, topicRoomsChatEdited(roomId), (body) => {
+            try {
+              const payload = JSON.parse(body) as {
+                chatId: number;
+                content: string;
+                isEdited: boolean;
+                editedAt: string | null;
+              };
+              if (payload?.chatId) {
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.chatId === payload.chatId
+                      ? {
+                          ...msg,
+                          content: payload.content ?? msg.content,
+                          isEdited: payload.isEdited ?? true,
+                          editedAt: payload.editedAt ?? msg.editedAt,
+                        }
+                      : msg,
+                  ),
+                );
+              }
+            } catch (err) {
+              console.error('채팅 수정 이벤트 파싱 실패:', err);
+            }
+          }),
+        );
+        subscriptions.push(
+          subscribeTopic(client, topicRoomsChatDeleted(roomId), (body) => {
+            try {
+              const payload = JSON.parse(body) as { chatId: number };
+              if (payload?.chatId) {
+                setMessages((prev) => prev.filter((msg) => msg.chatId !== payload.chatId));
+              }
+            } catch (err) {
+              console.error('채팅 삭제 이벤트 파싱 실패:', err);
+            }
+          }),
+        );
+      })
+      .catch((err) => {
+        console.error('채팅 WS 연결 실패:', err);
+      });
+
+    return () => {
+      cancelled = true;
+      subscriptions.forEach((sub) => sub.unsubscribe());
+      setRealtimeConnected(false);
+      void disconnectRealtimeClient(client);
+      if (realtimeClientRef.current === client) {
+        realtimeClientRef.current = null;
+      }
+    };
+  }, [roomId, upsertMessage]);
+
   const handleSendMessage = async () => {
     if (!roomId || !inputContent.trim()) return;
+    const content = inputContent.trim();
 
     try {
-      const newMessage = await sendChatMessage(Number(roomId), {
-        content: inputContent.trim(),
-      });
-      setMessages((prev) => [...prev, newMessage]);
+      if (realtimeConnected && realtimeClientRef.current) {
+        publishMessage(realtimeClientRef.current, appRoomsChat(roomId), { content });
+      } else {
+        const newMessage = await sendChatMessage(Number(roomId), { content });
+        upsertMessage(newMessage);
+      }
       setInputContent('');
     } catch (error) {
       console.error('메시지 전송 실패:', error);
     }
   };
 
-  // Enter 키 처리 (Shift+Enter는 줄바꿈)
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -81,15 +191,13 @@ const ChatPanel: React.FC = () => {
     }
   };
 
-  // textarea 높이 자동 조절
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputContent(e.target.value);
     const textarea = e.target;
     textarea.style.height = 'auto';
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 96)}px`; // max-height: 6rem (96px)
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 96)}px`;
   };
 
-  // 스크롤을 맨 아래로
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -98,12 +206,10 @@ const ChatPanel: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  // 참여자 정보 가져오기
   const getParticipant = (senderMemberId: number): RoomMember | undefined => {
     return participants.find((p) => p.memberId === senderMemberId);
   };
 
-  // 날짜 포맷팅 (2026년 1월 28일 수요일)
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     const year = date.getFullYear();
@@ -114,15 +220,13 @@ const ChatPanel: React.FC = () => {
     return `${year}년 ${month}월 ${day}일 ${weekday}`;
   };
 
-  // 시간 포맷팅 (16시 45분)
   const formatTime = (dateString: string): string => {
     const date = new Date(dateString);
     const hours = date.getHours();
-    const minutes = date.getMinutes();
+    const minutes = date.getMinutes().toString().padStart(2, '0');
     return `${hours}시 ${minutes}분`;
   };
 
-  // 동일 시/분인지 확인하는 함수
   const isSameMinute = (dateString1: string, dateString2: string): boolean => {
     const date1 = new Date(dateString1);
     const date2 = new Date(dateString2);
@@ -135,32 +239,28 @@ const ChatPanel: React.FC = () => {
     );
   };
 
-  // 아바타 그라데이션 생성 
   const getAvatarGradient = (name: string): string => {
     const gradients = [
-      'linear-gradient(135deg, #a855f7, #3b82f6)', // 밝은 보라 → 파랑
-      'linear-gradient(135deg, #6366f1, #8b5cf6)', // 인디고 → 밝은 보라
-      'linear-gradient(135deg, #3b82f6, #a855f7)', // 파랑 → 밝은 보라
-      'linear-gradient(135deg, #7c3aed, #2563eb)', // 진한 보라 → 진한 파랑
-      'linear-gradient(135deg, #9333ea, #60a5fa)', // 보라 → 밝은 파랑
-      'linear-gradient(135deg, #4f46e5, #a855f7)', // 진한 인디고 → 밝은 보라
-      'linear-gradient(135deg, #2563eb, #8b5cf6)', // 진한 파랑 → 보라
-      'linear-gradient(135deg, #a855f7, #60a5fa)', // 밝은 보라 → 밝은 파랑
+      'linear-gradient(135deg, #a855f7, #3b82f6)',
+      'linear-gradient(135deg, #6366f1, #8b5cf6)',
+      'linear-gradient(135deg, #3b82f6, #a855f7)',
+      'linear-gradient(135deg, #7c3aed, #2563eb)',
+      'linear-gradient(135deg, #9333ea, #60a5fa)',
+      'linear-gradient(135deg, #4f46e5, #a855f7)',
+      'linear-gradient(135deg, #2563eb, #8b5cf6)',
+      'linear-gradient(135deg, #a855f7, #60a5fa)',
     ];
     const index = name.charCodeAt(0) % gradients.length;
     return gradients[index];
   };
 
-  // 이름의 첫 글자 추출
   const getInitial = (name: string): string => {
     return name.charAt(0);
   };
 
-  // 오늘 날짜 표시
   const today = new Date();
   const todayString = formatDate(today.toISOString());
 
-  // 같은 시/분, 같은 발신자의 메시지를 하나의 그룹으로 묶기
   const messageGroups = useMemo(() => {
     const groups: {
       id: string;
@@ -169,14 +269,12 @@ const ChatPanel: React.FC = () => {
       messages: ChatMessage[];
     }[] = [];
 
-    let currentGroup:
-      | {
-          id: string;
-          senderMemberId: number;
-          createdAt: string;
-          messages: ChatMessage[];
-        }
-      | null = null;
+    let currentGroup: {
+      id: string;
+      senderMemberId: number;
+      createdAt: string;
+      messages: ChatMessage[];
+    } | null = null;
 
     messages.forEach((message) => {
       if (message.isDeleted) return;
@@ -211,24 +309,20 @@ const ChatPanel: React.FC = () => {
     return groups;
   }, [messages]);
 
-  // 단일 메시지 업데이트 시 상태 반영
   const handleMessageUpdated = (updated: ChatMessage) => {
     setMessages((prev) =>
       prev.map((msg) => (msg.chatId === updated.chatId ? updated : msg)),
     );
   };
 
-  // 메시지 삭제 시 상태에서 제거
   const handleMessageDeleted = (chatId: number) => {
     setMessages((prev) => prev.filter((msg) => msg.chatId !== chatId));
   };
 
   return (
     <div className="panel-content chat-panel">
-      {/* 날짜 헤더 */}
       <div className="chat-date-header">{todayString}</div>
 
-      {/* 채팅 메시지 리스트 */}
       <div className="chat-messages-container" ref={messagesContainerRef}>
         {loading ? (
           <div className="chat-loading">로딩 중...</div>
@@ -238,7 +332,8 @@ const ChatPanel: React.FC = () => {
           messageGroups.map((group) => {
             const participant = getParticipant(group.senderMemberId);
             const senderName = participant?.nickname || `사용자 ${group.senderMemberId}`;
-            const isCurrentUser = currentMemberId !== null && group.senderMemberId === currentMemberId;
+            const isCurrentUser =
+              currentMemberId !== null && group.senderMemberId === currentMemberId;
 
             return (
               <div key={group.id} className="chat-message-group">
@@ -252,7 +347,7 @@ const ChatPanel: React.FC = () => {
                   <div className="chat-message-header">
                     <span className="chat-sender-name">
                       {senderName}
-                      {isCurrentUser && '(나)'}
+                      {isCurrentUser && ' (나)'}
                     </span>
                     <span className="chat-timestamp">{formatTime(group.createdAt)}</span>
                   </div>
@@ -272,14 +367,13 @@ const ChatPanel: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 메시지 입력 영역 */}
       <div className="chat-input-container">
         <textarea
           className="chat-input"
           value={inputContent}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          placeholder="메시지를 입력하세요..."
+          placeholder="메시지를 입력하세요.."
           rows={1}
         />
         <button

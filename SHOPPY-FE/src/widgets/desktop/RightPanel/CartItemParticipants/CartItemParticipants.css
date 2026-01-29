@@ -1,9 +1,10 @@
-/* 참여자 래퍼 */
+/* 참여자 래퍼 (우측 정렬) */
 .participants-wrapper {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  margin-left: auto;
 }
 
 /* 장바구니 아이템 참여자 스타일 */

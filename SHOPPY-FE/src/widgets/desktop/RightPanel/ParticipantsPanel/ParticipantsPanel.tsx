@@ -1,10 +1,17 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getRoomMembers } from '@/entities/room/api/room';
-import type { RoomMember } from '@/entities/room/types/room.types';
 import { useRoomInfo } from '@/features/room/fetch-room/model/useRoomInfo';
+import { useRoomMembers } from '@/features/room/fetch-members/model/useRoomMembers';
 import ParticipantCard from './ParticipantCard/ParticipantCard';
 import ParticipantVolumeModal from '@/shared/ui/ParticipantVolumeModal';
+import { realtimeConfig } from '@/shared/config/realtime';
+import {
+  createRealtimeClient,
+  connectRealtimeClient,
+  disconnectRealtimeClient,
+  subscribeTopic,
+  topicRoomsMembers,
+} from '@/shared/lib/realtime';
 import './ParticipantsPanel.css';
 
 /**
@@ -12,9 +19,7 @@ import './ParticipantsPanel.css';
  */
 const ParticipantsPanel: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
-  const [participants, setParticipants] = useState<RoomMember[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const { members, loading, error, applyEvent } = useRoomMembers(roomId);
   const [volumeStates, setVolumeStates] = useState<Record<number, number>>({});
   const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(null);
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
@@ -32,27 +37,63 @@ const ParticipantsPanel: React.FC = () => {
   };
 
   useEffect(() => {
-    const fetchParticipants = async () => {
-      if (!roomId) return;
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await getRoomMembers(roomId);
-        setParticipants(data);
-      } catch (err) {
-        console.error('참여자 목록 조회 실패:', err);
-        setError('참여자 목록을 불러오는 데 실패했습니다.');
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!roomId || !realtimeConfig.enabled || !realtimeConfig.websocketUrl) {
+      return;
+    }
+    const token =
+      localStorage.getItem('accessToken') ??
+      localStorage.getItem('access_token') ??
+      undefined;
+    if (!token) {
+      return;
+    }
 
-    fetchParticipants();
-  }, [roomId]);
+    const client = createRealtimeClient({ token });
+    let subscription: { unsubscribe: () => void } | null = null;
+    let cancelled = false;
+
+    connectRealtimeClient(client)
+      .then(() => {
+        if (cancelled) {
+          return;
+        }
+        subscription = subscribeTopic(client, topicRoomsMembers(roomId), (body) => {
+          try {
+            const payload = JSON.parse(body) as {
+              type: 'JOINED' | 'LEFT' | 'STATE_UPDATED';
+              member: {
+                memberId: number;
+                roomId: number;
+                userId: number | null;
+                nickname: string;
+                role: string;
+                status: string;
+                isCameraOn: boolean;
+                joinedAt: string;
+              };
+            };
+            if (payload?.member && payload?.type) {
+              applyEvent({ type: payload.type, member: payload.member });
+            }
+          } catch (err) {
+            console.error('Failed to parse member event:', err);
+          }
+        });
+      })
+      .catch((err) => {
+        console.error('Realtime connection failed:', err);
+      });
+
+    return () => {
+      cancelled = true;
+      subscription?.unsubscribe();
+      void disconnectRealtimeClient(client);
+    };
+  }, [applyEvent, roomId]);
 
   const selectedParticipant = useMemo(
-    () => participants.find((p) => p.memberId === selectedParticipantId) ?? null,
-    [participants, selectedParticipantId],
+    () => members.find((p) => p.memberId === selectedParticipantId) ?? null,
+    [members, selectedParticipantId],
   );
 
   const selectedVolume = selectedParticipant
@@ -70,13 +111,13 @@ const ParticipantsPanel: React.FC = () => {
         <div className="participants-error">
           <p>{error}</p>
         </div>
-      ) : participants.length === 0 ? (
+      ) : members.length === 0 ? (
         <div className="participants-empty">
           <p>참여자가 없습니다.</p>
         </div>
       ) : (
         <div className="participants-list">
-          {participants.map((participant) => (
+          {members.map((participant) => (
             <ParticipantCard
               key={participant.memberId}
               participant={participant}

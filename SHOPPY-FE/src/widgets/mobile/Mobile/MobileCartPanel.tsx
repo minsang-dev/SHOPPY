@@ -8,19 +8,17 @@ interface MobileCartPanelProps {
 }
 
 const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping }) => {
-  const { items, loading, error, addItem, updateQuantity, toggleChecked, removeItem } =
+  const { items, loading, error, addItem, toggleChecked, removeItem } =
     useShoppingItems(roomId);
   const [showManualInput, setShowManualInput] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [manualName, setManualName] = useState('');
-  const [manualQty, setManualQty] = useState(1);
   const [manualError, setManualError] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleCloseManual = () => {
     setShowManualInput(false);
     setManualName('');
-    setManualQty(1);
     setManualError('');
   };
 
@@ -38,21 +36,8 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
       return;
     }
     setManualError('');
-    await addItem(trimmedName, manualQty);
+    await addItem(trimmedName, 1);
     handleCloseManual();
-  };
-
-  const adjustQty = (delta: number) => {
-    setManualQty((prev) => Math.max(1, prev + delta));
-  };
-
-  const handleUpdateQty = async (id: number, delta: number) => {
-    const current = items.find((item) => item.id === id);
-    if (!current) {
-      return;
-    }
-    const nextQty = Math.max(1, current.quantity + delta);
-    await updateQuantity(id, nextQty);
   };
 
   const handleToggleChecked = async (id: number) => {
@@ -67,8 +52,11 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
     await removeItem(id);
   };
 
+  // 오프라인 아이템만 표시 (null 또는 'offline')
+  const visibleItems = items.filter((item) => item.purchaseType !== 'online');
+
   const handleEndShopping = () => {
-    const hasUnchecked = items.some((item) => !item.checked);
+    const hasUnchecked = visibleItems.some((item) => !item.checked);
     if (hasUnchecked) {
       setShowConfirm(true);
       return;
@@ -120,37 +108,18 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
             <div className="mobile-panel-empty">로딩 중...</div>
           ) : error ? (
             <div className="mobile-panel-empty">{error}</div>
-          ) : items.length === 0 ? (
+          ) : visibleItems.length === 0 ? (
             <div className="mobile-panel-empty">등록된 상품이 없습니다.</div>
           ) : (
-            items.map((item) => (
+            visibleItems.map((item) => (
               <div key={item.id} className={`mobile-cart-item ${item.checked ? 'checked' : ''}`}>
-                <button
-                  type="button"
-                  className="mobile-cart-item-button"
-                  onClick={() => void handleToggleChecked(item.id)}
-                >
-                  <span className="mobile-cart-item-name">{item.name}</span>
-                </button>
-                <div className="mobile-cart-qty">
-                  <button
-                    type="button"
-                    className="mobile-cart-qty-btn"
-                    onClick={() => void handleUpdateQty(item.id, -1)}
-                    aria-label="수량 감소"
-                  >
-                    <i className="ri-subtract-line" aria-hidden="true" />
-                  </button>
-                  <span className="mobile-cart-qty-value">{item.quantity}</span>
-                  <button
-                    type="button"
-                    className="mobile-cart-qty-btn"
-                    onClick={() => void handleUpdateQty(item.id, 1)}
-                    aria-label="수량 증가"
-                  >
-                    <i className="ri-add-line" aria-hidden="true" />
-                  </button>
-                </div>
+                <input
+                  type="checkbox"
+                  className="mobile-cart-checkbox"
+                  checked={item.checked}
+                  onChange={() => void handleToggleChecked(item.id)}
+                />
+                <span className="mobile-cart-item-name">{item.name}</span>
                 <button
                   type="button"
                   className="mobile-cart-delete"
@@ -197,22 +166,6 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
                 }}
               />
               {manualError && <div className="mobile-manual-error">{manualError}</div>}
-              <div className="mobile-manual-label">수량</div>
-              <div className="mobile-manual-qty">
-                <button
-                  type="button"
-                  className="mobile-manual-step"
-                  onClick={() => adjustQty(-1)}
-                  data-label="-"
-                ></button>
-                <span className="mobile-manual-qty-value">{manualQty}</span>
-                <button
-                  type="button"
-                  className="mobile-manual-step"
-                  onClick={() => adjustQty(1)}
-                  data-label="+"
-                ></button>
-              </div>
               <div className="mobile-manual-actions">
                 <button type="button" className="mobile-manual-cancel" onClick={handleCloseManual}>
                   취소

@@ -1,21 +1,21 @@
-/* 오프라인 장바구니 입력 버튼 스타일 */
+/* 오프라인 장바구니 입력 버튼 - 토글보다 작게, 우측 정렬, 은은한 구분 */
 .offline-cart-input {
   display: flex;
-  gap: 0.5rem;
+  justify-content: flex-end;
+  gap: 0.4rem;
   margin-bottom: 1rem;
 }
 
 .offline-input-btn {
-  flex: 1;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border: none;
-  background-color: #f5f5f5;
-  color: #666666;
-  font-size: 0.9rem;
+  gap: 0.35rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid #e0e8f0;
+  background-color: #f8fafc;
+  color: #5a6c7d;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
   border-radius: 4px;
@@ -23,26 +23,29 @@
 }
 
 .offline-input-btn:hover {
-  background-color: #e8e8e8;
-  color: #000000;
+  background-color: #eef2f7;
+  border-color: #c5d4e4;
+  color: #374151;
 }
 
 .offline-input-btn i {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
 }
 
 .offline-input-btn span {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
-/* 음성입력 버튼 활성화 상태 (빨간색) */
+/* 음성입력 버튼 활성화 상태 */
 .voice-input-btn.active {
-  background-color: #ff4444;
+  background-color: #dc2626;
+  border-color: #dc2626;
   color: #ffffff;
 }
 
 .voice-input-btn.active:hover {
-  background-color: #ff3333;
+  background-color: #b91c1c;
+  border-color: #b91c1c;
 }
 
 .voice-input-btn.active i {
@@ -56,6 +59,7 @@
 }
 
 .offline-input-btn:disabled:hover {
-  background-color: #f5f5f5;
-  color: #666666;
+  background-color: #f8fafc;
+  border-color: #e0e8f0;
+  color: #5a6c7d;
 }
