@@ -82,6 +82,10 @@ pipeline {
                                 echo "MYSQL_DATABASE=shoppy" >> .env
                                 echo "MYSQL_USER=shoppyuser" >> .env
                                 echo "MYSQL_PASSWORD=shoppypass" >> .env
+                                echo "SERVER_SSL_KEY_STORE=/opt/openvidu/owncert/keystore.p12" >> .env
+                                echo "SERVER_SSL_KEY_STORE_PASSWORD=changeit" >> .env
+                                echo "SERVER_SSL_KEY_STORE_TYPE=PKCS12" >> .env
+                                echo "SERVER_SSL_KEY_ALIAS=tomcat" >> .env
                             '''
                             sh 'docker-compose up -d --no-build'
                         }

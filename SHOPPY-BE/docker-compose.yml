@@ -15,7 +15,8 @@ services:
             - ${OPENVIDU_RECORDING_PATH}:${OPENVIDU_RECORDING_PATH}
             - ${OPENVIDU_RECORDING_CUSTOM_LAYOUT}:${OPENVIDU_RECORDING_CUSTOM_LAYOUT}
             - ${OPENVIDU_CDR_PATH}:${OPENVIDU_CDR_PATH}
-            - ./openvidu/owncert:/opt/openvidu/owncert:ro
+ 	        - /opt/openvidu/owncert:/opt/openvidu/owncert:ro
+            - ./.env:/opt/openvidu/.env:ro
         env_file:
             - .env
         environment:
