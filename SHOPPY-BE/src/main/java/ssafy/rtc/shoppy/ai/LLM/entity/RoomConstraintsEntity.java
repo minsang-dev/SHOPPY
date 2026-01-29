@@ -19,7 +19,7 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "RoomConstraints")
+@Table(name = "room_constraints")
 public class RoomConstraintsEntity {
 
     @Id
@@ -34,6 +34,9 @@ public class RoomConstraintsEntity {
 
     @Column(name = "min_budget", nullable = false, precision = 12, scale = 2)
     private BigDecimal minBudget;
+
+    @Column(name = "target_budget", nullable = false, precision = 12, scale = 2)
+    private BigDecimal targetBudget;
 
     @Convert(converter = JsonStringListConverter.class)
     @Column(name = "interest_category_codes", nullable = false, columnDefinition = "json")
@@ -54,6 +57,7 @@ public class RoomConstraintsEntity {
             String purposeCode,
             int peopleCount,
             BigDecimal minBudget,
+            BigDecimal targetBudget,
             List<String> interestCategoryCodes,
             List<String> traitCodes
     ) {
@@ -61,19 +65,26 @@ public class RoomConstraintsEntity {
         this.purposeCode = purposeCode;
         this.peopleCount = peopleCount;
         this.minBudget = minBudget;
+        this.targetBudget = targetBudget;
         this.interestCategoryCodes = interestCategoryCodes;
         this.traitCodes = traitCodes;
     }
 
-    public static RoomConstraintsEntity from(Long roomId, RoomConstraintsRequestDto constraints, BigDecimal minBudget) {
+    public static RoomConstraintsEntity from(Long roomId, RoomConstraintsRequestDto constraints,
+                                             BigDecimal minBudget, BigDecimal targetBudget) {
         return new RoomConstraintsEntity(
                 roomId,
                 constraints.purpose(),
                 constraints.peopleCount(),
                 minBudget,
+                targetBudget,
                 constraints.interestCategories(),
                 constraints.traits()
         );
+    }
+
+    public Long getRoomId() {
+        return roomId;
     }
 
     @PrePersist

@@ -87,7 +87,7 @@ pipeline {
                                 echo "SERVER_SSL_KEY_STORE_TYPE=PKCS12" >> .env
                                 echo "SERVER_SSL_KEY_ALIAS=tomcat" >> .env
                             '''
-                            sh 'docker-compose up -d --no-build'
+                            sh 'docker compose up -d --no-build'
                         }
                     }
                 }
