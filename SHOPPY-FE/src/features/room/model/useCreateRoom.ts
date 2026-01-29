@@ -19,6 +19,8 @@ export const useCreateRoom = () => {
     setError(null);
     try {
       const res = await createRoom(payload);
+      console.log('방 생성 응답:', res);
+      console.log('inviteCode:', res.inviteCode);
       setData(res);
 
       const roomId = res.roomId;

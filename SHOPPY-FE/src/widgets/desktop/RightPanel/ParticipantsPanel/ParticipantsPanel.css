@@ -20,3 +20,26 @@
 .participants-error {
   color: #dc3545;
 }
+
+.invite-code-button {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: #4a90d9;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.invite-code-button:hover:not(:disabled) {
+  background-color: #3a7bc8;
+}
+
+.invite-code-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
