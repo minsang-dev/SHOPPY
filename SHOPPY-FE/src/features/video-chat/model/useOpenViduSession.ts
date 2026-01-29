@@ -16,6 +16,7 @@ interface UseOpenViduSessionOptions {
   profile?: OpenViduProfile;
   enabled?: boolean;
   localVideoRef?: React.RefObject<HTMLVideoElement | null>;
+  videoFacingMode?: 'user' | 'environment';
 }
 
 export interface OpenViduSessionState {
@@ -34,6 +35,7 @@ export const useOpenViduSession = ({
   profile,
   enabled = false,
   localVideoRef,
+  videoFacingMode,
 }: UseOpenViduSessionOptions): OpenViduSessionState => {
   const ovRef = useRef<OpenVidu | null>(null);
   const sessionRef = useRef<Session | null>(null);
@@ -87,13 +89,37 @@ export const useOpenViduSession = ({
     });
 
     if (role === 'PUBLISHER') {
-      const publisher = await ov.initPublisherAsync(undefined, {
-        publishAudio: true,
-        publishVideo: true,
-        resolution: '640x360',
-        frameRate: 30,
-        mirror: false,
-      });
+      let publisher: Publisher | null = null;
+      if (videoFacingMode && navigator.mediaDevices?.getUserMedia) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: videoFacingMode } },
+            audio: true,
+          });
+          const [videoTrack] = stream.getVideoTracks();
+          const [audioTrack] = stream.getAudioTracks();
+          publisher = await ov.initPublisherAsync(undefined, {
+            publishAudio: true,
+            publishVideo: true,
+            resolution: '640x360',
+            frameRate: 30,
+            mirror: videoFacingMode === 'user',
+            videoSource: videoTrack ?? undefined,
+            audioSource: audioTrack ?? undefined,
+          });
+        } catch (error) {
+          console.warn('[OpenVidu] Failed to get preferred camera, falling back.', error);
+        }
+      }
+      if (!publisher) {
+        publisher = await ov.initPublisherAsync(undefined, {
+          publishAudio: true,
+          publishVideo: true,
+          resolution: '640x360',
+          frameRate: 30,
+          mirror: false,
+        });
+      }
       session.publish(publisher);
       publisherRef.current = publisher;
       if (localVideoRef?.current) {
