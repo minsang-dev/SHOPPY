@@ -18,7 +18,7 @@ export const createRealtimeClient = (options: RealtimeClientOptions = {}) => {
     reconnectDelay: options.reconnectDelayMs ?? 5000,
     connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
     webSocketFactory: () => new SockJS(url),
-    debug: options.debug ? (message) => console.log(message) : undefined,
+    debug: options.debug ? (message) => console.log(message) : () => {},
   });
 
   return client;

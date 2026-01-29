@@ -7,12 +7,37 @@ interface UseRoomMembersState {
   loading: boolean;
   error: string | null;
   reload: () => Promise<void>;
+  applyEvent: (event: {
+    type: 'JOINED' | 'LEFT' | 'STATE_UPDATED';
+    member: RoomMember;
+  }) => void;
 }
 
 export const useRoomMembers = (roomId?: string): UseRoomMembersState => {
   const [members, setMembers] = useState<RoomMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const applyEvent = useCallback(
+    (event: { type: 'JOINED' | 'LEFT' | 'STATE_UPDATED'; member: RoomMember }) => {
+      setMembers((prev) => {
+        const exists = prev.find((item) => item.memberId === event.member.memberId);
+
+        if (event.type === 'LEFT') {
+          return prev.filter((item) => item.memberId !== event.member.memberId);
+        }
+
+        if (exists) {
+          return prev.map((item) =>
+            item.memberId === event.member.memberId ? { ...item, ...event.member } : item,
+          );
+        }
+
+        return [...prev, event.member];
+      });
+    },
+    [],
+  );
 
   const reload = useCallback(async () => {
     if (!roomId) {
@@ -35,5 +60,5 @@ export const useRoomMembers = (roomId?: string): UseRoomMembersState => {
     void reload();
   }, [reload]);
 
-  return { members, loading, error, reload };
+  return { members, loading, error, reload, applyEvent };
 };

@@ -4,7 +4,7 @@ import './ManualInputModal.css';
 interface ManualInputModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (productName: string, quantity: number) => void;
+  onAdd: (productName: string) => void;
 }
 
 /**
@@ -17,32 +17,19 @@ const ManualInputModal: React.FC<ManualInputModalProps> = ({
   onAdd,
 }) => {
   const [productName, setProductName] = useState('');
-  const [quantity, setQuantity] = useState(1);
 
   if (!isOpen) return null;
 
-  const handleQuantityDecrease = () => {
-    if (quantity > 1) {
-      setQuantity(quantity - 1);
-    }
-  };
-
-  const handleQuantityIncrease = () => {
-    setQuantity(quantity + 1);
-  };
-
   const handleSubmit = () => {
     if (productName.trim()) {
-      onAdd(productName.trim(), quantity);
+      onAdd(productName.trim());
       setProductName('');
-      setQuantity(1);
       onClose();
     }
   };
 
   const handleCancel = () => {
     setProductName('');
-    setQuantity(1);
     onClose();
   };
 
@@ -67,28 +54,6 @@ const ManualInputModal: React.FC<ManualInputModalProps> = ({
               }}
               maxLength={30}
             />
-          </div>
-
-          <div className="manual-input-field">
-            <label className="manual-input-label">수량</label>
-            <div className="manual-input-quantity">
-              <button
-                className="manual-input-quantity-btn"
-                onClick={handleQuantityDecrease}
-                disabled={quantity <= 1}
-                aria-label="수량 감소"
-              >
-                <i className="fa-solid fa-minus"></i>
-              </button>
-              <span className="manual-input-quantity-value">{quantity}</span>
-              <button
-                className="manual-input-quantity-btn"
-                onClick={handleQuantityIncrease}
-                aria-label="수량 증가"
-              >
-                <i className="fa-solid fa-plus"></i>
-              </button>
-            </div>
           </div>
         </div>
 

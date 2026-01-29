@@ -8,7 +8,27 @@ import MobileTopBar from '../../../widgets/mobile/Mobile/MobileTopBar';
 import { realtimeConfig } from '../../../shared/config/realtime';
 import { useOpenViduSession } from '../../../features/video-chat/model/useOpenViduSession';
 import { useRoomInfo } from '../../../features/room/fetch-room/model/useRoomInfo';
+import { leaveRoom } from '../../../entities/room/api/room';
 import './styles.css';
+
+const resolveAccessToken = () =>
+  window.localStorage.getItem('access_token') ??
+  window.localStorage.getItem('accessToken') ??
+  undefined;
+
+const sendKeepAliveLeave = (roomId: string, token?: string) => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
+  const url = `${baseUrl}/rooms/${roomId}/leave`;
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  try {
+    void fetch(url, { method: 'DELETE', headers, keepalive: true });
+  } catch {
+    // best-effort on unload
+  }
+};
 
 const MobileVideoChatPage: React.FC = () => {
   const navigate = useNavigate();
@@ -16,8 +36,15 @@ const MobileVideoChatPage: React.FC = () => {
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const leftRef = useRef(false);
 
   const handleExit = () => {
+    if (roomId && !leftRef.current) {
+      leftRef.current = true;
+      void leaveRoom(roomId).catch(() => {
+        sendKeepAliveLeave(roomId, resolveAccessToken());
+      });
+    }
     navigate('/m');
   };
 
@@ -60,7 +87,45 @@ const MobileVideoChatPage: React.FC = () => {
     accessToken,
     profile: { nickname, profileColor },
     localVideoRef,
+    videoFacingMode: 'environment',
   });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const visualViewport = window.visualViewport;
+    let baselineHeight = window.innerHeight;
+    root.style.setProperty('--app-height', `${baselineHeight}px`);
+
+    if (!visualViewport) {
+      return () => {
+        root.style.removeProperty('--keyboard-offset');
+        root.style.removeProperty('--app-height');
+      };
+    }
+
+    const updateKeyboardOffset = () => {
+      const offset = Math.max(0, baselineHeight - visualViewport.height - visualViewport.offsetTop);
+      root.style.setProperty('--keyboard-offset', `${offset}px`);
+    };
+
+    updateKeyboardOffset();
+    visualViewport.addEventListener('resize', updateKeyboardOffset);
+    visualViewport.addEventListener('scroll', updateKeyboardOffset);
+    const handleOrientationChange = () => {
+      baselineHeight = window.innerHeight;
+      root.style.setProperty('--app-height', `${baselineHeight}px`);
+      updateKeyboardOffset();
+    };
+    window.addEventListener('orientationchange', handleOrientationChange);
+
+    return () => {
+      visualViewport.removeEventListener('resize', updateKeyboardOffset);
+      visualViewport.removeEventListener('scroll', updateKeyboardOffset);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      root.style.removeProperty('--keyboard-offset');
+      root.style.removeProperty('--app-height');
+    };
+  }, []);
 
   useEffect(() => {
     setPublishAudio(micOn);
@@ -69,6 +134,27 @@ const MobileVideoChatPage: React.FC = () => {
   useEffect(() => {
     setPublishVideo(camOn);
   }, [camOn, setPublishVideo]);
+
+  useEffect(() => {
+    if (!roomId) {
+      return;
+    }
+    const token = resolveAccessToken();
+    const handleLeave = () => {
+      if (leftRef.current) {
+        return;
+      }
+      leftRef.current = true;
+      sendKeepAliveLeave(roomId, token);
+    };
+
+    window.addEventListener('beforeunload', handleLeave);
+    window.addEventListener('pagehide', handleLeave);
+    return () => {
+      window.removeEventListener('beforeunload', handleLeave);
+      window.removeEventListener('pagehide', handleLeave);
+    };
+  }, [roomId]);
 
   return (
     <div className="mobile-room-page" data-realtime-ready={realtimeReady ? 'true' : 'false'}>

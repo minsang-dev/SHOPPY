@@ -39,11 +39,14 @@ export type JoinRoomGuestResponse = {
 
 export type ShoppingItem = {
   shoppingItemId: number;
-  name: string;
+  name?: string;
+  displayName?: string;
   quantity: number;
   price?: number;
   imageUrl?: string | null;
   checked?: boolean;
+  isChecked?: boolean;
+  purchaseType?: string | null;
 };
 
 export type Product = {
