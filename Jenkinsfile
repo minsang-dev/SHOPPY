@@ -55,9 +55,11 @@ pipeline {
                         echo 'Deploying Backend & OpenVidu...'
                         dir('SHOPPY-BE') {
                             sh '''
-                                echo "DOMAIN_OR_PUBLIC_IP=i14c209.p.ssafy.io:8989" > .env
+                                echo "DOMAIN_OR_PUBLIC_IP=i14c209.p.ssafy.io" > .env
+                                echo "SERVER_SSL_ENABLED=true" >> .env
+                                echo "HTTPS_PORT=5443" >> .env
+                                echo "CERTIFICATE_TYPE=owncert" >> .env
                                 echo "OPENVIDU_SECRET=MySuperSecretPasswordC209" >> .env
-                                echo "CERTIFICATE_TYPE=selfsigned" >> .env
                                 echo "LETSENCRYPT_EMAIL=user@example.com" >> .env
                                 echo "OPENVIDU_RECORDING=false" >> .env
                                 echo "OPENVIDU_RECORDING_DEBUG=false" >> .env
