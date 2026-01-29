@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "startNodeId": "q1",
+  "nodes": [
+    {
+      "id": "q1",
+      "question": "조리를 할 수 있나요?",
+      "type": "YES_NO",
+      "yes": { "next": "q2", "traitsAdd": ["COOKING_OK"] },
+      "no": { "next": "q2", "traitsAdd": ["NO_COOKING"] }
+    },
+    {
+      "id": "q2",
+      "question": "술이 포함되나요?",
+      "type": "YES_NO",
+      "yes": { "next": "q3", "traitsAdd": ["ALCOHOL_YES"] },
+      "no": { "next": "q3", "traitsAdd": ["ALCOHOL_NO"] }
+    },
+    {
+      "id": "q3",
+      "question": "식사가 메인인가요?",
+      "type": "CHOICE",
+      "choices": [
+        { "label": "식사", "next": "q4", "traitsAdd": ["MEAL_MAIN"] },
+        { "label": "간식/안주", "next": "q4", "traitsAdd": ["SNACK_MAIN"] }
+      ]
+    },
+    {
+      "id": "q4",
+      "question": "예산은 어떤 편인가요?",
+      "type": "CHOICE",
+      "choices": [
+        { "label": "가성비", "next": "q5", "traitsAdd": ["VALUE"] },
+        { "label": "적당히", "next": "q5", "traitsAdd": ["BALANCED"] },
+        { "label": "푸짐하게", "next": "q5", "traitsAdd": ["BULK"] }
+      ]
+    },
+    {
+      "id": "q5",
+      "question": "장소는 어디인가요?",
+      "type": "CHOICE",
+      "choices": [
+        { "label": "실내", "next": "q6", "traitsAdd": ["INDOOR"] },
+        { "label": "야외", "next": "q6", "traitsAdd": ["OUTDOOR"] }
+      ]
+    },
+    {
+      "id": "q6",
+      "question": "준비/정리 시간을 줄이고 싶나요?",
+      "type": "YES_NO",
+      "yes": { "next": null, "traitsAdd": ["MINIMAL"] },
+      "no": { "next": null, "traitsAdd": ["VARIETY_OK"] }
+    }
+  ]
+}

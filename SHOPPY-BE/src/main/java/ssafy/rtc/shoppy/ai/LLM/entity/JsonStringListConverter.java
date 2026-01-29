@@ -23,7 +23,7 @@ public class JsonStringListConverter implements AttributeConverter<List<String>,
         try {
             return MAPPER.writeValueAsString(attribute);
         } catch (Exception ex) {
-            throw new IllegalArgumentException("Failed to serialize list to JSON", ex);
+            throw new IllegalArgumentException("리스트를 JSON으로 직렬화하지 못했습니다", ex);
         }
     }
 
@@ -35,7 +35,7 @@ public class JsonStringListConverter implements AttributeConverter<List<String>,
         try {
             return MAPPER.readValue(dbData, LIST_TYPE);
         } catch (Exception ex) {
-            throw new IllegalArgumentException("Failed to deserialize JSON to list", ex);
+            throw new IllegalArgumentException("JSON을 리스트로 역직렬화하지 못했습니다", ex);
         }
     }
 }

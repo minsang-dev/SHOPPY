@@ -24,53 +24,56 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AiChecklistService {
 
-    private final AiChecklistRepository checklistRepository;
-    private final AiChecklistItemRepository checklistItemRepository;
+        private final AiChecklistRepository checklistRepository;
+        private final AiChecklistItemRepository checklistItemRepository;
 
-    @Transactional(readOnly = true)
-    public AiChecklistResponseDto getChecklist(long roomId) {
-        AiChecklistEntity checklist = checklistRepository.findByRoomId(roomId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Checklist not found."));
+        @Transactional(readOnly = true)
+        public AiChecklistResponseDto getChecklist(long roomId) {
+                AiChecklistEntity checklist = checklistRepository.findByRoomId(roomId)
+                                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "체크리스트를 찾을 수 없습니다."));
 
-        List<AiChecklistItemEntity> items = checklistItemRepository
-                .findByChecklist_ChecklistIdOrderBySortOrderAsc(checklist.getChecklistId());
+                List<AiChecklistItemEntity> items = checklistItemRepository
+                                .findByChecklist_ChecklistIdOrderBySortOrderAsc(checklist.getChecklistId());
 
-        return buildChecklistResponse(checklist, items);
-    }
-
-    @Transactional
-    public void toggleChecklistItem(long roomId, long checklistItemId, boolean checked) {
-        AiChecklistEntity checklist = checklistRepository.findByRoomId(roomId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Checklist not found."));
-
-        AiChecklistItemEntity item = checklistItemRepository
-                .findByChecklist_ChecklistIdAndChecklistItemId(checklist.getChecklistId(), checklistItemId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Checklist item not found."));
-
-        item.updateChecked(checked);
-    }
-
-    private AiChecklistResponseDto buildChecklistResponse(AiChecklistEntity checklist, List<AiChecklistItemEntity> items) {
-        Map<String, List<AiChecklistItemEntity>> grouped = items.stream()
-                .collect(Collectors.groupingBy(AiChecklistItemEntity::getCategoryCode));
-
-        List<ChecklistCategoryResponseDto> categories = new ArrayList<>();
-        for (String code : AiChecklistCodes.CHECKLIST_CATEGORY_ORDER) {
-            List<ChecklistItemResponseDto> itemDtos = grouped.getOrDefault(code, List.of()).stream()
-                    .sorted(Comparator.comparingInt(item -> item.getSortOrder() == null ? 0 : item.getSortOrder()))
-                    .map(item -> new ChecklistItemResponseDto(
-                            item.getChecklistItemId(),
-                            item.getItemName(),
-                            item.isChecked(),
-                            item.getReason(),
-                            item.getSortOrder()
-                    ))
-                    .toList();
-            if (!itemDtos.isEmpty()) {
-                categories.add(new ChecklistCategoryResponseDto(code, AiChecklistCodes.labelForCategory(code), itemDtos));
-            }
+                return buildChecklistResponse(checklist, items);
         }
 
-        return new AiChecklistResponseDto(checklist.getChecklistId(), checklist.getGeneratedAt(), categories);
-    }
+        @Transactional
+        public void toggleChecklistItem(long roomId, long checklistItemId, boolean checked) {
+                AiChecklistEntity checklist = checklistRepository.findByRoomId(roomId)
+                                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "체크리스트를 찾을 수 없습니다."));
+
+                AiChecklistItemEntity item = checklistItemRepository
+                                .findByChecklist_ChecklistIdAndChecklistItemId(checklist.getChecklistId(),
+                                                checklistItemId)
+                                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "체크리스트 항목을 찾을 수 없습니다."));
+
+                item.updateChecked(checked);
+        }
+
+        private AiChecklistResponseDto buildChecklistResponse(AiChecklistEntity checklist,
+                        List<AiChecklistItemEntity> items) {
+                Map<String, List<AiChecklistItemEntity>> grouped = items.stream()
+                                .collect(Collectors.groupingBy(AiChecklistItemEntity::getCategoryCode));
+
+                List<ChecklistCategoryResponseDto> categories = new ArrayList<>();
+                for (String code : AiChecklistCodes.CHECKLIST_CATEGORY_ORDER) {
+                        List<ChecklistItemResponseDto> itemDtos = grouped.getOrDefault(code, List.of()).stream()
+                                        .sorted(Comparator.comparingInt(
+                                                        item -> item.getSortOrder() == null ? 0 : item.getSortOrder()))
+                                        .map(item -> new ChecklistItemResponseDto(
+                                                        item.getChecklistItemId(),
+                                                        item.getItemName(),
+                                                        item.isChecked(),
+                                                        item.getReason(),
+                                                        item.getSortOrder()))
+                                        .toList();
+                        if (!itemDtos.isEmpty()) {
+                                categories.add(new ChecklistCategoryResponseDto(code,
+                                                AiChecklistCodes.labelForCategory(code), itemDtos));
+                        }
+                }
+
+                return new AiChecklistResponseDto(checklist.getChecklistId(), checklist.getGeneratedAt(), categories);
+        }
 }
