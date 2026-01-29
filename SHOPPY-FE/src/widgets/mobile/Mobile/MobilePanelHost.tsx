@@ -1,7 +1,6 @@
 import React from 'react';
 import MobileCartPanel from './MobileCartPanel';
 import MobileChatPanel from './MobileChatPanel';
-import type { ChatMessage } from './MobileChatPanel';
 import MobileMembersPanel from './MobileMembersPanel';
 import MobileVotePanel from './MobileVotePanel';
 import type { VoteData } from './MobileVotePanel';
@@ -15,8 +14,6 @@ interface MobilePanelHostProps {
   vote?: VoteData;
   onCreateVote?: (payload: { title: string; options: string[] }) => void;
   onVote?: (optionId: number) => void;
-  chatMessages?: ChatMessage[];
-  onSendChatMessage?: (payload: { content: string }) => void;
   onEndShopping?: () => void;
 }
 
@@ -27,8 +24,6 @@ const MobilePanelHost: React.FC<MobilePanelHostProps> = ({
   vote,
   onCreateVote,
   onVote,
-  chatMessages,
-  onSendChatMessage,
   onEndShopping,
 }) => {
   switch (activePanel) {
@@ -44,7 +39,7 @@ const MobilePanelHost: React.FC<MobilePanelHostProps> = ({
     case 'members':
       return <MobileMembersPanel roomId={roomId} />;
     case 'chat':
-      return <MobileChatPanel messages={chatMessages} onSendMessage={onSendChatMessage} />;
+      return <MobileChatPanel roomId={roomId} />;
     case 'cart':
     default:
       return <MobileCartPanel roomId={roomId} onEndShopping={onEndShopping} />;

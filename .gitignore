@@ -57,3 +57,4 @@ dist-ssr
 # AI experimental / local-only
 SHOPPY-BE/src/main/java/ssafy/rtc/shoppy/ai/direciton/
 SHOPPY-BE/src/main/java/ssafy/rtc/shoppy/ai/direction/
+SHOPPY-BE/src/main/resources/data.sql

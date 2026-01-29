@@ -1,4 +1,5 @@
-import { useParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useAddToCart } from '@/features/cart/add-to-cart/model/useAddToCart';
 import { useProductList } from '@/features/product/fetch-products/model/useProductList';
 import Header from '@/widgets/desktop/Header/Header';
@@ -9,8 +10,17 @@ import './styles.css';
 
 const DesktopProductList = () => {
   const { roomId } = useParams<{ roomId?: string }>();
+  const [searchParams] = useSearchParams();
   const { products, loading, error, search } = useProductList();
   const addToCart = useAddToCart(roomId || null);
+
+  const keywordFromUrl = searchParams.get('keyword');
+
+  useEffect(() => {
+    if (keywordFromUrl != null && keywordFromUrl.trim() !== '') {
+      void search(keywordFromUrl.trim());
+    }
+  }, [keywordFromUrl, search]);
 
   const handleSearch = (keyword: string) => {
     void search(keyword);

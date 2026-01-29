@@ -1,0 +1,35 @@
+{
+  "id": "PURPOSE_MT",
+  "type": "PURPOSE",
+  "purpose": "MT",
+  "categoryRules": {
+    "FOOD_READY": { "unit": "개", "perPersonMin": 1, "perPersonMax": 2, "itemMin": 3, "itemMax": 8 },
+    "MEAT_RAW": { "unit": "g", "perPersonMin": 180, "perPersonMax": 280, "itemMin": 3, "itemMax": 8 },
+    "VEGETABLE_RAW": { "unit": "개", "perPersonMin": 0.5, "perPersonMax": 1.0, "itemMin": 3, "itemMax": 8 },
+    "FRESH_READY": { "unit": "개", "perPersonMin": 0.5, "perPersonMax": 1.0, "itemMin": 3, "itemMax": 8 },
+    "DRINK_NON_ALCOHOL": { "unit": "ml", "perPersonMin": 800, "perPersonMax": 1400, "itemMin": 3, "itemMax": 8 },
+    "ALCOHOL": { "unit": "ml", "perPersonMin": 400, "perPersonMax": 800, "itemMin": 3, "itemMax": 8 },
+    "SNACK": { "unit": "pack", "perPersonMin": 0.8, "perPersonMax": 1.2, "itemMin": 3, "itemMax": 8 },
+    "COOKING_TOOL": { "unit": "개", "perPersonMin": 0.3, "perPersonMax": 0.6, "itemMin": 2, "itemMax": 6 },
+    "SUPPLY": {
+      "unit": "개",
+      "fixed": true,
+      "fixedItems": { "휴지": 1, "키친타월": 1 },
+      "itemMin": 2,
+      "itemMax": 6
+    }
+  },
+  "traitMultipliers": {
+    "MINIMAL": 0.85,
+    "BULK": 1.25,
+    "ALCOHOL_YES": {
+      "DRINK_NON_ALCOHOL": 1.05,
+      "ALCOHOL": 1.25,
+      "SNACK": 1.10
+    },
+    "VALUE": 0.95
+  },
+  "disableByTrait": {
+    "NO_COOKING": ["MEAT_RAW", "VEGETABLE_RAW", "COOKING_TOOL"]
+  }
+}

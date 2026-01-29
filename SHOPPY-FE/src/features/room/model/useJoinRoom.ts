@@ -6,6 +6,8 @@ import { createWebRtcSession } from '../../../shared/api/webrtc';
 import type { WebRTCSession } from '../../../shared/api/types';
 import { useSessionStore } from '../../../entities/session/model/useSessionStore';
 
+const realtimeEnabled = import.meta.env.VITE_REALTIME_ENABLED === 'true';
+
 type JoinRoomPayload =
   | { roomCode: string; isLoggedIn: true }
   | { roomCode: string; nickname: string; isLoggedIn: false };
@@ -47,11 +49,14 @@ export const useJoinRoom = () => {
       const memberRes = await getRoomMembers(String(roomId));
       setMembers(memberRes);
 
-      const sessionRes = await createWebRtcSession(roomId);
-      setSession(sessionRes);
-      setSessionStore(roomId, sessionRes);
+      if (realtimeEnabled) {
+        const sessionRes = await createWebRtcSession(roomId);
+        setSession(sessionRes);
+        setSessionStore(roomId, sessionRes);
+        return { roomId, members: memberRes, session: sessionRes };
+      }
 
-      return { roomId, members: memberRes, session: sessionRes };
+      return { roomId, members: memberRes, session: null };
     } catch (e) {
       const normalized = normalizeApiError(e);
       setError(normalized);

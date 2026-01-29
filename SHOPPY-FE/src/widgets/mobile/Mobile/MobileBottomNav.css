@@ -9,6 +9,7 @@
   padding: 8px;
   border: 1px solid #e5e7eb;
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+  transform: translateY(var(--keyboard-offset, 0px));
 }
 
 .mobile-bottom-nav-item {

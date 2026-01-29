@@ -10,18 +10,20 @@ export const getProductList = async (keyword?: string): Promise<Product[]> => {
   if (keyword) {
     const response = await searchProducts(keyword);
     return extractItems(response).map((item) => ({
-      product_id: item.product_id,
+      // 백엔드가 camelCase로 응답하므로 둘 다 처리
+      product_id: item.product_id ?? (item as unknown as { productId: number }).productId,
       name: item.name,
       price: item.price,
-      image_url: item.image_url,
+      image_url: item.image_url ?? (item as unknown as { imageUrl: string }).imageUrl,
     }));
   }
 
   const response = await getProducts();
   return extractItems(response).map((item) => ({
-    product_id: item.product_id,
+    // 백엔드가 camelCase로 응답하므로 둘 다 처리
+    product_id: item.product_id ?? (item as unknown as { productId: number }).productId,
     name: item.name,
     price: item.price,
-    image_url: item.image_url,
+    image_url: item.image_url ?? (item as unknown as { imageUrl: string }).imageUrl,
   }));
 };
