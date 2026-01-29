@@ -16,6 +16,8 @@ services:
             - ${OPENVIDU_RECORDING_CUSTOM_LAYOUT}:${OPENVIDU_RECORDING_CUSTOM_LAYOUT}
             - ${OPENVIDU_CDR_PATH}:${OPENVIDU_CDR_PATH}
             - /opt/openvidu/owncert:/opt/openvidu/owncert:ro
+            - ./.env:/opt/openvidu/.env:ro
+        env_file:
             - .env
         environment:
             - SERVER_SSL_ENABLED=true
