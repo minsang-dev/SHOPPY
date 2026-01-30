@@ -56,7 +56,7 @@ pipeline {
                         echo 'Deploying Frontend...'
                         sh 'docker stop shoppy-fe || true'
                         sh 'docker rm shoppy-fe || true'
-                        sh 'docker run -d --name shoppy-fe -p 3000:3000 --restart always shoppy-fe:latest'
+                        sh 'docker run -d --name shoppy-fe --network host --restart always shoppy-fe:latest'
                     }
 
                     // 2. Backend & OpenVidu 배포
