@@ -83,6 +83,8 @@ services:
         image: shoppy-be
         restart: on-failure
         network_mode: host
+        env_file:
+            - .env
         environment:
             - SERVER_PORT=8080
             - OPENVIDU_URL=http://localhost:5443
