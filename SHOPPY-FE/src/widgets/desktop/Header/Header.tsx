@@ -59,10 +59,10 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           {isLoggedIn ? (
             <button
               className="btn-profile"
-              aria-label="프로필"
               onClick={() => navigate(`/myPage/${user?.id}`)}
             >
-              <i className="ri-user-line"></i>
+              <i className="ri-user-line" aria-hidden />
+              <span className="header-profile-tooltip">마이페이지</span>
             </button>
           ) : (
             <button onClick={openLoginModal} className="btn-login">
