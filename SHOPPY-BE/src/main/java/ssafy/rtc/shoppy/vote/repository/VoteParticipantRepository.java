@@ -1,6 +1,8 @@
 package ssafy.rtc.shoppy.vote.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import ssafy.rtc.shoppy.vote.entity.VoteParticipantEntity;
 
@@ -17,4 +19,7 @@ public interface VoteParticipantRepository extends JpaRepository<VoteParticipant
     long countByOptionId(Long optionId);
 
     boolean existsByVoteIdAndUserId(Long voteId, Long userId);
+
+    @Query("SELECT p.optionId, COUNT(p) FROM VoteParticipantEntity p WHERE p.voteId = :voteId GROUP BY p.optionId")
+    List<Object[]> countByVoteIdGroupByOptionId(@Param("voteId") Long voteId);
 }
