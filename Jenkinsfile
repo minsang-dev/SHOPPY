@@ -83,7 +83,7 @@ pipeline {
                                 echo "MYSQL_USER=shoppyuser" >> .env
                                 echo "MYSQL_PASSWORD=shoppypass" >> .env
                             '''
-                            sh 'docker-compose up -d --no-build'
+                            sh 'docker compose up -d --no-build'
                         }
                     }
                 }
