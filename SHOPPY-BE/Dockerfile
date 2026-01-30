@@ -44,4 +44,4 @@ EXPOSE 8090
 # 애플리케이션을 실행하는 명령어를 정의합니다.
 # java -jar app.jar 명령으로 Spring Boot 애플리케이션을 시작합니다.
 # 운영 환경 프로필(prod)을 적용합니다.
-ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
