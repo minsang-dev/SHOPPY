@@ -31,6 +31,7 @@ pipeline {
                     branch 'FE'
                     branch 'develop'
                     branch 'buildtest'
+                    branch 'release'
                 }
             }
             steps {
