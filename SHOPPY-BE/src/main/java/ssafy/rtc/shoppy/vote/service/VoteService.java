@@ -16,6 +16,7 @@ import ssafy.rtc.shoppy.vote.entity.VoteEntity;
 import ssafy.rtc.shoppy.vote.entity.VoteOptionEntity;
 import ssafy.rtc.shoppy.vote.entity.VoteParticipantEntity;
 import ssafy.rtc.shoppy.vote.enums.VoteStatus;
+import ssafy.rtc.shoppy.vote.event.VoteEventPublisher;
 import ssafy.rtc.shoppy.vote.repository.VoteOptionRepository;
 import ssafy.rtc.shoppy.vote.repository.VoteParticipantRepository;
 import ssafy.rtc.shoppy.vote.repository.VoteRepository;
@@ -31,6 +32,7 @@ public class VoteService {
     private final VoteOptionRepository voteOptionRepository;
     private final VoteParticipantRepository voteParticipantRepository;
     private final RoomRepository roomRepository;
+    private final VoteEventPublisher voteEventPublisher;
 
     @Transactional
     public VoteCreateResponseDto createVote(Long roomId, Long userId, VoteCreateRequestDto request) {
@@ -54,7 +56,10 @@ public class VoteService {
                 })
                 .toList();
 
-        return VoteCreateResponseDto.from(savedVote, savedOptions);
+        VoteCreateResponseDto response = VoteCreateResponseDto.from(savedVote, savedOptions);
+        voteEventPublisher.publishVoteCreated(roomId, response);
+
+        return response;
     }
 
     public VoteListResponseDto getVoteList(Long roomId, VoteStatus status) {
@@ -134,6 +139,9 @@ public class VoteService {
         VoteParticipantEntity participantEntity = VoteParticipantEntity.fromDomain(participant);
         VoteParticipantEntity savedEntity = voteParticipantRepository.save(participantEntity);
 
+        VoteDetailResponseDto voteDetail = buildVoteDetail(vote, voteId, userId);
+        voteEventPublisher.publishVoteParticipated(roomId, voteDetail);
+
         return VoteParticipateResponseDto.from(savedEntity.toDomain());
     }
 
@@ -162,12 +170,32 @@ public class VoteService {
         VoteEntity closedEntity = VoteEntity.fromDomain(closedVote);
         VoteEntity savedEntity = voteRepository.save(closedEntity);
 
-        return VoteCloseResponseDto.from(savedEntity.toDomain());
+        VoteCloseResponseDto response = VoteCloseResponseDto.from(savedEntity.toDomain());
+        voteEventPublisher.publishVoteClosed(roomId, response);
+
+        return response;
     }
 
     private Room getRoomById(Long roomId) {
         RoomEntity roomEntity = roomRepository.findById(roomId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
         return roomEntity.toDomain();
+    }
+
+    private VoteDetailResponseDto buildVoteDetail(Vote vote, Long voteId, Long userId) {
+        List<VoteOptionEntity> optionEntities = voteOptionRepository.findByVoteId(voteId);
+        List<VoteOptionWithCountDto> optionsWithCount = optionEntities.stream()
+                .map(optionEntity -> {
+                    VoteOption option = optionEntity.toDomain();
+                    long count = voteParticipantRepository.countByOptionId(option.getOptionId());
+                    return VoteOptionWithCountDto.from(option, count);
+                })
+                .toList();
+
+        Long mySelectedOptionId = voteParticipantRepository.findByVoteIdAndUserId(voteId, userId)
+                .map(VoteParticipantEntity::getOptionId)
+                .orElse(null);
+
+        return VoteDetailResponseDto.from(vote, optionsWithCount, mySelectedOptionId);
     }
 }

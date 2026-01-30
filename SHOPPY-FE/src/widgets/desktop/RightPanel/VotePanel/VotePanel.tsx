@@ -1,30 +1,28 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useVoteList } from '@/features/vote/fetch-vote-list/model/useVoteList';
-import { useVoteDetail } from '@/features/vote/fetch-vote-detail/model/useVoteDetail';
-import { useVoteParticipant } from '@/features/vote/participate-vote/model/useVoteParticipant';
-import { useCreateVote } from '@/features/vote/create-vote/model/useCreateVote';
+import { useVoteRealtime } from '@/features/vote/model/useVoteRealtime';
 import { closeVote } from '@/entities/vote/api/voteApi';
 import CreateVoteModal from '@/features/vote/create-vote/ui/CreateVoteModal';
 import './VotePanel.css';
 
-/**
- * 투표 패널 컴포넌트
- */
 const VotePanel: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const [selectedVoteId, setSelectedVoteId] = useState<number | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
   const [closeLoading, setCloseLoading] = useState(false);
+  const [participateLoading, setParticipateLoading] = useState(false);
 
-  const { data: votes, loading, error, refetch: refetchVoteList } = useVoteList(roomId, 'OPEN');
-  const { data: voteDetail, loading: detailLoading, error: detailError, refetch: refetchVoteDetail } = useVoteDetail(
-    roomId,
-    selectedVoteId,
-  );
-  const { run: participateVote, loading: participateLoading } = useVoteParticipant();
-  const { run: createVote } = useCreateVote();
+  const {
+    votes,
+    voteDetail,
+    loading,
+    detailLoading,
+    error,
+    refetchVoteList,
+    createVote,
+    participate,
+  } = useVoteRealtime({ roomId, selectedVoteId });
 
   const handleCreateVote = () => {
     setIsCreateModalOpen(true);
@@ -32,14 +30,10 @@ const VotePanel: React.FC = () => {
 
   const handleCreateVoteSubmit = async (title: string, options: string[]) => {
     if (!roomId) return;
-
     try {
-      await createVote(roomId, { title, options });
-      // 투표 생성 성공 후 목록 새로고침
-      await refetchVoteList();
-    } catch (error) {
-      console.error('투표 생성 실패:', error);
-      // TODO: 에러 처리 (토스트 메시지 등)
+      await createVote({ title, options });
+    } catch (err) {
+      console.error('투표 생성 실패:', err);
     }
   };
 
@@ -52,40 +46,32 @@ const VotePanel: React.FC = () => {
   };
 
   const handleOptionClick = async (optionId: number) => {
-    if (!roomId || !selectedVoteId || participateLoading) {
-      return;
-    }
-
+    if (!selectedVoteId || participateLoading) return;
+    setParticipateLoading(true);
     try {
-      await participateVote(roomId, selectedVoteId, { optionId });
-      // 투표 성공 후 상세 정보 다시 불러오기
-      await refetchVoteDetail();
-    } catch (error) {
-      console.error('투표 실패:', error);
-      // TODO: 에러 처리 (토스트 메시지 등)
+      await participate(selectedVoteId, { optionId });
+    } catch (err) {
+      console.error('투표 실패:', err);
+    } finally {
+      setParticipateLoading(false);
     }
   };
 
   const handleCloseVote = async () => {
-    if (!roomId || !selectedVoteId || closeLoading) {
-      return;
-    }
-
+    if (!roomId || !selectedVoteId || closeLoading) return;
     try {
       setCloseLoading(true);
       await closeVote(roomId, selectedVoteId);
       setIsCloseModalOpen(false);
       setSelectedVoteId(null);
       await refetchVoteList();
-    } catch (error) {
-      console.error('투표 마감 실패:', error);
-      // TODO: 에러 처리 (토스트 메시지 등)
+    } catch (err) {
+      console.error('투표 마감 실패:', err);
     } finally {
       setCloseLoading(false);
     }
   };
 
-  // 투표 상세 화면
   if (selectedVoteId !== null) {
     const totalVotes = voteDetail
       ? voteDetail.options.reduce((sum, option) => sum + option.voteCount, 0)
@@ -105,10 +91,6 @@ const VotePanel: React.FC = () => {
         {detailLoading ? (
           <div className="vote-loading">
             <p>로딩 중...</p>
-          </div>
-        ) : detailError ? (
-          <div className="vote-error">
-            <p>투표 상세를 불러오는데 실패했습니다.</p>
           </div>
         ) : voteDetail ? (
           <>
@@ -164,7 +146,6 @@ const VotePanel: React.FC = () => {
               </button>
             </div>
 
-            {/* 투표 마감 확인 모달 */}
             {isCloseModalOpen && (
               <div className="vote-modal-overlay" onClick={() => setIsCloseModalOpen(false)}>
                 <div className="vote-modal" onClick={(e) => e.stopPropagation()}>
@@ -198,11 +179,10 @@ const VotePanel: React.FC = () => {
     );
   }
 
-  // 투표 목록 화면
   return (
     <div className="panel-content vote-panel">
       <h3>투표 목록</h3>
-      
+
       {loading ? (
         <div className="vote-loading">
           <p>로딩 중...</p>
@@ -240,7 +220,7 @@ const VotePanel: React.FC = () => {
               ))
             )}
           </div>
-          
+
           <button className="vote-create-button" onClick={handleCreateVote}>
             + 새 투표 생성하기
           </button>
