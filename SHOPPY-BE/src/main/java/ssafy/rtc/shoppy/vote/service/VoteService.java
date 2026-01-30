@@ -1,6 +1,7 @@
 package ssafy.rtc.shoppy.vote.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.rtc.shoppy.global.exception.BusinessException;
@@ -22,6 +23,8 @@ import ssafy.rtc.shoppy.vote.repository.VoteParticipantRepository;
 import ssafy.rtc.shoppy.vote.repository.VoteRepository;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,13 +50,16 @@ public class VoteService {
         VoteEntity savedVoteEntity = voteRepository.save(voteEntity);
         Vote savedVote = savedVoteEntity.toDomain();
 
-        List<VoteOption> savedOptions = request.options().stream()
+        List<VoteOptionEntity> optionEntities = request.options().stream()
                 .map(content -> {
                     VoteOption option = VoteOption.create(savedVote.getVoteId(), content);
-                    VoteOptionEntity optionEntity = VoteOptionEntity.fromDomain(option);
-                    VoteOptionEntity savedOptionEntity = voteOptionRepository.save(optionEntity);
-                    return savedOptionEntity.toDomain();
+                    return VoteOptionEntity.fromDomain(option);
                 })
+                .toList();
+
+        List<VoteOptionEntity> savedOptionEntities = voteOptionRepository.saveAll(optionEntities);
+        List<VoteOption> savedOptions = savedOptionEntities.stream()
+                .map(VoteOptionEntity::toDomain)
                 .toList();
 
         VoteCreateResponseDto response = VoteCreateResponseDto.from(savedVote, savedOptions);
@@ -91,20 +97,7 @@ public class VoteService {
 
         Vote vote = voteEntity.toDomain();
 
-        List<VoteOptionEntity> optionEntities = voteOptionRepository.findByVoteId(voteId);
-        List<VoteOptionWithCountDto> optionsWithCount = optionEntities.stream()
-                .map(optionEntity -> {
-                    VoteOption option = optionEntity.toDomain();
-                    long count = voteParticipantRepository.countByOptionId(option.getOptionId());
-                    return VoteOptionWithCountDto.from(option, count);
-                })
-                .toList();
-
-        Long mySelectedOptionId = voteParticipantRepository.findByVoteIdAndUserId(voteId, userId)
-                .map(VoteParticipantEntity::getOptionId)
-                .orElse(null);
-
-        return VoteDetailResponseDto.from(vote, optionsWithCount, mySelectedOptionId);
+        return buildVoteDetail(vote, voteId, userId);
     }
 
     @Transactional
@@ -124,10 +117,6 @@ public class VoteService {
             throw new BusinessException(ErrorCode.VOTE_ALREADY_CLOSED);
         }
 
-        if (voteParticipantRepository.existsByVoteIdAndUserId(voteId, userId)) {
-            throw new BusinessException(ErrorCode.ALREADY_VOTED);
-        }
-
         VoteOptionEntity optionEntity = voteOptionRepository.findById(request.optionId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.VOTE_OPTION_NOT_FOUND));
 
@@ -137,7 +126,13 @@ public class VoteService {
 
         VoteParticipant participant = VoteParticipant.create(voteId, request.optionId(), userId);
         VoteParticipantEntity participantEntity = VoteParticipantEntity.fromDomain(participant);
-        VoteParticipantEntity savedEntity = voteParticipantRepository.save(participantEntity);
+
+        VoteParticipantEntity savedEntity;
+        try {
+            savedEntity = voteParticipantRepository.saveAndFlush(participantEntity);
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException(ErrorCode.ALREADY_VOTED);
+        }
 
         VoteDetailResponseDto voteDetail = buildVoteDetail(vote, voteId, userId);
         voteEventPublisher.publishVoteParticipated(roomId, voteDetail);
@@ -184,10 +179,18 @@ public class VoteService {
 
     private VoteDetailResponseDto buildVoteDetail(Vote vote, Long voteId, Long userId) {
         List<VoteOptionEntity> optionEntities = voteOptionRepository.findByVoteId(voteId);
+
+        Map<Long, Long> countByOptionId = voteParticipantRepository.countByVoteIdGroupByOptionId(voteId)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+
         List<VoteOptionWithCountDto> optionsWithCount = optionEntities.stream()
                 .map(optionEntity -> {
                     VoteOption option = optionEntity.toDomain();
-                    long count = voteParticipantRepository.countByOptionId(option.getOptionId());
+                    long count = countByOptionId.getOrDefault(option.getOptionId(), 0L);
                     return VoteOptionWithCountDto.from(option, count);
                 })
                 .toList();
