@@ -8,7 +8,6 @@ export const mockRoom: Room = {
   inviteCode: 'TEST123',
   roomStatus: 'ACTIVE',
   targetBudget: 100000,
-  syncMode: 'FOLLOW',
   hostCurrentUrl: null,
   roomMeta: {
     shoppingPurpose: '생일 선물 구매',
@@ -29,6 +28,7 @@ export const mockMembers: Member[] = [
     status: 'ACTIVE',
     isCameraOn: true,
     joinedAt: new Date().toISOString(),
+    syncMode: 'FREE',
   },
   {
     memberId: 2,
@@ -39,6 +39,7 @@ export const mockMembers: Member[] = [
     status: 'ACTIVE',
     isCameraOn: false,
     joinedAt: new Date().toISOString(),
+    syncMode: 'FREE',
   },
 ];
 
@@ -87,4 +88,5 @@ export const createMockMember = (nickname: string, role: 'HOST' | 'GUEST' = 'GUE
   status: 'ACTIVE',
   isCameraOn: false,
   joinedAt: new Date().toISOString(),
+  syncMode: 'FREE',
 });

@@ -35,7 +35,6 @@ export interface RoomResponse {
   inviteCode: string;
   roomStatus: string;
   targetBudget: string | number | null;
-  syncMode: string;
   hostCurrentUrl: string | null;
 }
 
@@ -48,6 +47,7 @@ export interface RoomMember {
   status: string;
   isCameraOn: boolean;
   joinedAt: string;
+  syncMode: SyncMode;
 }
 
 export interface RoomMeta {
@@ -58,10 +58,12 @@ export interface RoomMeta {
   budgetMax?: number; // Response에만 포함될 수 있음
 }
 
+/** 동기화 모드: FOLLOW(개인), FREE(호스트). null 불가. */
+export type SyncMode = 'FOLLOW' | 'FREE';
+
 export interface CreateRoomRequest {
   roomName: string;
   targetBudget: number;
-  syncMode: 'FOLLOW' | 'FREE';
   roomMeta: RoomMeta;
 }
 
@@ -72,7 +74,6 @@ export interface CreateRoomResponse {
   inviteCode: string;
   roomStatus: string;
   targetBudget: number;
-  syncMode: string;
   hostCurrentUrl: string | null;
   roomMeta: RoomMeta;
 }

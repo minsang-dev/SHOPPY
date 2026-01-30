@@ -12,7 +12,6 @@ export interface CreateRoomFormData {
   participants: number;
   targetBudget: string;
   minBudget: number;
-  mode: 'personal' | 'host';
 }
 
 export interface JoinRoomFormData {
