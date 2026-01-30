@@ -14,6 +14,7 @@ pipeline {
                     branch 'BE'
                     branch 'develop'
                     branch 'buildtest'
+                    branch 'release'
                 }
             }
             steps {
@@ -30,6 +31,7 @@ pipeline {
                     branch 'FE'
                     branch 'develop'
                     branch 'buildtest'
+                    branch 'release'
                 }
             }
             steps {
@@ -38,12 +40,12 @@ pipeline {
                 }
             }
         }
-
+    
         stage('Deploy') {
             steps {
                 script {
                     // 1. Frontend 배포
-                    if (env.BRANCH_NAME == 'FE' || env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'buildtest') {
+                    if (env.BRANCH_NAME == 'FE' || env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'buildtest' || env.BRANCH_NAME == 'release') {
                         echo 'Deploying Frontend...'
                         sh 'docker stop shoppy-fe || true'
                         sh 'docker rm shoppy-fe || true'
@@ -51,15 +53,13 @@ pipeline {
                     }
 
                     // 2. Backend & OpenVidu 배포
-                    if (env.BRANCH_NAME == 'BE' || env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'buildtest') {
+                    if (env.BRANCH_NAME == 'BE' || env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'buildtest' || env.BRANCH_NAME == 'release') {
                         echo 'Deploying Backend & OpenVidu...'
                         dir('SHOPPY-BE') {
                             sh '''
-                                echo "DOMAIN_OR_PUBLIC_IP=i14c209.p.ssafy.io" > .env
-                                echo "SERVER_SSL_ENABLED=true" >> .env
-                                echo "HTTPS_PORT=5443" >> .env
-                                echo "CERTIFICATE_TYPE=owncert" >> .env
+                                echo "DOMAIN_OR_PUBLIC_IP=i14c209.p.ssafy.io:8989" > .env
                                 echo "OPENVIDU_SECRET=MySuperSecretPasswordC209" >> .env
+                                echo "CERTIFICATE_TYPE=selfsigned" >> .env
                                 echo "LETSENCRYPT_EMAIL=user@example.com" >> .env
                                 echo "OPENVIDU_RECORDING=false" >> .env
                                 echo "OPENVIDU_RECORDING_DEBUG=false" >> .env
@@ -82,12 +82,8 @@ pipeline {
                                 echo "MYSQL_DATABASE=shoppy" >> .env
                                 echo "MYSQL_USER=shoppyuser" >> .env
                                 echo "MYSQL_PASSWORD=shoppypass" >> .env
-                                echo "SERVER_SSL_KEY_STORE=/opt/openvidu/owncert/keystore.p12" >> .env
-                                echo "SERVER_SSL_KEY_STORE_PASSWORD=changeit" >> .env
-                                echo "SERVER_SSL_KEY_STORE_TYPE=PKCS12" >> .env
-                                echo "SERVER_SSL_KEY_ALIAS=tomcat" >> .env
                             '''
-                            sh 'docker compose up -d --no-build'
+                            sh 'docker-compose up -d --no-build'
                         }
                     }
                 }
