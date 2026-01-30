@@ -7,6 +7,7 @@ import ParticipantVolumeModal from '@/shared/ui/ParticipantVolumeModal';
 import { realtimeConfig } from '@/shared/config/realtime';
 import { useAuthStore } from '@/entities/user';
 import { useMediaControlStore } from '@/features/video-chat/model/useMediaControlStore';
+import { useRemoteMediaControlStore } from '@/features/video-chat/model/useRemoteMediaControlStore';
 import {
   createRealtimeClient,
   connectRealtimeClient,
@@ -31,6 +32,12 @@ const ParticipantsPanel: React.FC = () => {
   const camOn = useMediaControlStore((state) => state.camOn);
   const toggleMic = useMediaControlStore((state) => state.toggleMic);
   const toggleCam = useMediaControlStore((state) => state.toggleCam);
+  const toggleRemoteMic = useRemoteMediaControlStore((state) => state.toggleMute);
+  const toggleRemoteCam = useRemoteMediaControlStore((state) => state.toggleHide);
+  const storedMemberId = useMemo(() => {
+    const raw = localStorage.getItem('memberId');
+    return raw ? Number(raw) : null;
+  }, []);
 
   const handleCopyInviteCode = async () => {
     if (!room?.inviteCode) return;
@@ -129,11 +136,16 @@ const ParticipantsPanel: React.FC = () => {
               key={participant.memberId}
               participant={participant}
               onSelect={(p) => setSelectedParticipantId(p.memberId)}
-              isSelf={Boolean(user && participant.userId && user.id === participant.userId)}
+              isSelf={
+                Boolean(user && participant.userId && user.id === participant.userId) ||
+                (storedMemberId !== null && participant.memberId === storedMemberId)
+              }
               micOn={micOn}
               camOn={camOn}
               onToggleMic={toggleMic}
               onToggleCam={toggleCam}
+              onToggleRemoteMic={() => toggleRemoteMic(participant.nickname)}
+              onToggleRemoteCam={() => toggleRemoteCam(participant.nickname)}
             />
           ))}
         </div>
