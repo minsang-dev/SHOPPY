@@ -9,9 +9,9 @@ import lombok.Getter;
 @Builder
 public class TokenRefreshResponse {
 
-    @Schema(description = "새로운 액세스 토큰", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+    @Schema(description = "새로운 액세스 토큰", example = "access-token-example")
     private String accessToken;
 
-    @Schema(description = "새로운 리프레시 토큰", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+    @Schema(description = "새로운 리프레시 토큰", example = "refresh-token-example")
     private String refreshToken;
 }

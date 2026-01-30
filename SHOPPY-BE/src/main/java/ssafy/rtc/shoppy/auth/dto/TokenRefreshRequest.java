@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class TokenRefreshRequest {
 
-    @Schema(description = "리프레시 토큰", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+    @Schema(description = "리프레시 토큰", example = "refresh-token-example")
     @NotBlank(message = "Refresh Token은 필수입니다.")
     private String refreshToken;
 }
