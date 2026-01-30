@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getVoteList, getVoteDetail, participateVote, createVote } from '@/entities/vote/api/voteApi';
-import type { Vote, VoteDetail, CreateVoteRequest, VoteParticipantRequest } from '@/entities/vote/types/vote.types';
+import type { Vote, VoteDetail, CreateVoteRequest, VoteParticipantRequest, CreateVoteResponse } from '@/entities/vote/types/vote.types';
 import {
   createRealtimeClient,
   connectRealtimeClient,
@@ -97,10 +97,27 @@ export const useVoteRealtime = ({ roomId, selectedVoteId }: UseVoteRealtimeOptio
         console.log('[Vote WS] 연결 성공, 구독:', createdTopic);
 
         subscriptions.push(
-          subscribeTopic(client, createdTopic, async () => {
+          subscribeTopic(client, createdTopic, (body) => {
             console.log('[Vote WS] 투표 생성 이벤트 수신');
-            const data = await getVoteList(roomId, 'OPEN');
-            setVotes(data);
+            try {
+              const created = JSON.parse(body) as CreateVoteResponse;
+              const newVote: Vote = {
+                voteId: created.voteId,
+                title: created.title,
+                status: created.status,
+                createdAt: created.createdAt,
+                closedAt: created.closedAt ?? null,
+              };
+              setVotes((prev) => {
+                // 중복 방지
+                if (prev.some((v) => v.voteId === newVote.voteId)) {
+                  return prev;
+                }
+                return [...prev, newVote];
+              });
+            } catch (err) {
+              console.error('투표 생성 이벤트 파싱 실패:', err);
+            }
           })
         );
 
@@ -121,9 +138,22 @@ export const useVoteRealtime = ({ roomId, selectedVoteId }: UseVoteRealtimeOptio
         );
 
         subscriptions.push(
-          subscribeTopic(client, topicVoteClosed(roomId), async () => {
-            const data = await getVoteList(roomId, 'OPEN');
-            setVotes(data);
+          subscribeTopic(client, topicVoteClosed(roomId), (body) => {
+            console.log('[Vote WS] 투표 마감 이벤트 수신');
+            try {
+              const closed = JSON.parse(body) as { voteId: number; status: string; closedAt: string };
+              // OPEN 목록에서 마감된 투표 제거
+              setVotes((prev) => prev.filter((v) => v.voteId !== closed.voteId));
+              // 현재 보고 있는 투표가 마감되면 상세 정보도 업데이트
+              setVoteDetail((prev) => {
+                if (prev?.voteId === closed.voteId) {
+                  return { ...prev, status: 'CLOSED', closedAt: closed.closedAt };
+                }
+                return prev;
+              });
+            } catch (err) {
+              console.error('투표 마감 이벤트 파싱 실패:', err);
+            }
           })
         );
       })
