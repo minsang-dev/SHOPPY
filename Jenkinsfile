@@ -35,7 +35,15 @@ pipeline {
             }
             steps {
                 dir('SHOPPY-FE') {
-                    sh 'docker build -t shoppy-fe:latest .'
+                    sh '''
+                        docker build --no-cache \
+                        --build-arg VITE_API_BASE_URL=https://i14c209.p.ssafy.io/api \
+                        --build-arg VITE_WEBSOCKET_URL=https://i14c209.p.ssafy.io/api/ws \
+                        --build-arg VITE_REALTIME_ENABLED=true \
+                        --build-arg VITE_KAKAO_JS_KEY=924e1ada162135f28e439c12268347cb \
+                        --build-arg VITE_KAKAO_REST_KEY=fcaef89fee2a672b719a292edcdb9b66 \
+                        -t shoppy-fe:latest .
+                    '''
                 }
             }
         }
