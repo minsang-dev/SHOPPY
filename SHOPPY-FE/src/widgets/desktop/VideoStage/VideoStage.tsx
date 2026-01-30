@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useOpenViduSession } from '@/features/video-chat/model/useOpenViduSession';
 import { useMediaControlStore } from '@/features/video-chat/model/useMediaControlStore';
+import { useRemoteMediaControlStore } from '@/features/video-chat/model/useRemoteMediaControlStore';
 import { useRoomInfo } from '@/features/room/fetch-room/model/useRoomInfo';
 import { useAuthStore } from '@/entities/user';
 import type { VideoChatMode } from '@/entities/room/types/desktopVideoChat.types';
@@ -49,11 +50,13 @@ const VideoTile = ({
   label,
   muted = false,
   showBlackWhenOff = true,
+  forceHidden = false,
 }: {
   streamManager?: StreamManager;
   label: string;
   muted?: boolean;
   showBlackWhenOff?: boolean;
+  forceHidden?: boolean;
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hasVideo = isStreamVideoActive(streamManager);
@@ -66,8 +69,8 @@ const VideoTile = ({
 
   return (
     <div className="video-tile">
-      <video ref={videoRef} autoPlay playsInline muted={muted} />
-      {showBlackWhenOff && !hasVideo && <div className="video-off">Camera Off</div>}
+      <video ref={videoRef} autoPlay playsInline muted={muted || forceHidden} />
+      {showBlackWhenOff && (!hasVideo || forceHidden) && <div className="video-off">Camera Off</div>}
       <div className="video-tile-label">{label}</div>
     </div>
   );
@@ -112,6 +115,8 @@ const VideoStage: React.FC<VideoStageProps> = ({ roomId, mode }) => {
 
   const micOn = useMediaControlStore((state) => state.micOn);
   const camOn = useMediaControlStore((state) => state.camOn);
+  const mutedByNickname = useRemoteMediaControlStore((state) => state.mutedByNickname);
+  const hiddenByNickname = useRemoteMediaControlStore((state) => state.hiddenByNickname);
 
   useEffect(() => {
     setPublishAudio(micOn);
@@ -131,6 +136,27 @@ const VideoStage: React.FC<VideoStageProps> = ({ roomId, mode }) => {
     () => subscribers.filter((sub) => sub?.stream?.typeOfVideo !== 'SCREEN'),
     [subscribers],
   );
+
+  useEffect(() => {
+    cameraSubscribers.forEach((sub) => {
+      const mediaStream =
+        typeof sub?.stream?.getMediaStream === 'function'
+          ? sub.stream.getMediaStream()
+          : undefined;
+      if (!mediaStream) {
+        return;
+      }
+      const nickname = parseNickname(sub);
+      const muted = Boolean(mutedByNickname[nickname]);
+      const hidden = Boolean(hiddenByNickname[nickname]);
+      const subscriber = sub as unknown as {
+        subscribeToAudio?: (value: boolean) => void;
+        subscribeToVideo?: (value: boolean) => void;
+      };
+      subscriber.subscribeToAudio?.(!muted);
+      subscriber.subscribeToVideo?.(!hidden);
+    });
+  }, [cameraSubscribers, hiddenByNickname, mutedByNickname]);
 
   const handleScreenShareToggle = () => {
     if (!isHost) {
@@ -153,6 +179,7 @@ const VideoStage: React.FC<VideoStageProps> = ({ roomId, mode }) => {
             streamManager={sub}
             label={parseNickname(sub)}
             showBlackWhenOff
+            forceHidden={Boolean(hiddenByNickname[parseNickname(sub)])}
           />
         ))}
         {cameraSubscribers.length === 0 && (

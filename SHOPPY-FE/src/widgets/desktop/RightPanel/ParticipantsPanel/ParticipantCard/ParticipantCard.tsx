@@ -10,6 +10,8 @@ interface ParticipantCardProps {
   camOn?: boolean;
   onToggleMic?: () => void;
   onToggleCam?: () => void;
+  onToggleRemoteMic?: () => void;
+  onToggleRemoteCam?: () => void;
 }
 
 const ParticipantCard: React.FC<ParticipantCardProps> = ({
@@ -20,6 +22,8 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({
   camOn,
   onToggleMic,
   onToggleCam,
+  onToggleRemoteMic,
+  onToggleRemoteCam,
 }) => {
   // 초성 추출 (첫 글자)
   const getInitial = (name: string): string => {
@@ -64,26 +68,28 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({
         <div className="participant-card-icons">
           {/* 카메라 아이콘 */}
           <i
-            className={`${isActive ? 'ri-camera-fill' : 'ri-camera-off-line'} participant-icon ${isActive ? 'active' : 'inactive'} ${isSelf ? 'clickable' : ''}`}
+            className={`${isActive ? 'ri-camera-fill' : 'ri-camera-off-line'} participant-icon ${isActive ? 'active' : 'inactive'} ${(isSelf || onToggleRemoteCam) ? 'clickable' : ''}`}
             aria-label={isActive ? '카메라 켜짐' : '카메라 꺼짐'}
             onClick={(event) => {
-              if (!isSelf || !onToggleCam) {
+              event.stopPropagation();
+              if (isSelf) {
+                onToggleCam?.();
                 return;
               }
-              event.stopPropagation();
-              onToggleCam();
+              onToggleRemoteCam?.();
             }}
           ></i>
           {/* 마이크 아이콘 */}
           <i
-            className={`${isMicOn ? 'ri-mic-fill' : 'ri-mic-off-fill'} participant-icon ${isMicOn ? 'active' : 'inactive'} ${isSelf ? 'clickable' : ''}`}
+            className={`${isMicOn ? 'ri-mic-fill' : 'ri-mic-off-fill'} participant-icon ${isMicOn ? 'active' : 'inactive'} ${(isSelf || onToggleRemoteMic) ? 'clickable' : ''}`}
             aria-label={isMicOn ? '마이크 켜짐' : '마이크 꺼짐'}
             onClick={(event) => {
-              if (!isSelf || !onToggleMic) {
+              event.stopPropagation();
+              if (isSelf) {
+                onToggleMic?.();
                 return;
               }
-              event.stopPropagation();
-              onToggleMic();
+              onToggleRemoteMic?.();
             }}
           ></i>
         </div>
