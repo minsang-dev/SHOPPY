@@ -63,9 +63,11 @@ pipeline {
                     if (env.BRANCH_NAME == 'BE' || env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'buildtest' || env.BRANCH_NAME == 'release') {
                         echo 'Deploying Backend & OpenVidu...'
                         dir('SHOPPY-BE') {
+                            sh 'docker compose down || true'
                             sh '''
                                 echo "DOMAIN_OR_PUBLIC_IP=i14c209.p.ssafy.io:8989" > .env
                                 echo "OPENVIDU_SECRET=MySuperSecretPasswordC209" >> .env
+                                echo "OPENVIDU_URL=http://localhost:5443" >> .env
                                 echo "CERTIFICATE_TYPE=selfsigned" >> .env
                                 echo "LETSENCRYPT_EMAIL=user@example.com" >> .env
                                 echo "OPENVIDU_RECORDING=false" >> .env
@@ -90,11 +92,11 @@ pipeline {
                                 echo "MYSQL_USER=shoppyuser" >> .env
                                 echo "MYSQL_PASSWORD=shoppypass" >> .env
                                 echo "KAKAO_CLIENT_ID=fcaef89fee2a672b719a292edcdb9b66" >> .env
-                                echo "KAKAO_REDIRECT_URI=https://i14c209.p.ssafy.io/auth/kakao/callback" >> .env
-                                echo "JWT_SECRET=OGU4MjRhNzFmMTQ4YjM3NDFmYTliNTU0NTI5YWE5ZTMwZmIzY2NiMzNmZDg0ZGNiMTc4MmNmYzliZmRlMGJlYw==" >> .env
+                                echo "KAKAO_REDIRECT_URI='https://i14c209.p.ssafy.io/auth/kakao/callback'" >> .env
+                                echo "JWT_SECRET='OGU4MjRhNzFmMTQ4YjM3NDFmYTliNTU0NTI5YWE5ZTMwZmIzY2NiMzNmZDg0ZGNiMTc4MmNmYzliZmRlMGJlYw=='" >> .env
                                 echo "JWT_ACCESS_EXP=3600000" >> .env
                                 echo "JWT_REFRESH_EXP=604800000" >> .env
-                                echo "CORS_ALLOWED_ORIGINS=https://i14c209.p.ssafy.io,http://localhost:5173" >> .env
+                                echo "CORS_ALLOWED_ORIGINS='https://i14c209.p.ssafy.io,http://localhost:5173'" >> .env
                             '''
                             sh 'docker compose up -d --no-build'
                         }
