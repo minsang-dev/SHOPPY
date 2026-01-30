@@ -25,7 +25,6 @@ public class VoteWebSocketController {
             Principal principal
     ) {
         if (principal == null) {
-            // todo : delete duplicate log message
             log.error("WebSocket message without authentication");
             return;
         }
