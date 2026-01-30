@@ -12,7 +12,6 @@ export type Room = {
   inviteCode: string;
   roomStatus: string;
   targetBudget: number;
-  syncMode: string;
   hostCurrentUrl: string | null;
   roomMeta: RoomMeta;
 };
@@ -26,6 +25,7 @@ export type Member = {
   status: string;
   isCameraOn: boolean;
   joinedAt: string;
+  syncMode: 'FOLLOW' | 'FREE';
 };
 
 // 로그인 유저 방 참여 응답

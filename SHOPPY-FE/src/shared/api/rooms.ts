@@ -9,7 +9,6 @@ type RoomId = string | number;
 export type CreateRoomRequest = {
   roomName: string;
   targetBudget: number;
-  syncMode: string;
   roomMeta: {
     shoppingPurpose: string;
     interestCategories: string[];
@@ -24,7 +23,6 @@ export const createRoom = (payload: CreateRoomRequest) =>
     ...mockRoom,
     roomName: payload.roomName,
     targetBudget: payload.targetBudget,
-    syncMode: payload.syncMode,
     roomMeta: payload.roomMeta,
   });
 
