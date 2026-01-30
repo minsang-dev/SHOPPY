@@ -75,6 +75,21 @@ services:
             options:
                 max-size: "${DOCKER_LOGS_MAX_SIZE:-100M}"
 
+    mysql:
+        image: mysql:8.0
+        restart: always
+        network_mode: host
+        environment:
+            - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+            - MYSQL_DATABASE=${MYSQL_DATABASE}
+            - MYSQL_USER=${MYSQL_USER}
+            - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+        volumes:
+            - ./mysql_data:/var/lib/mysql
+        logging:
+            options:
+                max-size: "100M"
+
 
     shoppy-be-app:
         build:
