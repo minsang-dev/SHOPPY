@@ -300,6 +300,15 @@
   cursor: default;
 }
 
+.mobile-vote-option.selected .mobile-vote-bar-fill {
+  background: #3b82f6;
+}
+
+.mobile-vote-option.selected .mobile-vote-option-row {
+  font-weight: 600;
+  color: #1d4ed8;
+}
+
 .mobile-vote-option-row {
   display: flex;
   justify-content: space-between;

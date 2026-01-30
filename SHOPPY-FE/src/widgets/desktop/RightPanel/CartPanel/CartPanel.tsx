@@ -1,8 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getShoppingList, updateShoppingItem, deleteShoppingItem, addShoppingItem } from '@/entities/shopping/api/shopping';
 import type { ShoppingItem, ShoppingItemAddRequest } from '@/entities/shopping/types/shopping.types';
 import { getProductList } from '@/entities/product/api/productListApi';
+import {
+  createRealtimeClient,
+  connectRealtimeClient,
+  disconnectRealtimeClient,
+  subscribeTopic,
+  topicShoppingAdded,
+  topicShoppingUpdated,
+  topicShoppingDeleted,
+} from '@/shared/lib/realtime';
+import { realtimeConfig } from '@/shared/config/realtime';
 import CartTypeToggle from '../CartTypeToggle/CartTypeToggle';
 import CartItem from '../CartItem/CartItem';
 import OfflineCartInput from '@/features/cart/add-offline-item/ui/OfflineCartInput';
@@ -11,6 +21,29 @@ import './CartPanel.css';
 
 export type ProductMetaMap = Record<number, { imageUrl: string; price: number }>;
 
+// 백엔드 웹소켓 응답 타입 (snake_case)
+interface ShoppingItemRaw {
+  shopping_item_id: number;
+  room_id: number;
+  added_by_user_id: number | null;
+  product_id: number | null;
+  display_name: string;
+  quantity: number;
+  is_checked: boolean;
+  purchase_type: 'online' | 'offline' | null;
+}
+
+// snake_case → camelCase 변환
+const toShoppingItem = (raw: ShoppingItemRaw): ShoppingItem => ({
+  shoppingItemId: raw.shopping_item_id,
+  roomId: raw.room_id,
+  addedByUserId: raw.added_by_user_id,
+  productId: raw.product_id,
+  displayName: raw.display_name,
+  quantity: raw.quantity,
+  isChecked: raw.is_checked,
+  purchaseType: raw.purchase_type,
+});
 
 const CartPanel: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -74,6 +107,97 @@ const CartPanel: React.FC = () => {
       window.removeEventListener('cart-updated', handleCartUpdate);
     };
   }, [loadItems]);
+
+  // 웹소켓 연결 및 구독
+  const realtimeClientRef = useRef<ReturnType<typeof createRealtimeClient> | null>(null);
+
+  useEffect(() => {
+    // 웹소켓 설정이 비활성화되어 있거나 roomId가 없으면 스킵
+    if (!roomId || !realtimeConfig.enabled || !realtimeConfig.websocketUrl) {
+      return;
+    }
+
+    const token =
+      localStorage.getItem('accessToken') ??
+      localStorage.getItem('access_token') ??
+      undefined;
+    if (!token) {
+      return;
+    }
+
+    const client = createRealtimeClient({ token });
+    realtimeClientRef.current = client;
+    let cancelled = false;
+    const subscriptions: Array<{ unsubscribe: () => void }> = [];
+
+    connectRealtimeClient(client)
+      .then(() => {
+        if (cancelled) return;
+
+        // 1) 아이템 추가 이벤트 구독
+        subscriptions.push(
+          subscribeTopic(client, topicShoppingAdded(roomId), (body) => {
+            try {
+              const raw = JSON.parse(body) as ShoppingItemRaw;
+              const newItem = toShoppingItem(raw);
+              setShoppingItems((prev) => {
+                // 중복 방지
+                if (prev.some((i) => i.shoppingItemId === newItem.shoppingItemId)) {
+                  return prev;
+                }
+                return [...prev, newItem];
+              });
+            } catch (err) {
+              console.error('장바구니 추가 이벤트 파싱 실패:', err);
+            }
+          })
+        );
+
+        // 2) 아이템 수정 이벤트 구독
+        subscriptions.push(
+          subscribeTopic(client, topicShoppingUpdated(roomId), (body) => {
+            try {
+              const raw = JSON.parse(body) as ShoppingItemRaw;
+              const updated = toShoppingItem(raw);
+              setShoppingItems((prev) =>
+                prev.map((item) =>
+                  item.shoppingItemId === updated.shoppingItemId ? updated : item
+                )
+              );
+            } catch (err) {
+              console.error('장바구니 수정 이벤트 파싱 실패:', err);
+            }
+          })
+        );
+
+        // 3) 아이템 삭제 이벤트 구독
+        subscriptions.push(
+          subscribeTopic(client, topicShoppingDeleted(roomId), (body) => {
+            try {
+              const { shopping_item_id } = JSON.parse(body) as { shopping_item_id: number };
+              setShoppingItems((prev) =>
+                prev.filter((item) => item.shoppingItemId !== shopping_item_id)
+              );
+            } catch (err) {
+              console.error('장바구니 삭제 이벤트 파싱 실패:', err);
+            }
+          })
+        );
+      })
+      .catch((err) => {
+        console.error('장바구니 WebSocket 연결 실패:', err);
+      });
+
+    // cleanup: 컴포넌트 언마운트 시 구독 해제 및 연결 종료
+    return () => {
+      cancelled = true;
+      subscriptions.forEach((sub) => sub.unsubscribe());
+      void disconnectRealtimeClient(client);
+      if (realtimeClientRef.current === client) {
+        realtimeClientRef.current = null;
+      }
+    };
+  }, [roomId]);
 
   // purchaseType에 따라 필터링 (null도 offline으로 처리)
   const currentCartItems = shoppingItems.filter((item) => {
