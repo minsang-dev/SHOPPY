@@ -47,7 +47,7 @@ export interface RoomMember {
   status: string;
   isCameraOn: boolean;
   joinedAt: string;
-  syncMode: SyncMode;
+  syncMode?: SyncMode;
 }
 
 export interface RoomMeta {

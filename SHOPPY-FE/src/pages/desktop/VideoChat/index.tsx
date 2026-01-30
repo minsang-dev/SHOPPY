@@ -3,6 +3,7 @@ import { useNavigate, Outlet, useParams, useLocation } from 'react-router-dom';
 import type { VideoChatMode, RightPanelType } from '../../../entities/room/types/desktopVideoChat.types';
 import VideoChatHeader from '../../../widgets/desktop/VideoChatHeader/VideoChatHeader';
 import RightPanel from '../../../widgets/desktop/RightPanel/RightPanel';
+import VideoStage from '../../../widgets/desktop/VideoStage/VideoStage';
 import { leaveRoom, patchSyncMode, patchHostUrl, getRoom } from '../../../entities/room/api/room';
 import { useRoomInfo } from '../../../features/room/fetch-room/model/useRoomInfo';
 import { useAuthStore } from '../../../entities/user/model/useAuthStore';
@@ -194,7 +195,9 @@ const DesktopVideoChatPage: React.FC = () => {
           }}
         >
           {/* 중첩 라우터 -> Outlet으로 router에서 정의한 화면 랜더링 */}
-          <Outlet />
+          <div className="video-chat-body">
+            <Outlet />
+          </div>
           {/* 호스트 모드일 때 참여자에게 안내 오버레이 */}
           {mode === 'host' && !isHost && (
             <div
@@ -214,6 +217,7 @@ const DesktopVideoChatPage: React.FC = () => {
               호스트 모드: 호스트가 화면을 제어 중입니다
             </div>
           )}
+          <VideoStage roomId={roomId} />
         </div>
         <div className="video-chat-right">
           <RightPanel panelType={activePanel} />
