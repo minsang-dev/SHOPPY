@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import ssafy.rtc.shoppy.room.domain.Room;
 import ssafy.rtc.shoppy.room.enums.RoomStatus;
-import ssafy.rtc.shoppy.room.enums.SyncMode;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -38,10 +37,6 @@ public class RoomEntity {
     @Column(name = "target_budget", precision = 12, scale = 2)
     private BigDecimal targetBudget;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "sync_mode", length = 10)
-    private SyncMode syncMode;
-
     @Column(name = "host_current_url", length = 2048)
     private String hostCurrentUrl;
 
@@ -52,7 +47,6 @@ public class RoomEntity {
             String roomCode,
             RoomStatus status,
             BigDecimal targetBudget,
-            SyncMode syncMode,
             String hostCurrentUrl
     ) {
         this.roomId = roomId;
@@ -61,7 +55,6 @@ public class RoomEntity {
         this.roomCode = roomCode;
         this.status = status;
         this.targetBudget = targetBudget;
-        this.syncMode = syncMode;
         this.hostCurrentUrl = hostCurrentUrl;
     }
 
@@ -72,9 +65,6 @@ public class RoomEntity {
         }
         if (this.status == null) {
             this.status = RoomStatus.ACTIVE;
-        }
-        if (this.syncMode == null) {
-            this.syncMode = SyncMode.FOLLOW;
         }
     }
 
@@ -90,7 +80,6 @@ public class RoomEntity {
                 this.roomCode,
                 this.status,
                 this.targetBudget,
-                this.syncMode,
                 this.hostCurrentUrl
         );
     }
@@ -103,7 +92,6 @@ public class RoomEntity {
                 room.getRoomCode(),
                 room.getStatus(),
                 room.getTargetBudget(),
-                room.getSyncMode(),
                 room.getHostCurrentUrl()
         );
     }

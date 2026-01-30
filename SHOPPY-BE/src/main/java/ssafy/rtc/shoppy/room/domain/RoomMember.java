@@ -5,6 +5,7 @@ import ssafy.rtc.shoppy.global.exception.BusinessException;
 import ssafy.rtc.shoppy.global.exception.ErrorCode;
 import ssafy.rtc.shoppy.room.enums.MemberRole;
 import ssafy.rtc.shoppy.room.enums.MemberStatus;
+import ssafy.rtc.shoppy.room.enums.SyncMode;
 
 import java.time.LocalDateTime;
 
@@ -18,6 +19,7 @@ public class RoomMember {
     private final MemberRole role;
     private final MemberStatus status;
     private final boolean isCameraOn;
+    private final SyncMode syncMode;
     private final LocalDateTime joinedAt;
 
     public static RoomMember join(Long roomId, Long userId, String nickname, MemberRole role) {
@@ -32,6 +34,7 @@ public class RoomMember {
                 role,
                 MemberStatus.ACTIVE,
                 false,
+                SyncMode.FREE,
                 LocalDateTime.now()
         );
     }
@@ -48,6 +51,7 @@ public class RoomMember {
                 MemberRole.GUEST,
                 MemberStatus.ACTIVE,
                 false,
+                SyncMode.FREE,
                 LocalDateTime.now()
         );
     }
@@ -60,6 +64,7 @@ public class RoomMember {
             MemberRole role,
             MemberStatus status,
             Boolean isCameraOn,
+            SyncMode syncMode,
             LocalDateTime joinedAt
     ) {
         return new RoomMember(
@@ -70,6 +75,7 @@ public class RoomMember {
                 role,
                 status,
                 isCameraOn != null ? isCameraOn : false,
+                syncMode != null ? syncMode : SyncMode.FREE,
                 joinedAt
         );
     }
@@ -82,6 +88,7 @@ public class RoomMember {
             MemberRole role,
             MemberStatus status,
             boolean isCameraOn,
+            SyncMode syncMode,
             LocalDateTime joinedAt
     ) {
         this.memberId = memberId;
@@ -91,6 +98,7 @@ public class RoomMember {
         this.role = role;
         this.status = status;
         this.isCameraOn = isCameraOn;
+        this.syncMode = syncMode;
         this.joinedAt = joinedAt;
     }
 
@@ -106,6 +114,7 @@ public class RoomMember {
                 this.role,
                 newStatus,
                 this.isCameraOn,
+                this.syncMode,
                 this.joinedAt
         );
     }
@@ -119,6 +128,7 @@ public class RoomMember {
                 this.role,
                 this.status,
                 !this.isCameraOn,
+                this.syncMode,
                 this.joinedAt
         );
     }
@@ -134,6 +144,24 @@ public class RoomMember {
                 this.role,
                 this.status,
                 resolvedCameraOn,
+                this.syncMode,
+                this.joinedAt
+        );
+    }
+
+    public RoomMember updateSyncMode(SyncMode newSyncMode) {
+        if (newSyncMode == null) {
+            throw new BusinessException(ErrorCode.INVALID_ARGUMENT);
+        }
+        return new RoomMember(
+                this.memberId,
+                this.roomId,
+                this.userId,
+                this.nickname,
+                this.role,
+                this.status,
+                this.isCameraOn,
+                newSyncMode,
                 this.joinedAt
         );
     }

@@ -17,6 +17,7 @@ import ssafy.rtc.shoppy.room.entity.RoomEntity;
 import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
 import ssafy.rtc.shoppy.room.enums.MemberRole;
 import ssafy.rtc.shoppy.room.enums.MemberStatus;
+import ssafy.rtc.shoppy.room.enums.SyncMode;
 import ssafy.rtc.shoppy.room.repository.RoomMemberRepository;
 import ssafy.rtc.shoppy.room.repository.RoomRepository;
 
@@ -215,6 +216,21 @@ public class RoomMemberService {
 
         // WebSocket event: member state updated
         publishMemberEvent(updatedMember.getRoomId(), RoomMemberEventDto.stateUpdated(updatedMember));
+    }
+
+    @Transactional
+    public void updateMemberSyncModeByUserId(Long roomId, Long userId, SyncMode syncMode) {
+        RoomMemberEntity memberEntity = roomMemberRepository
+                .findByRoom_RoomIdAndUserIdAndStatus(roomId, userId, MemberStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_MEMBER_NOT_FOUND));
+
+        RoomMember member = memberEntity.toDomain();
+        RoomMember updatedMember = member.updateSyncMode(syncMode);
+        RoomMemberEntity updatedEntity = RoomMemberEntity.fromDomain(updatedMember, memberEntity.getRoom());
+        roomMemberRepository.save(updatedEntity);
+
+        // WebSocket event: member sync mode updated
+        publishMemberEvent(updatedMember.getRoomId(), RoomMemberEventDto.syncModeUpdated(updatedMember));
     }
 
     /**

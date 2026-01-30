@@ -18,4 +18,8 @@ public record RoomMemberEventDto(
     public static RoomMemberEventDto stateUpdated(RoomMember member) {
         return new RoomMemberEventDto(RoomMemberEventType.STATE_UPDATED, RoomMemberDto.from(member));
     }
+
+    public static RoomMemberEventDto syncModeUpdated(RoomMember member) {
+        return new RoomMemberEventDto(RoomMemberEventType.SYNC_MODE_UPDATED, RoomMemberDto.from(member));
+    }
 }

@@ -20,9 +20,6 @@ public record RoomMetaRequestDto(
 
         @NotNull
         @PositiveOrZero
-        BigDecimal minBudget,
-
-        @NotNull
-        SyncMode syncMode
+        BigDecimal minBudget
 ) {
 }

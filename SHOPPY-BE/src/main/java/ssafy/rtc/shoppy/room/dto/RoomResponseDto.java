@@ -2,7 +2,6 @@ package ssafy.rtc.shoppy.room.dto;
 
 import ssafy.rtc.shoppy.room.domain.Room;
 import ssafy.rtc.shoppy.room.enums.RoomStatus;
-import ssafy.rtc.shoppy.room.enums.SyncMode;
 
 import java.math.BigDecimal;
 
@@ -19,8 +18,6 @@ public record RoomResponseDto(
 
         BigDecimal targetBudget,
 
-        SyncMode syncMode,
-
         String hostCurrentUrl
 ) {
     public static RoomResponseDto from(Room room) {
@@ -31,7 +28,6 @@ public record RoomResponseDto(
                 room.getRoomCode(),
                 room.getStatus(),
                 room.getTargetBudget(),
-                room.getSyncMode(),
                 room.getHostCurrentUrl()
         );
     }
