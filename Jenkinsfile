@@ -89,6 +89,12 @@ pipeline {
                                 echo "MYSQL_DATABASE=shoppy" >> .env
                                 echo "MYSQL_USER=shoppyuser" >> .env
                                 echo "MYSQL_PASSWORD=shoppypass" >> .env
+                                echo "KAKAO_CLIENT_ID=fcaef89fee2a672b719a292edcdb9b66" >> .env
+                                echo "KAKAO_REDIRECT_URI=https://i14c209.p.ssafy.io/auth/kakao/callback" >> .env
+                                echo "JWT_SECRET=OGU4MjRhNzFmMTQ4YjM3NDFmYTliNTU0NTI5YWE5ZTMwZmIzY2NiMzNmZDg0ZGNiMTc4MmNmYzliZmRlMGJlYw==" >> .env
+                                echo "JWT_ACCESS_EXP=3600000" >> .env
+                                echo "JWT_REFRESH_EXP=604800000" >> .env
+                                echo "CORS_ALLOWED_ORIGINS=https://i14c209.p.ssafy.io,http://localhost:5173" >> .env
                             '''
                             sh 'docker compose up -d --no-build'
                         }
