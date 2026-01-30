@@ -1,6 +1,16 @@
 pipeline {
     agent any
 
+    // 등록한 모든 Credentials를 환경 변수로 매핑
+    environment {
+        DB_ROOT_PASS = credentials('SHOPPY_MYSQL_ROOT_PASS')
+        DB_PASS      = credentials('SHOPPY_MYSQL_PASS')
+        DB_USER      = credentials('SHOPPY_MYSQL_USER')
+        OV_SECRET    = credentials('SHOPPY_OV_SECRET')
+        KAKAO_JS     = credentials('KAKAO_JS_KEY')
+        KAKAO_REST   = credentials('KAKAO_REST_KEY')
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -11,15 +21,11 @@ pipeline {
         stage('Backend - Dockerize') {
             when {
                 anyOf {
-                    branch 'BE'
-                    branch 'develop'
-                    branch 'buildtest'
-                    branch 'release'
+                    branch 'BE'; branch 'develop'; branch 'buildtest'; branch 'release'
                 }
             }
             steps {
                 dir('SHOPPY-BE') {
-                    // Gradle 직접 빌드 제거 (Dockerfile 내부 빌드 사용)
                     sh 'docker build -t shoppy-be:latest .'
                 }
             }
@@ -28,23 +34,20 @@ pipeline {
         stage('Frontend - Dockerize') {
             when {
                 anyOf {
-                    branch 'FE'
-                    branch 'develop'
-                    branch 'buildtest'
-                    branch 'release'
+                    branch 'FE'; branch 'develop'; branch 'buildtest'; branch 'release'
                 }
             }
             steps {
                 dir('SHOPPY-FE') {
-                    sh '''
+                    sh """
                         docker build --no-cache \
                         --build-arg VITE_API_BASE_URL=https://i14c209.p.ssafy.io/api \
                         --build-arg VITE_WEBSOCKET_URL=https://i14c209.p.ssafy.io/api/ws \
                         --build-arg VITE_REALTIME_ENABLED=true \
-                        --build-arg VITE_KAKAO_JS_KEY=924e1ada162135f28e439c12268347cb \
-                        --build-arg VITE_KAKAO_REST_KEY=fcaef89fee2a672b719a292edcdb9b66 \
+                        --build-arg VITE_KAKAO_JS_KEY=${KAKAO_JS} \
+                        --build-arg VITE_KAKAO_REST_KEY=${KAKAO_REST} \
                         -t shoppy-fe:latest .
-                    '''
+                    """
                 }
             }
         }
@@ -52,24 +55,22 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // 1. Frontend 배포
-                    if (env.BRANCH_NAME == 'BE' || env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'buildtest' || env.BRANCH_NAME == 'release') {
+                    def targetBranches = ['BE', 'develop', 'buildtest', 'release']
+                    if (targetBranches.contains(env.BRANCH_NAME)) {
+                        
                         echo 'Deploying Frontend...'
                         sh 'docker stop shoppy-fe || true'
                         sh 'docker rm shoppy-fe || true'
                         sh 'docker run -d --name shoppy-fe -p 3000:3000 --restart always shoppy-fe:latest'
-                    }
 
-                    // 2. Backend & OpenVidu 배포
-                    if (env.BRANCH_NAME == 'BE' || env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'buildtest' || env.BRANCH_NAME == 'release') {
                         echo 'Deploying Backend & OpenVidu...'
                         dir('SHOPPY-BE') {
-                            sh '''
+                            sh """
                                 echo "DOMAIN_OR_PUBLIC_IP=i14c209.p.ssafy.io" > .env
                                 echo "SERVER_SSL_ENABLED=true" >> .env
                                 echo "HTTPS_PORT=5443" >> .env
                                 echo "CERTIFICATE_TYPE=owncert" >> .env
-                                echo "OPENVIDU_SECRET=MySuperSecretPasswordC209" >> .env
+                                echo "OPENVIDU_SECRET=${OV_SECRET}" >> .env
                                 echo "LETSENCRYPT_EMAIL=user@example.com" >> .env
                                 echo "OPENVIDU_RECORDING=false" >> .env
                                 echo "OPENVIDU_RECORDING_DEBUG=false" >> .env
@@ -88,15 +89,15 @@ pipeline {
                                 echo "OPENVIDU_SESSIONS_GARBAGE_THRESHOLD=3600" >> .env
                                 echo "OPENVIDU_CDR=false" >> .env
                                 echo "OPENVIDU_CDR_PATH=/opt/openvidu/cdr" >> .env
-                                echo "MYSQL_ROOT_PASSWORD=root" >> .env
+                                echo "MYSQL_ROOT_PASSWORD=${DB_ROOT_PASS}" >> .env
                                 echo "MYSQL_DATABASE=shoppy" >> .env
-                                echo "MYSQL_USER=shoppyuser" >> .env
-                                echo "MYSQL_PASSWORD=shoppypass" >> .env
+                                echo "MYSQL_USER=${DB_USER}" >> .env
+                                echo "MYSQL_PASSWORD=${DB_PASS}" >> .env
                                 echo "SERVER_SSL_KEY_STORE=/opt/openvidu/owncert/keystore.p12" >> .env
                                 echo "SERVER_SSL_KEY_STORE_PASSWORD=changeit" >> .env
                                 echo "SERVER_SSL_KEY_STORE_TYPE=PKCS12" >> .env
                                 echo "SERVER_SSL_KEY_ALIAS=tomcat" >> .env
-                            '''
+                            """
                             sh 'docker compose up -d --no-build'
                         }
                     }
