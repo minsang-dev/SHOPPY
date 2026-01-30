@@ -5,15 +5,29 @@ import './ParticipantCard.css';
 interface ParticipantCardProps {
   participant: RoomMember;
   onSelect?: (participant: RoomMember) => void;
+  isSelf?: boolean;
+  micOn?: boolean;
+  camOn?: boolean;
+  onToggleMic?: () => void;
+  onToggleCam?: () => void;
 }
 
-const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, onSelect }) => {
+const ParticipantCard: React.FC<ParticipantCardProps> = ({
+  participant,
+  onSelect,
+  isSelf = false,
+  micOn,
+  camOn,
+  onToggleMic,
+  onToggleCam,
+}) => {
   // 초성 추출 (첫 글자)
   const getInitial = (name: string): string => {
     return name.charAt(0);
   };
 
-  const isActive = participant.isCameraOn; // 향후 음성 발화 감지로 변경
+  const isActive = isSelf ? camOn ?? participant.isCameraOn : participant.isCameraOn;
+  const isMicOn = isSelf ? micOn ?? true : participant.isCameraOn;
   const isHost = participant.role === 'HOST';
 
   return (
@@ -50,13 +64,27 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({ participant, onSelect
         <div className="participant-card-icons">
           {/* 카메라 아이콘 */}
           <i
-            className={`${isActive ? 'ri-camera-fill' : 'ri-camera-off-line'} participant-icon ${isActive ? 'active' : 'inactive'}`}
+            className={`${isActive ? 'ri-camera-fill' : 'ri-camera-off-line'} participant-icon ${isActive ? 'active' : 'inactive'} ${isSelf ? 'clickable' : ''}`}
             aria-label={isActive ? '카메라 켜짐' : '카메라 꺼짐'}
+            onClick={(event) => {
+              if (!isSelf || !onToggleCam) {
+                return;
+              }
+              event.stopPropagation();
+              onToggleCam();
+            }}
           ></i>
           {/* 마이크 아이콘 */}
           <i
-            className={`${isActive ? 'ri-mic-fill' : 'ri-mic-off-fill'} participant-icon ${isActive ? 'active' : 'inactive'}`}
-            aria-label={isActive ? '마이크 켜짐' : '마이크 꺼짐'}
+            className={`${isMicOn ? 'ri-mic-fill' : 'ri-mic-off-fill'} participant-icon ${isMicOn ? 'active' : 'inactive'} ${isSelf ? 'clickable' : ''}`}
+            aria-label={isMicOn ? '마이크 켜짐' : '마이크 꺼짐'}
+            onClick={(event) => {
+              if (!isSelf || !onToggleMic) {
+                return;
+              }
+              event.stopPropagation();
+              onToggleMic();
+            }}
           ></i>
         </div>
       </div>

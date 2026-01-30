@@ -5,6 +5,8 @@ import { useRoomMembers } from '@/features/room/fetch-members/model/useRoomMembe
 import ParticipantCard from './ParticipantCard/ParticipantCard';
 import ParticipantVolumeModal from '@/shared/ui/ParticipantVolumeModal';
 import { realtimeConfig } from '@/shared/config/realtime';
+import { useAuthStore } from '@/entities/user';
+import { useMediaControlStore } from '@/features/video-chat/model/useMediaControlStore';
 import {
   createRealtimeClient,
   connectRealtimeClient,
@@ -24,6 +26,11 @@ const ParticipantsPanel: React.FC = () => {
   const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(null);
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
   const { room } = useRoomInfo(roomId);
+  const user = useAuthStore((state) => state.user);
+  const micOn = useMediaControlStore((state) => state.micOn);
+  const camOn = useMediaControlStore((state) => state.camOn);
+  const toggleMic = useMediaControlStore((state) => state.toggleMic);
+  const toggleCam = useMediaControlStore((state) => state.toggleCam);
 
   const handleCopyInviteCode = async () => {
     if (!room?.inviteCode) return;
@@ -122,6 +129,11 @@ const ParticipantsPanel: React.FC = () => {
               key={participant.memberId}
               participant={participant}
               onSelect={(p) => setSelectedParticipantId(p.memberId)}
+              isSelf={Boolean(user && participant.userId && user.id === participant.userId)}
+              micOn={micOn}
+              camOn={camOn}
+              onToggleMic={toggleMic}
+              onToggleCam={toggleCam}
             />
           ))}
         </div>

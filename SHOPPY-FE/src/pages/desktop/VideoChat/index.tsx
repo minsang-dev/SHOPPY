@@ -3,6 +3,7 @@ import { useNavigate, Outlet, useParams } from 'react-router-dom';
 import type { VideoChatMode, RightPanelType } from '../../../entities/room/types/desktopVideoChat.types';
 import VideoChatHeader from '../../../widgets/desktop/VideoChatHeader/VideoChatHeader';
 import RightPanel from '../../../widgets/desktop/RightPanel/RightPanel';
+import VideoStage from '../../../widgets/desktop/VideoStage/VideoStage';
 import { leaveRoom } from '../../../entities/room/api/room';
 import './styles.css';
 
@@ -83,7 +84,10 @@ const DesktopVideoChatPage: React.FC = () => {
       <div className="video-chat-content">
         <div className="video-chat-left">
           {/* 중첩 라우터 -> Outlet으로 router에서 정의한 화면 랜더링 */}
-          <Outlet />
+          <div className="video-chat-body">
+            <Outlet />
+          </div>
+          <VideoStage roomId={roomId} mode={mode} />
         </div>
         <div className="video-chat-right">
           <RightPanel panelType={activePanel} />
