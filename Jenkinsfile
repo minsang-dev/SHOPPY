@@ -50,7 +50,7 @@ pipeline {
                 dir('SHOPPY-FE') {
                     sh """
                         docker build --no-cache \
-                        --build-arg VITE_API_BASE_URL=https://i14c209.p.ssafy.io/api \
+                        --build-arg VITE_API_BASE_URL=https://i14c209.p.ssafy.io \
                         --build-arg VITE_WEBSOCKET_URL=https://i14c209.p.ssafy.io/api/ws \
                         --build-arg VITE_REALTIME_ENABLED=true \
                         --build-arg VITE_KAKAO_JS_KEY=${KAKAO_JS} \
