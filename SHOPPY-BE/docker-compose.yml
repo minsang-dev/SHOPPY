@@ -95,7 +95,6 @@ services:
             - SPRING_DATASOURCE_URL=jdbc:mysql://${DB_HOST}:${DB_PORT}/Shoppy_DB?useSSL=false&allowPublicKeyRetrieval=true
             - SPRING_DATASOURCE_USERNAME=${DB_USER}
             - SPRING_DATASOURCE_PASSWORD=${DB_PASS}
-            - SPRING_JPA_HIBERNATE_DDL_AUTO=none
             - SPRING_JPA_DATABASE-PLATFORM=org.hibernate.dialect.MySQLDialect
             - JWT_SECRET=${JWT_SECRET}
             - JWT_ACCESS_EXP=${JWT_ACCESS_EXP}

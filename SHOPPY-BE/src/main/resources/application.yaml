@@ -9,8 +9,8 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO}
-    show-sql: ${JPA_SHOW_SQL}
+      ddl-auto: update
+    show-sql: true
 
   cloud:
     aws:
