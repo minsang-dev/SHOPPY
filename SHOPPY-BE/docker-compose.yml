@@ -107,3 +107,7 @@ services:
                 max-size: "100M"
         networks:
             - shoppy-net
+
+networks:
+    shoppy-net:
+        external: true
