@@ -81,7 +81,8 @@ services:
             dockerfile: Dockerfile
         container_name: shoppy-be
         image: shoppy-be
-        restart: on-failure
+        ports:
+            - "8090:8080"
         env_file:
             - .env
         environment:
