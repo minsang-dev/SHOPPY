@@ -91,9 +91,9 @@ services:
             - OPENVIDU_SECRET=${OPENVIDU_SECRET}
             - SPRING_APPLICATION_NAME=shoppy-be
             # === MySQL Connection ===
-            - SPRING_DATASOURCE_URL=jdbc:mysql://shoppy-mysql:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true
-            - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
-            - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+            - SPRING_DATASOURCE_URL=jdbc:mysql://{DB_HOST}:{DB_PORT}/${DB_NAME}?useSSL=false&allowPublicKeyRetrieval=true
+            - SPRING_DATASOURCE_USERNAME=${DB_USER}
+            - SPRING_DATASOURCE_PASSWORD=${DB_PASS}
             - SPRING_JPA_HIBERNATE_DDL_AUTO=none
             - SPRING_JPA_DATABASE-PLATFORM=org.hibernate.dialect.MySQLDialect
             - JWT_SECRET=${JWT_SECRET}
