@@ -12,6 +12,9 @@ pipeline {
         JWT_SECRET   =  credentials('JWT_SECRET')
         JWT_ACCESS_EXP = credentials('JWT_ACCESS_EXP')
         JWT_REFRESH_EXP = credentials('JWT_REFRESH_EXP')
+        AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
+        AWS_SECRET_KEY = credentials('AWS_SECRET_KEY')
+        AWS_S3_BUCKET     = credentials('AWS_S3_BUCKET')
     }
 
     stages {
@@ -105,6 +108,9 @@ pipeline {
                                 echo "JWT_REFRESH_EXP=${JWT_REFRESH_EXP}" >> .env
                                 echo "JPA_DDL_AUTO=none" >> .env
                                 echo "JPA_SHOW_SQL=false" >> .env
+                                echo "AWS_ACCESS_KEY=REDACTED" >> .env
+                                echo "AWS_SECRET_KEY=REDACTED" >> .env
+                                echo "AWS_S3_BUCKET=${AWS_S3_BUCKET}" >> .env
                             """
                             sh 'docker compose up -d --no-build'
                         }
