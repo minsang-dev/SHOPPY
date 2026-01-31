@@ -113,8 +113,8 @@ pipeline {
                 }
              }
         }
-
-        post {
+    }
+    post {
             always {
                 // BE 폴더에 들어가서 .env 삭제
                 dir('SHOPPY-BE') { 
@@ -131,5 +131,4 @@ pipeline {
                 echo "💥 배포 중 오류가 발생했습니다."
             }
         }
-    }
 }
