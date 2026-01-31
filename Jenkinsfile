@@ -16,6 +16,8 @@ pipeline {
         AWS_SECRET_KEY = credentials('AWS_SECRET_KEY')
         AWS_S3_BUCKET     = credentials('AWS_S3_BUCKET')
         GMS_API_KEY = credentials('GMS_API_KEY')
+        KAKAO_CLIENT_ID = credentials('KAKAO_CLIENT_ID')
+        KAKAO_REDIRECT_URI = credentials('KAKAO_REDIRECT_URI')
     }
 
     stages {
@@ -113,6 +115,8 @@ pipeline {
                                 echo "AWS_SECRET_KEY=REDACTED" >> .env
                                 echo "AWS_S3_BUCKET=${AWS_S3_BUCKET}" >> .env
                                 echo "GMS_API_KEY=${GMS_API_KEY}" >> .env
+                                echo "KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}" >> .env
+                                echo "KAKAO_REDIRECT_URI=${KAKAO_REDIRECT_URI}" >> .env
                             """
                             sh 'docker compose up -d --no-build'
                         }
