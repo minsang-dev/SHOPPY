@@ -27,6 +27,8 @@ services:
         logging:
             options:
                 max-size: "${DOCKER_LOGS_MAX_SIZE:-100M}"
+        networks:
+            - shoppy-net
 
     kms:
         image: ${KMS_IMAGE:-kurento/kurento-media-server:7.3.0}
@@ -50,6 +52,8 @@ services:
         logging:
             options:
                 max-size: "${DOCKER_LOGS_MAX_SIZE:-100M}"
+        networks:
+            - shoppy-net
 
     coturn:
         image: openvidu/openvidu-coturn:2.32.1
@@ -74,27 +78,14 @@ services:
         logging:
             options:
                 max-size: "${DOCKER_LOGS_MAX_SIZE:-100M}"
-
-    mysql:
-        image: mysql:8.0
-        restart: always
-        network_mode: host
-        environment:
-            - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-            - MYSQL_DATABASE=${MYSQL_DATABASE}
-            - MYSQL_USER=${MYSQL_USER}
-            - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-        volumes:
-            - ./mysql_data:/var/lib/mysql
-        logging:
-            options:
-                max-size: "100M"
-
+        networks:
+            - shoppy-net
 
     shoppy-be-app:
         build:
             context: .
             dockerfile: Dockerfile
+        container_name: shoppy-be
         image: shoppy-be
         restart: on-failure
         network_mode: host
@@ -102,11 +93,11 @@ services:
             - .env
         environment:
             - SERVER_PORT=8080
-            - OPENVIDU_URL=http://localhost:5443
+            - OPENVIDU_URL=http://shoppy-be-openvidu-server-1
             - OPENVIDU_SECRET=${OPENVIDU_SECRET}
             - SPRING_APPLICATION_NAME=shoppy-be
             # === MySQL Connection ===
-            - SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true
+            - SPRING_DATASOURCE_URL=jdbc:mysql://shoppy-mysql:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true
             - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
             - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
             - SPRING_JPA_HIBERNATE_DDL_AUTO=update
@@ -114,3 +105,5 @@ services:
         logging:
             options:
                 max-size: "100M"
+        networks:
+            - shoppy-net

@@ -21,7 +21,7 @@ pipeline {
         stage('Backend - Dockerize') {
             when {
                 anyOf {
-                    branch 'BE'; branch 'develop'; branch 'buildtest'; branch 'release'
+                    branch 'develop'; branch 'buildtest'; branch 'release'
                 }
             }
             steps {
@@ -34,7 +34,7 @@ pipeline {
         stage('Frontend - Dockerize') {
             when {
                 anyOf {
-                    branch 'FE'; branch 'develop'; branch 'buildtest'; branch 'release'
+                    branch 'develop'; branch 'buildtest'; branch 'release'
                 }
             }
             steps {
@@ -55,7 +55,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    def targetBranches = ['BE', 'develop', 'buildtest', 'release']
+                    def targetBranches = ['develop', 'buildtest', 'release']
                     if (targetBranches.contains(env.BRANCH_NAME)) {
                         
                         echo 'Deploying Frontend...'
@@ -90,7 +90,7 @@ pipeline {
                                 echo "OPENVIDU_CDR=false" >> .env
                                 echo "OPENVIDU_CDR_PATH=/opt/openvidu/cdr" >> .env
                                 echo "MYSQL_ROOT_PASSWORD=${DB_ROOT_PASS}" >> .env
-                                echo "MYSQL_DATABASE=shoppy" >> .env
+                                echo "MYSQL_DATABASE=Shoppy_DB" >> .env
                                 echo "MYSQL_USER=${DB_USER}" >> .env
                                 echo "MYSQL_PASSWORD=${DB_PASS}" >> .env
                                 echo "SERVER_SSL_KEY_STORE=/opt/openvidu/owncert/keystore.p12" >> .env
@@ -102,6 +102,33 @@ pipeline {
                         }
                     }
                 }
+            }
+        }
+        
+        stage('Clean up Image') {
+             steps {
+                script {
+                    // 사용하지 않는 이미지(Dangling images) 삭제
+                    sh 'docker image prune -f'
+                }
+             }
+        }
+
+        post {
+            always {
+                // BE 폴더에 들어가서 .env 삭제
+                dir('SHOPPY-BE') { 
+                    script {
+                        sh "rm -f .env"
+                        echo "🧹 Backend .env file deleted."
+                    }
+                }
+            }
+            success {
+                echo "🎉 모든 배포가 성공적으로 완료되었습니다!"
+            }
+            failure {
+                echo "💥 배포 중 오류가 발생했습니다."
             }
         }
     }
