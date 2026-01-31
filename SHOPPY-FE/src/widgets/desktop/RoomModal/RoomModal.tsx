@@ -26,7 +26,6 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
     participants: 1,
     targetBudget: '',
     minBudget: 1000,
-    mode: 'personal',
   });
   const [joinFormData, setJoinFormData] = useState<JoinRoomFormData>({
     nickname: '',
@@ -52,13 +51,9 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
         .map(cat => cat.trim())
         .filter(cat => cat.length > 0);
 
-      // syncMode 변환: personal -> FOLLOW, host -> FREE
-      const syncMode: 'FOLLOW' | 'FREE' = createFormData.mode === 'personal' ? 'FOLLOW' : 'FREE';
-
       const payload = {
         roomName: createFormData.title,
         targetBudget,
-        syncMode,
         roomMeta: {
           shoppingPurpose: createFormData.purpose,
           interestCategories,

@@ -24,14 +24,12 @@ public class VoteWebSocketController {
             VoteCreateRequestDto request,
             Principal principal
     ) {
-        if (principal == null) {
-            log.error("WebSocket message without authentication");
+        Long userId = extractUserId(principal);
+        if (userId == null) {
             return;
         }
 
-        Long userId = Long.parseLong(principal.getName());
         log.info("WebSocket vote create request - roomId: {}, userId: {}", roomId, userId);
-
         voteService.createVote(roomId, userId, request);
     }
 
@@ -42,14 +40,12 @@ public class VoteWebSocketController {
             VoteParticipateRequestDto request,
             Principal principal
     ) {
-        if (principal == null) {
-            log.error("WebSocket message without authentication");
+        Long userId = extractUserId(principal);
+        if (userId == null) {
             return;
         }
 
-        Long userId = Long.parseLong(principal.getName());
         log.info("WebSocket vote participate request - roomId: {}, voteId: {}, userId: {}", roomId, voteId, userId);
-
         voteService.participate(roomId, voteId, userId, request);
     }
 
@@ -59,14 +55,26 @@ public class VoteWebSocketController {
             @DestinationVariable Long voteId,
             Principal principal
     ) {
-        if (principal == null) {
-            log.error("WebSocket message without authentication");
+        Long userId = extractUserId(principal);
+        if (userId == null) {
             return;
         }
 
-        Long userId = Long.parseLong(principal.getName());
         log.info("WebSocket vote close request - roomId: {}, voteId: {}, userId: {}", roomId, voteId, userId);
-
         voteService.closeVote(roomId, voteId, userId);
+    }
+
+    private Long extractUserId(Principal principal) {
+        if (principal == null) {
+            log.error("WebSocket message without authentication");
+            return null;
+        }
+
+        try {
+            return Long.parseLong(principal.getName());
+        } catch (NumberFormatException e) {
+            log.error("Invalid principal name format, expected numeric userId but got: {}", principal.getName());
+            return null;
+        }
     }
 }

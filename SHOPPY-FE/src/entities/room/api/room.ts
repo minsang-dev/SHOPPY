@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   CreateRoomRequest,
   CreateRoomResponse,
   JoinRoomAsUserRequest,
@@ -7,6 +7,7 @@
   JoinRoomAsGuestResponse,
   RoomMember,
   RoomResponse,
+  SyncMode,
 } from '../types/room.types';
 import { apiRequest } from '@/shared/api/http';
 import { updateMemberState as updateMemberStateApi } from '@/shared/api/rooms';
@@ -39,7 +40,7 @@ export const joinRoomAsGuest = async (payload: JoinRoomAsGuestRequest): Promise<
   });
 };
 
-// 편의 joinRoom (deprecated, nickname이 있으면 게스트, 없으면 로그인 사용자)
+// 로그인 사용자 방 입장 
 export const joinRoom = async (payload: { roomCode: string; nickname?: string }): Promise<JoinRoomResponse> => {
   if (payload.nickname) {
     const guestRes = await joinRoomAsGuest({ roomCode: payload.roomCode, nickname: payload.nickname });
@@ -70,6 +71,30 @@ export const leaveRoom = async (roomId: string): Promise<void> => {
   await apiRequest<void>({
     method: 'DELETE',
     url: `/rooms/${roomId}/leave`,
+  });
+};
+
+// 개인 동기화 모드 변경 (멤버 본인의 FOLLOW/FREE 전환)
+export const patchSyncMode = async (
+  roomId: string,
+  payload: { syncMode: SyncMode },
+): Promise<void> => {
+  await apiRequest<void>({
+    method: 'PATCH',
+    url: `/rooms/${roomId}/sync-mode`,
+    data: payload,
+  });
+};
+
+// 호스트 URL 업데이트
+export const patchHostUrl = async (
+  roomId: string,
+  payload: { currentUrl: string },
+): Promise<void> => {
+  await apiRequest<void>({
+    method: 'PATCH',
+    url: `/rooms/${roomId}/host-url`,
+    data: payload,
   });
 };
 

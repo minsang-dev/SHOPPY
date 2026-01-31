@@ -1,7 +1,7 @@
 package ssafy.rtc.shoppy.vote.event;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import ssafy.rtc.shoppy.vote.dto.VoteCloseResponseDto;
 import ssafy.rtc.shoppy.vote.dto.VoteCreateResponseDto;
@@ -11,26 +11,17 @@ import ssafy.rtc.shoppy.vote.dto.VoteDetailResponseDto;
 @RequiredArgsConstructor
 public class VoteEventPublisher {
 
-    private final SimpMessagingTemplate messagingTemplate;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
-    public void publishVoteCreated(Long roomId, VoteCreateResponseDto vote) {
-        messagingTemplate.convertAndSend(
-                "/topic/rooms/" + roomId + "/votes/created",
-                vote
-        );
+    public void publishVoteCreated(Long roomId, VoteCreateResponseDto response) {
+        applicationEventPublisher.publishEvent(new VoteCreatedEvent(roomId, response));
     }
 
     public void publishVoteParticipated(Long roomId, VoteDetailResponseDto voteDetail) {
-        messagingTemplate.convertAndSend(
-                "/topic/rooms/" + roomId + "/votes/participated",
-                voteDetail
-        );
+        applicationEventPublisher.publishEvent(new VoteParticipatedEvent(roomId, voteDetail));
     }
 
-    public void publishVoteClosed(Long roomId, VoteCloseResponseDto vote) {
-        messagingTemplate.convertAndSend(
-                "/topic/rooms/" + roomId + "/votes/closed",
-                vote
-        );
+    public void publishVoteClosed(Long roomId, VoteCloseResponseDto response) {
+        applicationEventPublisher.publishEvent(new VoteClosedEvent(roomId, response));
     }
 }

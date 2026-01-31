@@ -41,7 +41,7 @@ const VideoChatHeader: React.FC<DesktopVideoChatHeaderProps> = ({
           </button>
         </div>
 
-        {/* 우측 상단 아이콘 */} 
+        {/* 우측 상단 아이콘 */}
         <div className="header-icons">
           <button
             className={`header-icon ${activePanel === 'cart' ? 'active' : ''}`}
@@ -49,6 +49,7 @@ const VideoChatHeader: React.FC<DesktopVideoChatHeaderProps> = ({
             aria-label="장바구니"
           >
             <i className="fa-solid fa-cart-arrow-down"></i>
+            <span className="header-icon-tooltip">장바구니</span>
           </button>
           <button
             className={`header-icon ${activePanel === 'participants' ? 'active' : ''}`}
@@ -56,6 +57,7 @@ const VideoChatHeader: React.FC<DesktopVideoChatHeaderProps> = ({
             aria-label="참여자 목록"
           >
             <i className="fa-solid fa-users"></i>
+            <span className="header-icon-tooltip">참여자 목록</span>
           </button>
           <button
             className={`header-icon ${activePanel === 'vote' ? 'active' : ''}`}
@@ -63,6 +65,7 @@ const VideoChatHeader: React.FC<DesktopVideoChatHeaderProps> = ({
             aria-label="투표"
           >
             <i className="fa-solid fa-check-to-slot"></i>
+            <span className="header-icon-tooltip">투표</span>
           </button>
           <button
             className={`header-icon ${activePanel === 'chat' ? 'active' : ''}`}
@@ -70,6 +73,7 @@ const VideoChatHeader: React.FC<DesktopVideoChatHeaderProps> = ({
             aria-label="실시간 채팅"
           >
             <i className="fa-regular fa-comment-dots"></i>
+            <span className="header-icon-tooltip">채팅</span>
           </button>
         </div>
       </div>

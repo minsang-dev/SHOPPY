@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useVoteRealtime } from '@/features/vote/model/useVoteRealtime';
 import { closeVote } from '@/entities/vote/api/voteApi';
+import { useRoomInfo } from '@/features/room/fetch-room/model/useRoomInfo';
+import { useAuthStore } from '@/entities/user/model/useAuthStore';
 import CreateVoteModal from '@/features/vote/create-vote/ui/CreateVoteModal';
 import './VotePanel.css';
 
@@ -12,6 +14,10 @@ const VotePanel: React.FC = () => {
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
   const [closeLoading, setCloseLoading] = useState(false);
   const [participateLoading, setParticipateLoading] = useState(false);
+
+  const { room } = useRoomInfo(roomId);
+  const user = useAuthStore((state) => state.user);
+  const isHost = user?.id === room?.hostId;
 
   const {
     votes,
@@ -221,9 +227,11 @@ const VotePanel: React.FC = () => {
             )}
           </div>
 
-          <button className="vote-create-button" onClick={handleCreateVote}>
-            + 새 투표 생성하기
-          </button>
+          {isHost && (
+            <button className="vote-create-button" onClick={handleCreateVote}>
+              + 새 투표 생성하기
+            </button>
+          )}
         </>
       )}
 

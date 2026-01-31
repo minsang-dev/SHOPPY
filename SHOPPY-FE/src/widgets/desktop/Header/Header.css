@@ -244,6 +244,52 @@
   }
 }
 
+.btn-profile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #000;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.btn-profile:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.header-profile-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 6px;
+  padding: 6px 10px;
+  background-color: #333;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  border-radius: 6px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.btn-profile:hover .header-profile-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
 .btn-login {
   padding: 0.5rem 1rem;
   text-decoration: none;

@@ -1,0 +1,164 @@
+import React, { useEffect, useMemo, useRef } from 'react';
+import { useOpenViduSession } from '@/features/video-chat/model/useOpenViduSession';
+import { useMediaControlStore } from '@/features/video-chat/model/useMediaControlStore';
+import { useRemoteMediaControlStore } from '@/features/video-chat/model/useRemoteMediaControlStore';
+import type { StreamManager } from 'openvidu-browser';
+import './VideoStage.css';
+
+type VideoStageProps = {
+  roomId?: string;
+};
+
+const parseNickname = (streamManager?: StreamManager) => {
+  const raw = streamManager?.stream?.connection?.data;
+  if (!raw) {
+    return 'Guest';
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed?.clientData) {
+      const client = typeof parsed.clientData === 'string' ? JSON.parse(parsed.clientData) : parsed.clientData;
+      return client?.nickname || 'Guest';
+    }
+    return parsed?.nickname || 'Guest';
+  } catch {
+    const match = raw.match(/"nickname"\s*:\s*"([^"]+)"/);
+    return match?.[1] ?? 'Guest';
+  }
+};
+
+const isStreamVideoActive = (streamManager?: StreamManager) => {
+  const stream = streamManager?.stream as { hasVideo?: () => boolean; videoActive?: boolean } | undefined;
+  if (!stream) {
+    return true;
+  }
+  if (typeof stream.hasVideo === 'function') {
+    return stream.hasVideo();
+  }
+  if (typeof stream.videoActive === 'boolean') {
+    return stream.videoActive;
+  }
+  return true;
+};
+
+const VideoTile = ({
+  streamManager,
+  label,
+  muted = false,
+  showBlackWhenOff = true,
+  forceHidden = false,
+}: {
+  streamManager?: StreamManager;
+  label: string;
+  muted?: boolean;
+  showBlackWhenOff?: boolean;
+  forceHidden?: boolean;
+}) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hasVideo = isStreamVideoActive(streamManager);
+
+  useEffect(() => {
+    if (videoRef.current && streamManager) {
+      streamManager.addVideoElement(videoRef.current);
+    }
+  }, [streamManager]);
+
+  return (
+    <div className="video-tile">
+      <video ref={videoRef} autoPlay playsInline muted={muted || forceHidden} />
+      {showBlackWhenOff && (!hasVideo || forceHidden) && <div className="video-off">Camera Off</div>}
+      <div className="video-tile-label">{label}</div>
+    </div>
+  );
+};
+
+const LocalVideoTile = ({
+  videoRef,
+  label,
+}: {
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  label: string;
+}) => (
+  <div className="video-tile">
+    <video ref={videoRef} autoPlay playsInline muted />
+    <div className="video-tile-label">{label}</div>
+  </div>
+);
+
+const VideoStage: React.FC<VideoStageProps> = ({ roomId }) => {
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+
+  const {
+    subscribers,
+    setPublishAudio,
+    setPublishVideo,
+  } = useOpenViduSession({
+    enabled: Boolean(roomId),
+    roomId,
+    profile: {},
+    localVideoRef,
+  });
+
+  const micOn = useMediaControlStore((state) => state.micOn);
+  const camOn = useMediaControlStore((state) => state.camOn);
+  const mutedByNickname = useRemoteMediaControlStore((state) => state.mutedByNickname);
+  const hiddenByNickname = useRemoteMediaControlStore((state) => state.hiddenByNickname);
+
+  useEffect(() => {
+    setPublishAudio(micOn);
+  }, [micOn, setPublishAudio]);
+
+  useEffect(() => {
+    setPublishVideo(camOn);
+  }, [camOn, setPublishVideo]);
+
+  const cameraSubscribers = useMemo(
+    () => subscribers.filter((sub) => sub?.stream?.typeOfVideo !== 'SCREEN'),
+    [subscribers],
+  );
+
+  useEffect(() => {
+    cameraSubscribers.forEach((sub) => {
+      const mediaStream =
+        typeof sub?.stream?.getMediaStream === 'function'
+          ? sub.stream.getMediaStream()
+          : undefined;
+      if (!mediaStream) {
+        return;
+      }
+      const nickname = parseNickname(sub);
+      const muted = Boolean(mutedByNickname[nickname]);
+      const hidden = Boolean(hiddenByNickname[nickname]);
+      const subscriber = sub as unknown as {
+        subscribeToAudio?: (value: boolean) => void;
+        subscribeToVideo?: (value: boolean) => void;
+      };
+      subscriber.subscribeToAudio?.(!muted);
+      subscriber.subscribeToVideo?.(!hidden);
+    });
+  }, [cameraSubscribers, hiddenByNickname, mutedByNickname]);
+
+  return (
+    <section className="video-stage">
+      <div className="video-strip">
+        <LocalVideoTile videoRef={localVideoRef} label="Me" />
+        {cameraSubscribers.map((sub) => (
+          <VideoTile
+            key={sub.stream?.streamId}
+            streamManager={sub}
+            label={parseNickname(sub)}
+            showBlackWhenOff
+            forceHidden={Boolean(hiddenByNickname[parseNickname(sub)])}
+          />
+        ))}
+        {cameraSubscribers.length === 0 && (
+          <div className="video-strip-empty">참여자가 들어오면 여기에 표시돼요.</div>
+        )}
+      </div>
+
+      <div className="video-controls" />
+    </section>
+  );
+};
+
+export default VideoStage;

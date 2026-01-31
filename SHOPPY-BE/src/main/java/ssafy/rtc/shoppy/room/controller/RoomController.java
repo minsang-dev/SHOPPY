@@ -37,7 +37,6 @@ public class RoomController {
         Room room = roomService.createRoom(
                 request.roomName(),
                 request.targetBudget(),
-                request.syncMode(),
                 hostId
         );
 
@@ -122,13 +121,13 @@ public class RoomController {
     }
 
     @PatchMapping("/{roomId}/sync-mode")
-    @Operation(summary = "동기화 모드 변경", description = "호스트가 방 동기화 모드를 변경합니다.")
+    @Operation(summary = "동기화 모드 변경", description = "사용자가 자신의 동기화 모드를 변경합니다.")
     public ResponseEntity<SuccessResponse<Void>> updateSyncMode(
-            @AuthenticationPrincipal Long hostId,
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long roomId,
             @Valid @RequestBody RoomSyncModeUpdateRequestDto request
     ) {
-        roomService.updateSyncMode(roomId, hostId, request.syncMode());
+        roomMemberService.updateMemberSyncModeByUserId(roomId, userId, request.syncMode());
         return ResponseEntity.ok(SuccessResponse.ok("동기화 모드가 변경되었습니다."));
     }
 
