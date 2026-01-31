@@ -27,8 +27,6 @@ services:
         logging:
             options:
                 max-size: "${DOCKER_LOGS_MAX_SIZE:-100M}"
-        networks:
-            - shoppy-net
 
     kms:
         image: ${KMS_IMAGE:-kurento/kurento-media-server:7.3.0}
@@ -52,8 +50,6 @@ services:
         logging:
             options:
                 max-size: "${DOCKER_LOGS_MAX_SIZE:-100M}"
-        networks:
-            - shoppy-net
 
     coturn:
         image: openvidu/openvidu-coturn:2.32.1
@@ -78,8 +74,6 @@ services:
         logging:
             options:
                 max-size: "${DOCKER_LOGS_MAX_SIZE:-100M}"
-        networks:
-            - shoppy-net
 
     shoppy-be-app:
         build:
@@ -88,12 +82,11 @@ services:
         container_name: shoppy-be
         image: shoppy-be
         restart: on-failure
-        network_mode: host
         env_file:
             - .env
         environment:
             - SERVER_PORT=8080
-            - OPENVIDU_URL=http://shoppy-be-openvidu-server-1
+            - OPENVIDU_URL=http://172.26.8.114:5443
             - OPENVIDU_SECRET=${OPENVIDU_SECRET}
             - SPRING_APPLICATION_NAME=shoppy-be
             # === MySQL Connection ===
