@@ -121,6 +121,7 @@ pipeline {
                                 echo "KAKAO_REDIRECT_URI=${KAKAO_REDIRECT_URI}" >> .env
                                 echo "DB_HOST=${DB_HOST}" >> .env
                                 echo "DB_PORT=${DB_PORT}" >> .env
+                                echo "CORS_ALLOWED_ORIGINS=https://i14c209.p.ssafy.io" >> .env
                             """
                             sh 'docker compose up -d --no-build'
                         }
