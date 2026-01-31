@@ -56,8 +56,7 @@ public class AiRoomService {
     public AiRoomCreateResponseDto createRoomWithChecklist(AiRoomCreateRequestDto request, Long hostId) {
         validator.validate(request);
 
-        Room room = Room.create(hostId, request.roomMeta().roomName(), request.roomMeta().targetBudget(),
-                request.roomMeta().syncMode());
+        Room room = Room.create(hostId, request.roomMeta().roomName(), request.roomMeta().targetBudget());
         RoomEntity savedRoom = roomRepository.save(RoomEntity.fromDomain(room));
 
         RoomConstraintsEntity constraints = RoomConstraintsEntity.from(
@@ -356,8 +355,7 @@ public class AiRoomService {
                         room.getStatus(),
                         request.roomMeta().type(),
                         request.roomMeta().targetBudget(),
-                        request.roomMeta().minBudget(),
-                        room.getSyncMode()),
+                        request.roomMeta().minBudget()),
                 new RoomConstraintsResponseDto(
                         constraints.getPurposeCode(),
                         constraints.getPeopleCount(),

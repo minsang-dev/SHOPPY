@@ -33,9 +33,6 @@ openvidu:
 webrtc:
   session-id-prefix: room-
   default-max-participants: ${WEBRTC_MAX_USERS:4}
-  ice-servers:
-    - urls:
-        - stun:stun.l.google.com:19302
 
 kakao:
   client-id: ${KAKAO_CLIENT_ID}

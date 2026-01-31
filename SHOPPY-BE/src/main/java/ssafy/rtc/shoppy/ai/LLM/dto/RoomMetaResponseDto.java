@@ -2,7 +2,6 @@ package ssafy.rtc.shoppy.ai.llm.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import ssafy.rtc.shoppy.room.enums.RoomStatus;
-import ssafy.rtc.shoppy.room.enums.SyncMode;
 
 import java.math.BigDecimal;
 
@@ -15,8 +14,6 @@ public record RoomMetaResponseDto(
         @JsonProperty("target_budget")
         BigDecimal targetBudget,
         @JsonProperty("min_budget")
-        BigDecimal minBudget,
-        @JsonProperty("sync_mode")
-        SyncMode syncMode
+        BigDecimal minBudget
 ) {
 }

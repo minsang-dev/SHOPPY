@@ -14,7 +14,6 @@ import ssafy.rtc.shoppy.room.dto.RoomEventDto;
 import ssafy.rtc.shoppy.room.entity.RoomEntity;
 import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
 import ssafy.rtc.shoppy.room.enums.MemberRole;
-import ssafy.rtc.shoppy.room.enums.SyncMode;
 import ssafy.rtc.shoppy.room.repository.RoomMemberRepository;
 import ssafy.rtc.shoppy.room.repository.RoomRepository;
 
@@ -31,9 +30,9 @@ public class RoomService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
-    public Room createRoom(String roomName, BigDecimal targetBudget, SyncMode syncMode, Long hostId) {
+    public Room createRoom(String roomName, BigDecimal targetBudget, Long hostId) {
         // 1. Room 생성
-        Room room = Room.create(hostId, roomName, targetBudget, syncMode);
+        Room room = Room.create(hostId, roomName, targetBudget);
 
         RoomEntity roomEntity = RoomEntity.fromDomain(room);
         RoomEntity savedEntity = roomRepository.save(roomEntity);
@@ -74,25 +73,6 @@ public class RoomService {
     }
 
     @Transactional
-    public void updateSyncMode(Long roomId, Long requestUserId, SyncMode syncMode) {
-        RoomEntity roomEntity = roomRepository.findById(roomId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
-
-        Room room = roomEntity.toDomain();
-
-        if (!room.isHost(requestUserId)) {
-            throw new BusinessException(ErrorCode.HOST_ONLY);
-        }
-
-        Room updatedRoom = room.updateSyncMode(syncMode);
-        RoomEntity updatedEntity = RoomEntity.fromDomain(updatedRoom);
-        roomRepository.save(updatedEntity);
-
-        // WebSocket event: sync mode changed
-        publishRoomEvent(roomId, "/sync-mode", RoomEventDto.syncModeChanged(roomId, syncMode));
-    }
-
-    @Transactional
     public void updateHostCurrentUrl(Long roomId, Long requestUserId, String currentUrl) {
         if (currentUrl == null || currentUrl.isBlank()) {
             throw new BusinessException(ErrorCode.HOST_URL_REQUIRED);
@@ -105,10 +85,6 @@ public class RoomService {
 
         if (!room.isHost(requestUserId)) {
             throw new BusinessException(ErrorCode.HOST_ONLY);
-        }
-
-        if (room.getSyncMode() != SyncMode.FOLLOW) {
-            throw new BusinessException(ErrorCode.SYNC_MODE_NOT_FOLLOW);
         }
 
         Room updatedRoom = room.updateHostCurrentUrl(currentUrl);

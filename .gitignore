@@ -13,6 +13,8 @@ out/
 **/application-local.yaml
 SHOPPY-BE/docs/
 SHOPPY-BE/.claude/*
+SHOPPY-BE/openvidu.pem
+SHOPPY-BE/truststore.jks
 
 ### Local development ###
 docker-compose.openvidu.yml

@@ -214,32 +214,6 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
         )}
       </div>
 
-      <div className="form-field">
-        <label className="form-label">동기화 모드</label>
-        <div className="mode-radio-group">
-          <label className="mode-radio">
-            <input
-              type="radio"
-              name="mode"
-              value="personal"
-              checked={formData.mode === 'personal'}
-              onChange={(e) => handleChange('mode', e.target.value as 'personal' | 'host')}
-            />
-            <span>개인 모드</span>
-          </label>
-          <label className="mode-radio">
-            <input
-              type="radio"
-              name="mode"
-              value="host"
-              checked={formData.mode === 'host'}
-              onChange={(e) => handleChange('mode', e.target.value as 'personal' | 'host')}
-            />
-            <span>호스트 모드</span>
-          </label>
-        </div>
-      </div>
-
       <div className="form-tip">
         <span className="tip-icon">💡</span>
         <span className="tip-text">팁) AI가 위시리스트를 자동 작성해 줍니다.</span>

@@ -3,6 +3,7 @@ package ssafy.rtc.shoppy.room.dto;
 import ssafy.rtc.shoppy.room.domain.RoomMember;
 import ssafy.rtc.shoppy.room.enums.MemberRole;
 import ssafy.rtc.shoppy.room.enums.MemberStatus;
+import ssafy.rtc.shoppy.room.enums.SyncMode;
 
 import java.time.LocalDateTime;
 
@@ -21,6 +22,8 @@ public record RoomMemberDto(
 
         Boolean isCameraOn,
 
+        SyncMode syncMode,
+
         LocalDateTime joinedAt
 ) {
     public static RoomMemberDto from(RoomMember member) {
@@ -32,6 +35,7 @@ public record RoomMemberDto(
                 member.getRole(),
                 member.getStatus(),
                 member.isCameraOn(),
+                member.getSyncMode(),
                 member.getJoinedAt()
         );
     }

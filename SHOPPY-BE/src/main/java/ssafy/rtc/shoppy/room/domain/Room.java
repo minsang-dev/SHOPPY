@@ -4,7 +4,6 @@ import lombok.Getter;
 import ssafy.rtc.shoppy.global.exception.BusinessException;
 import ssafy.rtc.shoppy.global.exception.ErrorCode;
 import ssafy.rtc.shoppy.room.enums.RoomStatus;
-import ssafy.rtc.shoppy.room.enums.SyncMode;
 
 import java.math.BigDecimal;
 
@@ -17,12 +16,11 @@ public class Room {
     private final String roomCode;
     private final RoomStatus status;
     private final BigDecimal targetBudget;
-    private final SyncMode syncMode;
     private final String hostCurrentUrl;
 
-    public static Room create(Long hostId, String title, BigDecimal targetBudget, SyncMode syncMode) {
-        validateCreation(hostId, title, targetBudget, syncMode);
-        return new Room(null, hostId, title, null, RoomStatus.ACTIVE, targetBudget, syncMode, null);
+    public static Room create(Long hostId, String title, BigDecimal targetBudget) {
+        validateCreation(hostId, title, targetBudget);
+        return new Room(null, hostId, title, null, RoomStatus.ACTIVE, targetBudget, null);
     }
 
     public static Room from(
@@ -32,10 +30,9 @@ public class Room {
             String roomCode,
             RoomStatus status,
             BigDecimal targetBudget,
-            SyncMode syncMode,
             String hostCurrentUrl
     ) {
-        return new Room(roomId, hostId, title, roomCode, status, targetBudget, syncMode, hostCurrentUrl);
+        return new Room(roomId, hostId, title, roomCode, status, targetBudget, hostCurrentUrl);
     }
 
     private Room(
@@ -45,7 +42,6 @@ public class Room {
             String roomCode,
             RoomStatus status,
             BigDecimal targetBudget,
-            SyncMode syncMode,
             String hostCurrentUrl
     ) {
         this.roomId = roomId;
@@ -54,11 +50,10 @@ public class Room {
         this.roomCode = roomCode;
         this.status = status;
         this.targetBudget = targetBudget;
-        this.syncMode = syncMode;
         this.hostCurrentUrl = hostCurrentUrl;
     }
 
-    private static void validateCreation(Long hostId, String title, BigDecimal targetBudget, SyncMode syncMode) {
+    private static void validateCreation(Long hostId, String title, BigDecimal targetBudget) {
         if (hostId == null) {
             throw new BusinessException(ErrorCode.INVALID_ARGUMENT);
         }
@@ -66,9 +61,6 @@ public class Room {
             throw new BusinessException(ErrorCode.INVALID_ARGUMENT);
         }
         if (targetBudget == null || targetBudget.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException(ErrorCode.INVALID_ARGUMENT);
-        }
-        if (syncMode == null) {
             throw new BusinessException(ErrorCode.INVALID_ARGUMENT);
         }
     }
@@ -84,23 +76,6 @@ public class Room {
                 this.roomCode,
                 newStatus,
                 this.targetBudget,
-                this.syncMode,
-                this.hostCurrentUrl
-        );
-    }
-
-    public Room updateSyncMode(SyncMode newSyncMode) {
-        if (newSyncMode == null) {
-            throw new BusinessException(ErrorCode.INVALID_ARGUMENT);
-        }
-        return new Room(
-                this.roomId,
-                this.hostId,
-                this.title,
-                this.roomCode,
-                this.status,
-                this.targetBudget,
-                newSyncMode,
                 this.hostCurrentUrl
         );
     }
@@ -113,7 +88,6 @@ public class Room {
                 this.roomCode,
                 this.status,
                 this.targetBudget,
-                this.syncMode,
                 newUrl
         );
     }

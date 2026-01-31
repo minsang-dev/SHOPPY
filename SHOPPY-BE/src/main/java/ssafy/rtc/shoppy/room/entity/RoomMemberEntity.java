@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import ssafy.rtc.shoppy.room.domain.RoomMember;
 import ssafy.rtc.shoppy.room.enums.MemberRole;
 import ssafy.rtc.shoppy.room.enums.MemberStatus;
+import ssafy.rtc.shoppy.room.enums.SyncMode;
 
 import java.time.LocalDateTime;
 
@@ -42,6 +43,10 @@ public class RoomMemberEntity {
     @Column(name = "is_camera_on")
     private Boolean isCameraOn;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sync_mode", length = 10)
+    private SyncMode syncMode;
+
     @Column(name = "joined_at")
     private LocalDateTime joinedAt;
 
@@ -53,6 +58,7 @@ public class RoomMemberEntity {
             MemberRole role,
             MemberStatus status,
             Boolean isCameraOn,
+            SyncMode syncMode,
             LocalDateTime joinedAt
     ) {
         this.memberId = memberId;
@@ -62,6 +68,7 @@ public class RoomMemberEntity {
         this.role = role;
         this.status = status;
         this.isCameraOn = isCameraOn;
+        this.syncMode = syncMode;
         this.joinedAt = joinedAt;
     }
 
@@ -76,6 +83,9 @@ public class RoomMemberEntity {
         if (this.isCameraOn == null) {
             this.isCameraOn = false;
         }
+        if (this.syncMode == null) {
+            this.syncMode = SyncMode.FREE;
+        }
     }
 
     public RoomMember toDomain() {
@@ -87,6 +97,7 @@ public class RoomMemberEntity {
                 this.role,
                 this.status,
                 this.isCameraOn,
+                this.syncMode,
                 this.joinedAt
         );
     }
@@ -100,6 +111,7 @@ public class RoomMemberEntity {
                 member.getRole(),
                 member.getStatus(),
                 member.isCameraOn(),
+                member.getSyncMode(),
                 member.getJoinedAt()
         );
     }

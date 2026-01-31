@@ -182,7 +182,6 @@ export const handlers = [
         inviteCode: roomCode,
         roomStatus: 'OPEN',
         targetBudget: 500000,
-        syncMode: 'FOLLOW',
         hostCurrentUrl: null,
         roomMeta: {
           shoppingPurpose: '모바일 테스트',
