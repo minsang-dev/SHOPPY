@@ -88,7 +88,7 @@ services:
         environment:
             - SERVER_PORT=8080
             - SERVER_SSL_ENABLED=false
-            - OPENVIDU_URL=http://172.26.8.114:5443
+            - OPENVIDU_URL=https:/i14c209.p.ssafy.io:5443
             - OPENVIDU_SECRET=${OPENVIDU_SECRET}
             - SPRING_APPLICATION_NAME=shoppy-be
             # === MySQL Connection ===
