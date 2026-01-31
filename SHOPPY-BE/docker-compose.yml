@@ -95,6 +95,8 @@ services:
             - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
             - SPRING_JPA_HIBERNATE_DDL_AUTO=update
             - SPRING_JPA_DATABASE-PLATFORM=org.hibernate.dialect.MySQLDialect
+        volumes:
+            - /opt/openvidu/owncert:/opt/openvidu/owncert:ro
         logging:
             options:
                 max-size: "100M"
