@@ -119,6 +119,8 @@ pipeline {
                                 echo "GMS_API_KEY=${GMS_API_KEY}" >> .env
                                 echo "KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}" >> .env
                                 echo "KAKAO_REDIRECT_URI=${KAKAO_REDIRECT_URI}" >> .env
+                                echo "DB_HOST=${DB_HOST}" >> .env
+                                echo "DB_PORT=${DB_PORT}" >> .env
                             """
                             sh 'docker compose up -d --no-build'
                         }
