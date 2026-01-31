@@ -6,6 +6,8 @@ pipeline {
         DB_ROOT_PASS = credentials('SHOPPY_MYSQL_ROOT_PASS')
         DB_PASS      = credentials('SHOPPY_MYSQL_PASS')
         DB_USER      = credentials('SHOPPY_MYSQL_USER')
+        DB_HOST      = credentials('SHOPPY_MYSQL_HOST')
+        DB_PORT      = credentials('SHOPPY_MYSQL_PORT')
         OV_SECRET    = credentials('SHOPPY_OV_SECRET')
         KAKAO_JS     = credentials('KAKAO_JS_KEY')
         KAKAO_REST   = credentials('KAKAO_REST_KEY')
