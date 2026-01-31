@@ -103,6 +103,8 @@ pipeline {
                                 echo "JWT_SECRET=${JWT_SECRET}" >> .env
                                 echo "JWT_ACCESS_EXP=${JWT_ACCESS_EXP}" >> .env
                                 echo "JWT_REFRESH_EXP=${JWT_REFRESH_EXP}" >> .env
+                                echo "JPA_DDL_AUTO=none" >> .env
+                                echo "JPA_SHOW_SQL=false" >> .env
                             """
                             sh 'docker compose up -d --no-build'
                         }
