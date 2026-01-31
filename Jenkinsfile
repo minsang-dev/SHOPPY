@@ -69,7 +69,7 @@ pipeline {
                         
                         echo 'Deploying Frontend...'
                         sh 'docker stop shoppy-fe || true'
-                        sh 'docker rm shoppy-fe || true'
+                        sh 'docker rm -f shoppy-fe || true'
                         sh 'docker run -d --name shoppy-fe -p 3000:3000 --restart always shoppy-fe:latest'
 
                         echo 'Deploying Backend & OpenVidu...'
