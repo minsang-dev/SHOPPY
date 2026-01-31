@@ -95,6 +95,9 @@ services:
             - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
             - SPRING_JPA_HIBERNATE_DDL_AUTO=update
             - SPRING_JPA_DATABASE-PLATFORM=org.hibernate.dialect.MySQLDialect
+            - JWT_SECRET=${JWT_SECRET}
+            - JWT_ACCESS_EXP=${JWT_ACCESS_EXP}
+            - JWT_REFRESH_EXP=${JWT_REFRESH_EXP}
         volumes:
             - /opt/openvidu/owncert:/opt/openvidu/owncert:ro
         logging:

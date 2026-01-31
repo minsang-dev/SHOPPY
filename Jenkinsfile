@@ -9,6 +9,9 @@ pipeline {
         OV_SECRET    = credentials('SHOPPY_OV_SECRET')
         KAKAO_JS     = credentials('KAKAO_JS_KEY')
         KAKAO_REST   = credentials('KAKAO_REST_KEY')
+        JWT_SECRET   =  credentials('JWT_SECRET')
+        JWT_ACCESS_EXP = credentials('JWT_ACCESS_EXP')
+        JWT_REFRESH_EXP = credentials('JWT_REFRESH_EXP')
     }
 
     stages {
@@ -97,6 +100,9 @@ pipeline {
                                 echo "SERVER_SSL_KEY_STORE_PASSWORD=changeit" >> .env
                                 echo "SERVER_SSL_KEY_STORE_TYPE=PKCS12" >> .env
                                 echo "SERVER_SSL_KEY_ALIAS=tomcat" >> .env
+                                echo "JWT_SECRET=${JWT_SECRET}" >> .env
+                                echo "JWT_ACCESS_EXP=${JWT_ACCESS_EXP}" >> .env
+                                echo "JWT_REFRESH_EXP=${JWT_REFRESH_EXP}" >> .env
                             """
                             sh 'docker compose up -d --no-build'
                         }
