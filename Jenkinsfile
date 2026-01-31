@@ -15,6 +15,7 @@ pipeline {
         AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
         AWS_SECRET_KEY = credentials('AWS_SECRET_KEY')
         AWS_S3_BUCKET     = credentials('AWS_S3_BUCKET')
+        GMS_API_KEY = credentials('GMS_API_KEY')
     }
 
     stages {
@@ -111,6 +112,7 @@ pipeline {
                                 echo "AWS_ACCESS_KEY=REDACTED" >> .env
                                 echo "AWS_SECRET_KEY=REDACTED" >> .env
                                 echo "AWS_S3_BUCKET=${AWS_S3_BUCKET}" >> .env
+                                echo "GMS_API_KEY=${GMS_API_KEY}" >> .env
                             """
                             sh 'docker compose up -d --no-build'
                         }

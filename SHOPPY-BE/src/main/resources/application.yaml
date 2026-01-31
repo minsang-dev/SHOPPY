@@ -50,3 +50,6 @@ jwt:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
+
+gms:
+  api-key: ${GMS_API_KEY}
