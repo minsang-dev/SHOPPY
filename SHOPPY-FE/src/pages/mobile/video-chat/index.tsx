@@ -35,6 +35,7 @@ const MobileVideoChatPage: React.FC = () => {
   const [activePanel, setActivePanel] = useState<PanelType>('cart');
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
+  const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('environment');
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const leftRef = useRef(false);
 
@@ -60,6 +61,14 @@ const MobileVideoChatPage: React.FC = () => {
     setCamOn((prev) => !prev);
   };
 
+  const handleSwitchCamera = () => {
+    setCameraFacingMode((prev) => {
+      const next = prev === 'environment' ? 'user' : 'environment';
+      void switchCamera(next);
+      return next;
+    });
+  };
+
   const realtimeReady =
     realtimeConfig.enabled &&
     Boolean(realtimeConfig.websocketUrl) &&
@@ -81,13 +90,13 @@ const MobileVideoChatPage: React.FC = () => {
 
   const { room } = useRoomInfo(roomId);
 
-  const { isConnected, setPublishAudio, setPublishVideo } = useOpenViduSession({
+  const { isConnected, setPublishAudio, setPublishVideo, switchCamera } = useOpenViduSession({
     enabled: realtimeReady,
     roomId,
     accessToken,
     profile: { nickname, profileColor },
     localVideoRef,
-    videoFacingMode: 'environment',
+    videoFacingMode: cameraFacingMode,
   });
 
   useEffect(() => {
@@ -171,9 +180,46 @@ const MobileVideoChatPage: React.FC = () => {
           camOn={camOn}
           onToggleMic={handleToggleMic}
           onToggleCam={handleToggleCam}
+          onSwitchCamera={handleSwitchCamera}
+          cameraFacingMode={cameraFacingMode}
+          cameraSwitchLabel="카메라 전환"
+          showControls={false}
         />
 
-        <MobileCameraStage videoRef={localVideoRef} hasVideo={isConnected && camOn} />
+        <MobileCameraStage
+          videoRef={localVideoRef}
+          hasVideo={isConnected && camOn}
+          mirror={cameraFacingMode === 'user'}
+        />
+        <div className="mobile-camera-controls">
+          <button
+            type="button"
+            className={`mobile-topbar-icon ${micOn ? '' : 'is-off'}`}
+            onClick={handleToggleMic}
+            aria-label={micOn ? 'Mute microphone' : 'Unmute microphone'}
+          >
+            <i className={micOn ? 'ri-mic-fill' : 'ri-mic-off-fill'} />
+          </button>
+          <button
+            type="button"
+            className={`mobile-topbar-icon ${camOn ? '' : 'is-off'}`}
+            onClick={handleToggleCam}
+            aria-label={camOn ? 'Turn off camera' : 'Turn on camera'}
+          >
+            <i className={camOn ? 'ri-camera-fill' : 'ri-camera-off-line'} />
+          </button>
+          <button
+            type="button"
+            className="mobile-topbar-icon"
+            onClick={handleSwitchCamera}
+            aria-label="카메라 전환"
+            title="카메라 전환"
+            disabled={!camOn}
+            data-facing={cameraFacingMode}
+          >
+            <i className="ri-camera-switch-line" />
+          </button>
+        </div>
 
         <div className="mobile-room-panel">
           <MobilePanelHost

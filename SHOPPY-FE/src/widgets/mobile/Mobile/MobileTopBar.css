@@ -63,3 +63,8 @@
   background: #fee2e2;
   color: #991b1b;
 }
+
+.mobile-topbar-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

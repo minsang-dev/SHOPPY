@@ -79,7 +79,6 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
 
   return (
     <section className="mobile-panel">
-      <div className="mobile-panel-pill">장바구니</div>
       <div className="mobile-panel-card cart-panel-card">
         <div className="mobile-panel-header">
           <div className="mobile-panel-title">장바구니</div>
