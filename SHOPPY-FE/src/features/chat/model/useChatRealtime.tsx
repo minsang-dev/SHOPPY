@@ -42,8 +42,8 @@ interface ChatRealtimeContextValue {
 const ChatRealtimeContext = createContext<ChatRealtimeContextValue | null>(null);
 
 const resolveToken = () =>
-  localStorage.getItem('accessToken') ??
-  localStorage.getItem('access_token') ??
+  sessionStorage.getItem('accessToken') ??
+  sessionStorage.getItem('access_token') ??
   undefined;
 
 interface ChatRealtimeProviderProps {

@@ -90,6 +90,18 @@ const ChatPanel: React.FC = () => {
     return participants.find((p) => p.memberId === senderMemberId);
   };
 
+  /** 입장 순서(joinedAt) 기준으로 정렬된 참여자 목록 - 색상 인덱스 계산용 */
+  const participantsByJoinOrder = useMemo(
+    () => [...participants].sort((a, b) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime()),
+    [participants],
+  );
+
+  /** memberId로 입장 순서 인덱스를 찾아 색상 키로 사용 */
+  const getColorKeyByMemberId = (memberId: number): number => {
+    const index = participantsByJoinOrder.findIndex((p) => p.memberId === memberId);
+    return index >= 0 ? index : memberId;
+  };
+
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     const year = date.getFullYear();
@@ -200,7 +212,7 @@ const ChatPanel: React.FC = () => {
               <div key={group.id} className="chat-message-group">
                 <UserAvatar
                   name={senderName}
-                  colorKey={group.senderMemberId}
+                  colorKey={getColorKeyByMemberId(group.senderMemberId)}
                   size="sm"
                   className="chat-avatar"
                 />

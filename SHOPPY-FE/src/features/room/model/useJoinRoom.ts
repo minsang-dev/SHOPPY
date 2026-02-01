@@ -29,7 +29,7 @@ export const useJoinRoom = () => {
         // 로그인 사용자: POST /rooms/join
         const joinRes = await joinRoomAsUser({ roomCode: payload.roomCode });
         roomId = joinRes.roomId;
-        localStorage.setItem('memberId', String(joinRes.memberId));
+        sessionStorage.setItem('memberId', String(joinRes.memberId));
       } else {
         // 게스트: POST /rooms/join/guest
         const joinRes = await joinRoomAsGuest({ 
@@ -37,10 +37,10 @@ export const useJoinRoom = () => {
           nickname: payload.nickname 
         });
         roomId = joinRes.member.roomId;
-        localStorage.setItem('memberId', String(joinRes.member.memberId));
+        sessionStorage.setItem('memberId', String(joinRes.member.memberId));
         // 게스트 토큰 저장
         if (joinRes.accessToken) {
-          localStorage.setItem('accessToken', joinRes.accessToken);
+          sessionStorage.setItem('accessToken', joinRes.accessToken);
         }
       }
 

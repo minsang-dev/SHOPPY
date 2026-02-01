@@ -19,8 +19,8 @@ import {
 import './styles.css';
 
 const resolveAccessToken = () =>
-  window.localStorage.getItem('access_token') ??
-  window.localStorage.getItem('accessToken') ??
+  window.sessionStorage.getItem('access_token') ??
+  window.sessionStorage.getItem('accessToken') ??
   undefined;
 
 const sendKeepAliveLeave = (roomId: string, token?: string) => {

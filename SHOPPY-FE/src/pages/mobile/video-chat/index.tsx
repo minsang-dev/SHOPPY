@@ -12,8 +12,8 @@ import { leaveRoom } from '../../../entities/room/api/room';
 import './styles.css';
 
 const resolveAccessToken = () =>
-  window.localStorage.getItem('access_token') ??
-  window.localStorage.getItem('accessToken') ??
+  window.sessionStorage.getItem('access_token') ??
+  window.sessionStorage.getItem('accessToken') ??
   undefined;
 
 const sendKeepAliveLeave = (roomId: string, token?: string) => {
@@ -73,8 +73,8 @@ const MobileVideoChatPage: React.FC = () => {
     (import.meta.env.VITE_USE_MOCK === 'true' ? '1' : undefined);
   const accessToken =
     searchParams.get('access_token') ??
-    window.localStorage.getItem('access_token') ??
-    window.localStorage.getItem('accessToken') ??
+    window.sessionStorage.getItem('access_token') ??
+    window.sessionStorage.getItem('accessToken') ??
     undefined;
   const nickname = searchParams.get('nickname') ?? undefined;
   const profileColor = searchParams.get('profile_color') ?? undefined;

@@ -44,8 +44,8 @@ const MobileMembersPanel: React.FC<MobileMembersPanelProps> = ({ roomId }) => {
       return;
     }
     const token =
-      localStorage.getItem('accessToken') ??
-      localStorage.getItem('access_token') ??
+      sessionStorage.getItem('accessToken') ??
+      sessionStorage.getItem('access_token') ??
       undefined;
     if (!token) {
       return;

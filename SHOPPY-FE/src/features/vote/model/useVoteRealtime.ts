@@ -80,8 +80,8 @@ export const useVoteRealtime = ({ roomId, selectedVoteId }: UseVoteRealtimeOptio
     }
 
     const token =
-      localStorage.getItem('accessToken') ??
-      localStorage.getItem('access_token') ??
+      sessionStorage.getItem('accessToken') ??
+      sessionStorage.getItem('access_token') ??
       undefined;
     if (!token) return;
 

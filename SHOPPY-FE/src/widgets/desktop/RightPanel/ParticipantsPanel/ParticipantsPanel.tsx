@@ -35,7 +35,7 @@ const ParticipantsPanel: React.FC = () => {
   const toggleRemoteMic = useRemoteMediaControlStore((state) => state.toggleMute);
   const toggleRemoteCam = useRemoteMediaControlStore((state) => state.toggleHide);
   const storedMemberId = useMemo(() => {
-    const raw = localStorage.getItem('memberId');
+    const raw = sessionStorage.getItem('memberId');
     return raw ? Number(raw) : null;
   }, []);
 
@@ -55,8 +55,8 @@ const ParticipantsPanel: React.FC = () => {
       return;
     }
     const token =
-      localStorage.getItem('accessToken') ??
-      localStorage.getItem('access_token') ??
+      sessionStorage.getItem('accessToken') ??
+      sessionStorage.getItem('access_token') ??
       undefined;
     if (!token) {
       return;

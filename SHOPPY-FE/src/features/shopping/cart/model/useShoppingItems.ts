@@ -102,8 +102,8 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
     }
 
     const token =
-      localStorage.getItem('accessToken') ??
-      localStorage.getItem('access_token') ??
+      sessionStorage.getItem('accessToken') ??
+      sessionStorage.getItem('access_token') ??
       undefined;
     if (!token) {
       return;
