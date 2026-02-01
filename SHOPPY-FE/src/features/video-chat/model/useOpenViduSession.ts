@@ -30,6 +30,7 @@ export interface OpenViduSessionState {
   disconnect: () => void;
   setPublishAudio: (enabled: boolean) => void;
   setPublishVideo: (enabled: boolean) => void;
+  switchCamera: (mode: 'user' | 'environment') => Promise<void>;
   isScreenSharing: boolean;
   startScreenShare: () => Promise<void>;
   stopScreenShare: () => void;
@@ -51,6 +52,9 @@ export const useOpenViduSession = ({
   const sessionRef = useRef<Session | null>(null);
   const publisherRef = useRef<Publisher | null>(null);
   const screenPublisherRef = useRef<Publisher | null>(null);
+  const publishAudioRef = useRef(true);
+  const publishVideoRef = useRef(true);
+  const switchInFlightRef = useRef(false);
   const [subscribers, setSubscribers] = useState<StreamManager[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -63,6 +67,65 @@ export const useOpenViduSession = ({
   const setConnected = useCallback((value: boolean) => {
     isConnectedRef.current = value;
     setIsConnected(value);
+  }, []);
+
+  const createPublisher = useCallback(
+    async (ov: OpenVidu, mode?: 'user' | 'environment') => {
+      let publisher: Publisher | null = null;
+      if (mode && navigator.mediaDevices?.getUserMedia) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: mode } },
+            audio: publishAudioRef.current,
+          });
+          const [videoTrack] = stream.getVideoTracks();
+          const [audioTrack] = stream.getAudioTracks();
+          publisher = await ov.initPublisherAsync(undefined, {
+            publishAudio: publishAudioRef.current,
+            publishVideo: publishVideoRef.current,
+            resolution: '640x360',
+            frameRate: 30,
+            mirror: mode === 'user',
+            videoSource: videoTrack ?? undefined,
+            audioSource: audioTrack ?? undefined,
+          });
+        } catch (error) {
+          console.warn('[OpenVidu] Failed to get preferred camera, falling back.', error);
+        }
+      }
+      if (!publisher) {
+        publisher = await ov.initPublisherAsync(undefined, {
+          publishAudio: publishAudioRef.current,
+          publishVideo: publishVideoRef.current,
+          resolution: '640x360',
+          frameRate: 30,
+          mirror: mode === 'user',
+        });
+      }
+      return publisher;
+    },
+    [],
+  );
+
+  const getPreferredVideoTrack = useCallback(async (mode: 'user' | 'environment') => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      return null;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: mode } },
+        audio: false,
+      });
+      const [track] = stream.getVideoTracks();
+      if (!track) {
+        stream.getTracks().forEach((item) => item.stop());
+        return null;
+      }
+      return track;
+    } catch (error) {
+      console.warn('[OpenVidu] Failed to get preferred camera track.', error);
+      return null;
+    }
   }, []);
 
   const connect = useCallback(async () => {
@@ -122,37 +185,7 @@ export const useOpenViduSession = ({
       });
 
       if (role === 'PUBLISHER') {
-        let publisher: Publisher | null = null;
-        if (videoFacingMode && navigator.mediaDevices?.getUserMedia) {
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-              video: { facingMode: { ideal: videoFacingMode } },
-              audio: true,
-            });
-            const [videoTrack] = stream.getVideoTracks();
-            const [audioTrack] = stream.getAudioTracks();
-            publisher = await ov.initPublisherAsync(undefined, {
-              publishAudio: true,
-              publishVideo: true,
-              resolution: '640x360',
-              frameRate: 30,
-              mirror: videoFacingMode === 'user',
-              videoSource: videoTrack ?? undefined,
-              audioSource: audioTrack ?? undefined,
-            });
-          } catch (error) {
-            console.warn('[OpenVidu] Failed to get preferred camera, falling back.', error);
-          }
-        }
-        if (!publisher) {
-          publisher = await ov.initPublisherAsync(undefined, {
-            publishAudio: true,
-            publishVideo: true,
-            resolution: '640x360',
-            frameRate: 30,
-            mirror: false,
-          });
-        }
+        const publisher = await createPublisher(ov, videoFacingMode);
         session.publish(publisher);
         publisherRef.current = publisher;
         if (localVideoRef?.current) {
@@ -170,7 +203,61 @@ export const useOpenViduSession = ({
     } finally {
       connectInFlightRef.current = false;
     }
-  }, [accessToken, localVideoRef, profile, role, roomId, setConnected, videoFacingMode]);
+  }, [accessToken, createPublisher, localVideoRef, profile, role, roomId, setConnected, videoFacingMode]);
+
+  const switchCamera = useCallback(
+    async (mode: 'user' | 'environment') => {
+      const ov = ovRef.current;
+      const session = sessionRef.current;
+      const publisher = publisherRef.current;
+      if (!ov || !session || !publisher || !isConnectedRef.current || role !== 'PUBLISHER') {
+        return;
+      }
+      if (switchInFlightRef.current) {
+        return;
+      }
+      switchInFlightRef.current = true;
+      try {
+        const nextTrack = await getPreferredVideoTrack(mode);
+        if (!nextTrack) {
+          return;
+        }
+        const oldStream = publisher.stream?.getMediaStream?.();
+        const oldTrack = oldStream?.getVideoTracks?.()[0];
+        const canReplace = typeof (publisher as { replaceTrack?: (track: MediaStreamTrack) => Promise<void> })
+          .replaceTrack === 'function';
+        if (canReplace) {
+          await (publisher as { replaceTrack: (track: MediaStreamTrack) => Promise<void> }).replaceTrack(
+            nextTrack,
+          );
+          if (oldTrack) {
+            oldTrack.stop();
+          }
+          return;
+        }
+        const nextPublisher = await createPublisher(ov, mode);
+        try {
+          session.unpublish(publisher);
+        } catch (error) {
+          console.warn('[OpenVidu] Failed to unpublish current media before switching.', error);
+          return;
+        }
+        if (oldStream) {
+          oldStream.getTracks().forEach((track) => track.stop());
+        }
+        session.publish(nextPublisher);
+        publisherRef.current = nextPublisher;
+        if (localVideoRef?.current) {
+          nextPublisher.addVideoElement(localVideoRef.current);
+        }
+      } catch (error) {
+        console.error('[OpenVidu] Failed to switch camera:', error);
+      } finally {
+        switchInFlightRef.current = false;
+      }
+    },
+    [createPublisher, getPreferredVideoTrack, localVideoRef, role],
+  );
 
   const stopScreenShare = useCallback(() => {
     const session = sessionRef.current;
@@ -233,10 +320,12 @@ export const useOpenViduSession = ({
   }, [setConnected]);
 
   const setPublishAudio = useCallback((enabledAudio: boolean) => {
+    publishAudioRef.current = enabledAudio;
     publisherRef.current?.publishAudio(enabledAudio);
   }, []);
 
   const setPublishVideo = useCallback((enabledVideo: boolean) => {
+    publishVideoRef.current = enabledVideo;
     publisherRef.current?.publishVideo(enabledVideo);
   }, []);
 
@@ -273,6 +362,7 @@ export const useOpenViduSession = ({
     disconnect,
     setPublishAudio,
     setPublishVideo,
+    switchCamera,
     isScreenSharing,
     startScreenShare,
     stopScreenShare,

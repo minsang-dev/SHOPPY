@@ -196,7 +196,6 @@ const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ roomId }) => {
 
   return (
     <section className="mobile-panel">
-      <div className="mobile-panel-pill">채팅</div>
       <div className="mobile-panel-card">
         <div className="mobile-panel-title">실시간 메시지</div>
         {loading ? (

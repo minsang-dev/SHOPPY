@@ -96,9 +96,10 @@ const MobileMembersPanel: React.FC<MobileMembersPanelProps> = ({ roomId }) => {
 
   return (
     <section className="mobile-panel">
-      <div className="mobile-panel-pill">참여자</div>
       <div className="mobile-panel-card">
-        <div className="mobile-panel-title">현재 참여자</div>
+        <div className="mobile-panel-header is-inline">
+          <div className="mobile-panel-title">현재 참여자</div>
+        </div>
         {loading ? (
           <div className="mobile-panel-empty">불러오는 중...</div>
         ) : error ? (

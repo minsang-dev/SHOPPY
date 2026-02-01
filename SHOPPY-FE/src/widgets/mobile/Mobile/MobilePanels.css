@@ -6,15 +6,6 @@
   height: 100%;
 }
 
-.mobile-panel-pill {
-  background: #ecfdf5;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-weight: 700;
-  color: #047857;
-  width: fit-content;
-}
-
 .mobile-panel-toggle {
   display: inline-flex;
   gap: 6px;
@@ -61,6 +52,8 @@
   display: grid;
   gap: 8px;
   padding-right: 4px;
+  align-content: start;
+  grid-auto-rows: min-content;
 }
 
 .mobile-cart-item {
@@ -484,6 +477,11 @@
   min-width: 0;
 }
 
+.mobile-panel-header.is-inline {
+  justify-content: flex-start;
+  gap: 10px;
+}
+
 .mobile-panel-header-actions {
   display: inline-flex;
   gap: 8px;
@@ -694,6 +692,8 @@
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
+  align-content: start;
+  grid-auto-rows: min-content;
 }
 
 .mobile-panel-member-role {
@@ -708,6 +708,8 @@
   min-height: 0;
   overflow-y: auto;
   padding-bottom: calc(8px + var(--keyboard-offset, 0px));
+  align-content: start;
+  grid-auto-rows: min-content;
 }
 
 .mobile-panel-chat-item {

@@ -95,7 +95,6 @@ const MobileVotePanel: React.FC<MobileVotePanelProps> = ({ roomId }) => {
 
   return (
     <section className="mobile-panel">
-      <div className="mobile-panel-pill">투표</div>
       <div className="mobile-panel-card">
         <div className="mobile-panel-title">진행 중인 투표</div>
         {loading ? (

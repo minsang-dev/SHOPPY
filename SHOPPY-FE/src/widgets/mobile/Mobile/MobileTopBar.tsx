@@ -13,6 +13,10 @@ interface MobileTopBarProps {
   camOn: boolean;
   onToggleMic: () => void;
   onToggleCam: () => void;
+  onSwitchCamera: () => void;
+  cameraFacingMode: 'user' | 'environment';
+  cameraSwitchLabel: string;
+  showControls?: boolean;
 }
 
 const MobileTopBar: React.FC<MobileTopBarProps> = ({
@@ -27,6 +31,10 @@ const MobileTopBar: React.FC<MobileTopBarProps> = ({
   camOn,
   onToggleMic,
   onToggleCam,
+  onSwitchCamera,
+  cameraFacingMode,
+  cameraSwitchLabel,
+  showControls = true,
 }) => {
   return (
     <div className="mobile-topbar">
@@ -34,24 +42,37 @@ const MobileTopBar: React.FC<MobileTopBarProps> = ({
         <i className="ri-arrow-left-line" />
       </button>
       <div className="mobile-topbar-title">{title}</div>
-      <div className="mobile-topbar-controls">
-        <button
-          type="button"
-          className={`mobile-topbar-icon ${micOn ? '' : 'is-off'}`}
-          onClick={onToggleMic}
-          aria-label={micOn ? micOnLabel : micOffLabel}
-        >
-          <i className={micOn ? 'ri-mic-fill' : 'ri-mic-off-fill'} />
-        </button>
-        <button
-          type="button"
-          className={`mobile-topbar-icon ${camOn ? '' : 'is-off'}`}
-          onClick={onToggleCam}
-          aria-label={camOn ? camOnLabel : camOffLabel}
-        >
-          <i className={camOn ? 'ri-camera-fill' : 'ri-camera-off-line'} />
-        </button>
-      </div>
+      {showControls && (
+        <div className="mobile-topbar-controls">
+          <button
+            type="button"
+            className={`mobile-topbar-icon ${micOn ? '' : 'is-off'}`}
+            onClick={onToggleMic}
+            aria-label={micOn ? micOnLabel : micOffLabel}
+          >
+            <i className={micOn ? 'ri-mic-fill' : 'ri-mic-off-fill'} />
+          </button>
+          <button
+            type="button"
+            className={`mobile-topbar-icon ${camOn ? '' : 'is-off'}`}
+            onClick={onToggleCam}
+            aria-label={camOn ? camOnLabel : camOffLabel}
+          >
+            <i className={camOn ? 'ri-camera-fill' : 'ri-camera-off-line'} />
+          </button>
+          <button
+            type="button"
+            className="mobile-topbar-icon"
+            onClick={onSwitchCamera}
+            aria-label={cameraSwitchLabel}
+            title={cameraSwitchLabel}
+            disabled={!camOn}
+            data-facing={cameraFacingMode}
+          >
+            <i className="ri-camera-switch-line" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
