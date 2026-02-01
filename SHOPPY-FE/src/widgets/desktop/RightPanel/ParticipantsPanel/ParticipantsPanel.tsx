@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useRoomInfo } from '@/features/room/fetch-room/model/useRoomInfo';
 import { useRoomMembers } from '@/features/room/fetch-members/model/useRoomMembers';
@@ -114,6 +114,12 @@ const ParticipantsPanel: React.FC = () => {
     ? volumeStates[selectedParticipant.memberId] ?? 100
     : 100;
 
+  /** 입장 순서(joinedAt)에 따라 정렬 - 1번째 입장 = 색상 1번, 2번째 = 2번, ... 11번째 = 1번 */
+  const membersByJoinOrder = useMemo(
+    () => [...members].sort((a, b) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime()),
+    [members],
+  );
+
   return (
     <div className="panel-content">
       <h3>참여자 목록</h3>
@@ -131,15 +137,17 @@ const ParticipantsPanel: React.FC = () => {
         </div>
       ) : (
         <div className="participants-list">
-          {members.map((participant) => (
+          {membersByJoinOrder.map((participant, index) => {
+            const isSelf =
+              Boolean(user && participant.userId && user.id === participant.userId) ||
+              (storedMemberId !== null && participant.memberId === storedMemberId);
+            return (
             <ParticipantCard
               key={participant.memberId}
               participant={participant}
+              colorKey={index}
               onSelect={(p) => setSelectedParticipantId(p.memberId)}
-              isSelf={
-                Boolean(user && participant.userId && user.id === participant.userId) ||
-                (storedMemberId !== null && participant.memberId === storedMemberId)
-              }
+              isSelf={isSelf}
               micOn={micOn}
               camOn={camOn}
               onToggleMic={toggleMic}
@@ -147,7 +155,8 @@ const ParticipantsPanel: React.FC = () => {
               onToggleRemoteMic={() => toggleRemoteMic(participant.nickname)}
               onToggleRemoteCam={() => toggleRemoteCam(participant.nickname)}
             />
-          ))}
+            );
+          })}
         </div>
       )}
 
