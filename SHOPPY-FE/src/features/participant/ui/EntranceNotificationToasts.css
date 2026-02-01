@@ -1,0 +1,9 @@
+.entrance-notification-toasts {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 12px;
+}
+
+.entrance-notification-toasts__item {
+  /* flex child */
+}

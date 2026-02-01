@@ -1,0 +1,9 @@
+.cart-notification-toasts {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 12px;
+}
+
+.cart-notification-toasts__item {
+  /* flex child */
+}
