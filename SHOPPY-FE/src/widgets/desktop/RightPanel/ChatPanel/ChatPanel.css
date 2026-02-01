@@ -283,7 +283,7 @@
 
 .chat-input:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: rgb(45, 129, 239);
 }
 
 .chat-send-button {
@@ -291,7 +291,7 @@
   height: 2.5rem;
   min-height: 2.5rem;
   border: none;
-  background-color: #6366f1;
+  background-color: rgb(45, 129, 239);
   color: #ffffff;
   border-radius: 0.5rem;
   display: flex;
@@ -304,7 +304,7 @@
 }
 
 .chat-send-button:hover:not(:disabled) {
-  background-color: #4f46e5;
+  background-color: rgb(38, 110, 203);
 }
 
 .chat-send-button:disabled {

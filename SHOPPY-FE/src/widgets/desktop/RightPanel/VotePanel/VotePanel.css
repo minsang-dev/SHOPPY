@@ -74,7 +74,7 @@
 .vote-panel .vote-create-button {
   width: 100%;
   padding: 12px 20px;
-  background-color: #007bff !important;
+  background-color: rgb(45, 129, 239) !important;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -85,11 +85,11 @@
 }
 
 .vote-panel .vote-create-button:hover {
-  background-color: #0056b3 !important;
+  background-color: rgb(38, 110, 203) !important;
 }
 
 .vote-panel .vote-create-button:active {
-  background-color: #004085 !important;
+  background-color: rgb(30, 95, 175) !important;
 }
 
 /* 투표 상세 화면 */

@@ -28,7 +28,7 @@
   width: 100%;
   margin-top: 1rem;
   padding: 0.75rem 1rem;
-  background-color: #4a90d9;
+  background-color: rgb(45, 129, 239);
   color: white;
   border: none;
   border-radius: 8px;
@@ -39,7 +39,7 @@
 }
 
 .invite-code-button:hover:not(:disabled) {
-  background-color: #3a7bc8;
+  background-color: rgb(38, 110, 203);
 }
 
 .invite-code-button:disabled {

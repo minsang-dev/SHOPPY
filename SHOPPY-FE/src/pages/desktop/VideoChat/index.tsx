@@ -15,7 +15,17 @@ import {
   disconnectRealtimeClient,
   subscribeTopic,
   topicRoomsHostUrl,
+  topicVoteCreated,
+  topicRoomsMembers,
+  topicShoppingAdded,
 } from '../../../shared/lib/realtime';
+import type { CreateVoteResponse } from '../../../entities/vote/types/vote.types';
+import { useVoteNotificationStore } from '../../../features/vote/model/useVoteNotificationStore';
+import VoteNotificationToasts from '../../../features/vote/ui/VoteNotificationToasts';
+import { useEntranceNotificationStore } from '../../../features/participant/model/useEntranceNotificationStore';
+import EntranceNotificationToasts from '../../../features/participant/ui/EntranceNotificationToasts';
+import { useCartNotificationStore } from '../../../features/cart/model/useCartNotificationStore';
+import CartNotificationToasts from '../../../features/cart/ui/CartNotificationToasts';
 import './styles.css';
 
 const resolveAccessToken = () =>
@@ -178,6 +188,162 @@ const DesktopVideoChatPage: React.FC = () => {
     });
   }, [roomId, isHost, location.pathname]);
 
+  // RightPanel 탭과 무관하게 새 투표 생성 시 모두에게 토스트 알림
+  const addVoteToast = useVoteNotificationStore((state) => state.addToast);
+  useEffect(() => {
+    if (!roomId || !realtimeConfig.enabled || !realtimeConfig.websocketUrl) {
+      return;
+    }
+    const token = resolveAccessToken();
+    if (!token) return;
+
+    const client = createRealtimeClient({ token });
+    let voteCreatedSub: { unsubscribe: () => void } | null = null;
+    let cancelled = false;
+
+    connectRealtimeClient(client)
+      .then(() => {
+        if (cancelled) return;
+        voteCreatedSub = subscribeTopic(client, topicVoteCreated(roomId), (body) => {
+          try {
+            const created = JSON.parse(body) as CreateVoteResponse;
+            addVoteToast({
+              title: '투표 생성 알림',
+              voteTitle: `${created.title} 투표가 생성되었습니다.`,
+              voteSubject: created.title,
+            });
+          } catch (err) {
+            console.error('투표 생성 알림 파싱 실패:', err);
+          }
+        });
+      })
+      .catch((err) => {
+        console.error('투표 알림 WebSocket 연결 실패:', err);
+      });
+
+    return () => {
+      cancelled = true;
+      voteCreatedSub?.unsubscribe();
+      void disconnectRealtimeClient(client);
+    };
+  }, [roomId, addVoteToast]);
+
+  // RightPanel 탭과 무관하게 새 참가자 입장 시 모두에게 토스트 알림 (본인 입장 제외)
+  const addEntranceToast = useEntranceNotificationStore((state) => state.addToast);
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+  useEffect(() => {
+    if (!roomId || !realtimeConfig.enabled || !realtimeConfig.websocketUrl) {
+      return;
+    }
+    const token = resolveAccessToken();
+    if (!token) return;
+
+    const client = createRealtimeClient({ token });
+    let membersSub: { unsubscribe: () => void } | null = null;
+    let cancelled = false;
+
+    connectRealtimeClient(client)
+      .then(() => {
+        if (cancelled) return;
+        membersSub = subscribeTopic(client, topicRoomsMembers(roomId), (body) => {
+          try {
+            const payload = JSON.parse(body) as {
+              type: 'JOINED' | 'LEFT' | 'STATE_UPDATED';
+              member: {
+                memberId: number;
+                roomId: number;
+                userId: number | null;
+                nickname: string;
+                role: string;
+                status: string;
+                isCameraOn: boolean;
+                joinedAt: string;
+              };
+            };
+            if (payload?.type !== 'JOINED' || !payload.member) return;
+            const currentUser = userRef.current;
+            const storedMemberId = sessionStorage.getItem('memberId');
+            const isSelf =
+              (currentUser != null && payload.member.userId === currentUser.id) ||
+              (storedMemberId != null && payload.member.memberId === Number(storedMemberId));
+            if (!isSelf) {
+              addEntranceToast({ nickname: payload.member.nickname });
+            }
+          } catch (err) {
+            console.error('입장 알림 파싱 실패:', err);
+          }
+        });
+      })
+      .catch((err) => {
+        console.error('입장 알림 WebSocket 연결 실패:', err);
+      });
+
+    return () => {
+      cancelled = true;
+      membersSub?.unsubscribe();
+      void disconnectRealtimeClient(client);
+    };
+  }, [roomId, addEntranceToast]);
+
+  // RightPanel 탭과 무관하게 장바구니 추가 시 모두에게 토스트 알림 (본인 추가 제외)
+  const addCartToast = useCartNotificationStore((state) => state.addToast);
+  useEffect(() => {
+    if (!roomId || !realtimeConfig.enabled || !realtimeConfig.websocketUrl) {
+      return;
+    }
+    const token = resolveAccessToken();
+    if (!token) return;
+
+    const client = createRealtimeClient({ token });
+    let shoppingAddedSub: { unsubscribe: () => void } | null = null;
+    let cancelled = false;
+
+    connectRealtimeClient(client)
+      .then(() => {
+        if (cancelled) return;
+        shoppingAddedSub = subscribeTopic(client, topicShoppingAdded(roomId), (body) => {
+          try {
+            const payload = JSON.parse(body) as {
+              shopping_item_id: number;
+              room_id: number;
+              added_by_user_id: number | null;
+              product_id: number | null;
+              display_name: string;
+              quantity: number;
+              is_checked: boolean;
+              purchase_type: 'online' | 'offline' | null;
+              added_by_nickname?: string;
+            };
+            const currentUser = userRef.current;
+            const isSelf =
+              currentUser != null &&
+              payload.added_by_user_id != null &&
+              payload.added_by_user_id === currentUser.id;
+            if (!isSelf) {
+              addCartToast({
+                nickname: payload.added_by_nickname ?? '참여자',
+                productName: payload.display_name,
+              });
+            }
+          } catch (err) {
+            console.error('장바구니 추가 알림 파싱 실패:', err);
+          }
+        });
+      })
+      .catch((err) => {
+        console.error('장바구니 추가 알림 WebSocket 연결 실패:', err);
+      });
+
+    return () => {
+      cancelled = true;
+      shoppingAddedSub?.unsubscribe();
+      void disconnectRealtimeClient(client);
+    };
+  }, [roomId, addCartToast]);
+
   return (
     <div className="video-chat-page">
       <ChatRealtimeProvider activePanel={activePanel}>
@@ -224,6 +390,11 @@ const DesktopVideoChatPage: React.FC = () => {
           <div className="video-chat-right">
             <RightPanel panelType={activePanel} />
           </div>
+        </div>
+        <div className="video-chat-notification-toasts">
+          <EntranceNotificationToasts />
+          <CartNotificationToasts />
+          <VoteNotificationToasts />
         </div>
       </ChatRealtimeProvider>
     </div>
