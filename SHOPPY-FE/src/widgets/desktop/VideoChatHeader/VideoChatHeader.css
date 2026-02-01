@@ -144,6 +144,26 @@
   height: 0;
 }
 
+.header-icon-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e53935;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1;
+  border-radius: 9px;
+  border: 2px solid #ffffff;
+  box-sizing: border-box;
+}
+
 .header-icon-tooltip {
   position: absolute;
   top: 100%;

@@ -48,6 +48,8 @@ export interface RoomMember {
   isCameraOn: boolean;
   joinedAt: string;
   syncMode?: SyncMode;
+  /** 로그인 사용자의 프로필 이미지 URL (API에서 반환 시) */
+  profileImage?: string | null;
 }
 
 export interface RoomMeta {

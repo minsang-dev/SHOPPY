@@ -79,10 +79,23 @@
   flex-shrink: 0;
 }
 
-.participant-crown-icon {
-  font-size: 1.125rem;
-  color: #ffa726;
+/* 호스트 배지 (왕관 아이콘 + 호스트) */
+.participant-host-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  background-color:rgba(243, 243, 243, 0.66);
   flex-shrink: 0;
+}
+
+.participant-host-badge i {
+  font-size: 0.875rem;
+  color: #eab308;
 }
 
 .participant-card-icons {

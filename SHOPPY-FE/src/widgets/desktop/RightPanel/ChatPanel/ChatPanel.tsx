@@ -1,35 +1,28 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { getChatMessages, sendChatMessage } from '@/entities/chat/api/chatApi';
+import { sendChatMessage } from '@/entities/chat/api/chatApi';
 import type { ChatMessage } from '@/entities/chat/types/chat.types';
 import { getRoomMembers } from '@/entities/room/api/room';
 import type { RoomMember } from '@/entities/room/types/room.types';
 import { useAuthStore } from '@/entities/user/model/useAuthStore';
-import { realtimeConfig } from '@/shared/config/realtime';
-import {
-  appRoomsChat,
-  createRealtimeClient,
-  connectRealtimeClient,
-  disconnectRealtimeClient,
-  publishMessage,
-  subscribeTopic,
-  topicRoomsChat,
-  topicRoomsChatDeleted,
-  topicRoomsChatEdited,
-} from '@/shared/lib/realtime';
+import { useChatRealtimeContext } from '@/features/chat/model/useChatRealtime';
+import UserAvatar from '@/shared/ui/UserAvatar';
 import ChatMessageRow from './ChatMessageRow';
 import './ChatPanel.css';
 
 const ChatPanel: React.FC = () => {
-  const { roomId } = useParams<{ roomId: string }>();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const {
+    messages,
+    setMessages,
+    upsertMessage,
+    realtimeConnected,
+    loading,
+    roomId,
+    publishChat,
+  } = useChatRealtimeContext();
   const [participants, setParticipants] = useState<RoomMember[]>([]);
   const [inputContent, setInputContent] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [realtimeConnected, setRealtimeConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const realtimeClientRef = useRef<ReturnType<typeof createRealtimeClient> | null>(null);
   const { user } = useAuthStore();
 
   const currentMemberId = useMemo(() => {
@@ -48,132 +41,17 @@ const ChatPanel: React.FC = () => {
     }
   }, [roomId]);
 
-  const loadMessages = useCallback(async () => {
-    if (!roomId) return;
-    try {
-      setLoading(true);
-      const response = await getChatMessages(Number(roomId), 0, 50);
-      setMessages(response.messages);
-    } catch (error) {
-      console.error('채팅 메시지 조회 실패:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [roomId]);
-
   useEffect(() => {
     loadParticipants();
-    loadMessages();
-  }, [loadParticipants, loadMessages]);
-
-  const upsertMessage = useCallback((incoming: ChatMessage) => {
-    setMessages((prev) => {
-      const exists = prev.find((msg) => msg.chatId === incoming.chatId);
-      if (exists) {
-        return prev.map((msg) => (msg.chatId === incoming.chatId ? incoming : msg));
-      }
-      return [...prev, incoming];
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!roomId || !realtimeConfig.enabled || !realtimeConfig.websocketUrl) {
-      return;
-    }
-    const token =
-      localStorage.getItem('accessToken') ??
-      localStorage.getItem('access_token') ??
-      undefined;
-    if (!token) {
-      return;
-    }
-
-    const client = createRealtimeClient({ token });
-    realtimeClientRef.current = client;
-    let cancelled = false;
-    const subscriptions: Array<{ unsubscribe: () => void }> = [];
-
-    connectRealtimeClient(client)
-      .then(() => {
-        if (cancelled) {
-          return;
-        }
-        setRealtimeConnected(true);
-        subscriptions.push(
-          subscribeTopic(client, topicRoomsChat(roomId), (body) => {
-            try {
-              const payload = JSON.parse(body) as ChatMessage;
-              if (payload?.chatId) {
-                upsertMessage(payload);
-              }
-            } catch (err) {
-              console.error('채팅 메시지 파싱 실패:', err);
-            }
-          }),
-        );
-        subscriptions.push(
-          subscribeTopic(client, topicRoomsChatEdited(roomId), (body) => {
-            try {
-              const payload = JSON.parse(body) as {
-                chatId: number;
-                content: string;
-                isEdited: boolean;
-                editedAt: string | null;
-              };
-              if (payload?.chatId) {
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.chatId === payload.chatId
-                      ? {
-                          ...msg,
-                          content: payload.content ?? msg.content,
-                          isEdited: payload.isEdited ?? true,
-                          editedAt: payload.editedAt ?? msg.editedAt,
-                        }
-                      : msg,
-                  ),
-                );
-              }
-            } catch (err) {
-              console.error('채팅 수정 이벤트 파싱 실패:', err);
-            }
-          }),
-        );
-        subscriptions.push(
-          subscribeTopic(client, topicRoomsChatDeleted(roomId), (body) => {
-            try {
-              const payload = JSON.parse(body) as { chatId: number };
-              if (payload?.chatId) {
-                setMessages((prev) => prev.filter((msg) => msg.chatId !== payload.chatId));
-              }
-            } catch (err) {
-              console.error('채팅 삭제 이벤트 파싱 실패:', err);
-            }
-          }),
-        );
-      })
-      .catch((err) => {
-        console.error('채팅 WS 연결 실패:', err);
-      });
-
-    return () => {
-      cancelled = true;
-      subscriptions.forEach((sub) => sub.unsubscribe());
-      setRealtimeConnected(false);
-      void disconnectRealtimeClient(client);
-      if (realtimeClientRef.current === client) {
-        realtimeClientRef.current = null;
-      }
-    };
-  }, [roomId, upsertMessage]);
+  }, [loadParticipants]);
 
   const handleSendMessage = async () => {
     if (!roomId || !inputContent.trim()) return;
     const content = inputContent.trim();
 
     try {
-      if (realtimeConnected && realtimeClientRef.current) {
-        publishMessage(realtimeClientRef.current, appRoomsChat(roomId), { content });
+      if (realtimeConnected) {
+        publishChat(content);
       } else {
         const newMessage = await sendChatMessage(Number(roomId), { content });
         upsertMessage(newMessage);
@@ -237,25 +115,6 @@ const ChatPanel: React.FC = () => {
       date1.getHours() === date2.getHours() &&
       date1.getMinutes() === date2.getMinutes()
     );
-  };
-
-  const getAvatarGradient = (name: string): string => {
-    const gradients = [
-      'linear-gradient(135deg, #a855f7, #3b82f6)',
-      'linear-gradient(135deg, #6366f1, #8b5cf6)',
-      'linear-gradient(135deg, #3b82f6, #a855f7)',
-      'linear-gradient(135deg, #7c3aed, #2563eb)',
-      'linear-gradient(135deg, #9333ea, #60a5fa)',
-      'linear-gradient(135deg, #4f46e5, #a855f7)',
-      'linear-gradient(135deg, #2563eb, #8b5cf6)',
-      'linear-gradient(135deg, #a855f7, #60a5fa)',
-    ];
-    const index = name.charCodeAt(0) % gradients.length;
-    return gradients[index];
-  };
-
-  const getInitial = (name: string): string => {
-    return name.charAt(0);
   };
 
   const today = new Date();
@@ -337,12 +196,12 @@ const ChatPanel: React.FC = () => {
 
             return (
               <div key={group.id} className="chat-message-group">
-                <div
+                <UserAvatar
+                  name={senderName}
+                  colorKey={group.senderMemberId}
+                  size="sm"
                   className="chat-avatar"
-                  style={{ background: getAvatarGradient(senderName) }}
-                >
-                  {getInitial(senderName)}
-                </div>
+                />
                 <div className="chat-message-content">
                   <div className="chat-message-header">
                     <span className="chat-sender-name">
