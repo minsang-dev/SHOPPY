@@ -72,13 +72,13 @@ http.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const storedRefreshToken = localStorage.getItem('refreshToken');
+      const storedRefreshToken = sessionStorage.getItem('refreshToken');
 
       if (!storedRefreshToken) {
         isRefreshing = false;
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('refreshToken');
+        sessionStorage.removeItem('user');
         window.location.href = '/';
         return Promise.reject(error);
       }
@@ -86,8 +86,8 @@ http.interceptors.response.use(
       try {
         const { accessToken, refreshToken } = await refreshAccessToken(storedRefreshToken);
 
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
+        sessionStorage.setItem('accessToken', accessToken);
+        sessionStorage.setItem('refreshToken', refreshToken);
         useAuthStore.getState().setAccessToken(accessToken);
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
@@ -96,9 +96,9 @@ http.interceptors.response.use(
         return http(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('refreshToken');
+        sessionStorage.removeItem('user');
         window.location.href = '/';
         return Promise.reject(refreshError);
       } finally {
@@ -132,7 +132,7 @@ const toApiError = (payload: ApiFailResponse, httpStatus?: number | null): ApiEr
 export const apiRequest = async <T>(options: ApiRequestOptions): Promise<T> => {
   const { method, url, data, params, auth = true, config } = options;
 
-  const token = localStorage.getItem('accessToken');
+  const token = sessionStorage.getItem('accessToken');
   const headers = {
     ...(config?.headers ?? {}),
     ...(auth && token ? { Authorization: `Bearer ${token}` } : {}),

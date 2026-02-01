@@ -17,7 +17,7 @@ export const useKakaoAuth = () => {
         nickname: data.nickname,
         profileImage: data.profileImageUrl,
       });
-      localStorage.setItem('refreshToken', data.refreshToken);
+      sessionStorage.setItem('refreshToken', data.refreshToken);
 
       navigate('/');
     } catch (error) {
