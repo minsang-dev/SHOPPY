@@ -138,7 +138,7 @@ const VotePanel: React.FC = () => {
             </div>
 
             <div className="vote-detail-actions">
-              {voteDetail.status === 'OPEN' && (
+              {isHost && voteDetail.status === 'OPEN' && (
                 <button
                   className="vote-close-button"
                   onClick={() => setIsCloseModalOpen(true)}
