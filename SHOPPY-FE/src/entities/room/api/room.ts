@@ -58,6 +58,14 @@ export const getRoom = async (roomId: string): Promise<RoomResponse> => {
   });
 };
 
+// 방 코드로 방 조회
+export const getRoomByCode = async (roomCode: string): Promise<RoomResponse> => {
+  return apiRequest<RoomResponse>({
+    method: 'GET',
+    url: `/rooms/code/${roomCode}`,
+  });
+};
+
 // 참여자 목록 조회
 export const getRoomMembers = async (roomId: string): Promise<RoomMember[]> => {
   return apiRequest<RoomMember[]>({

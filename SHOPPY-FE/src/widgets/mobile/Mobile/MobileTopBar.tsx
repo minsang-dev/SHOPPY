@@ -36,9 +36,15 @@ const MobileTopBar: React.FC<MobileTopBarProps> = ({
   cameraSwitchLabel,
   showControls = true,
 }) => {
+  const handleExit = () => {
+    if (window.confirm('정말로 나가시겠습니까?')) {
+      onExit();
+    }
+  };
+
   return (
     <div className="mobile-topbar">
-      <button type="button" className="mobile-topbar-exit" onClick={onExit} aria-label={backLabel}>
+      <button type="button" className="mobile-topbar-exit" onClick={handleExit} aria-label={backLabel}>
         <i className="ri-arrow-left-line" />
       </button>
       <div className="mobile-topbar-title">{title}</div>

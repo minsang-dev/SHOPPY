@@ -13,6 +13,12 @@ const VideoChatHeader: React.FC<DesktopVideoChatHeaderProps> = ({
 }) => {
   const unreadChatCount = useChatNotificationStore((state) => state.unreadCount);
 
+  const handleExit = () => {
+    if (window.confirm('정말로 나가시겠습니까?')) {
+      onExit();
+    }
+  };
+
   const handleIconClick = (panelType: 'cart' | 'participants' | 'vote' | 'chat') => {
     if (activePanel === panelType) {
       return; // 현재 열려 있는 토글과 방금 누른 아이콘 일치 -> 아무 변화 X
@@ -24,7 +30,7 @@ const VideoChatHeader: React.FC<DesktopVideoChatHeaderProps> = ({
   return (
     <header className="video-chat-header">
       <div className="video-chat-header-container">
-        <button className="exit-button" onClick={onExit}>
+        <button className="exit-button" onClick={handleExit}>
           나가기
         </button>
 

@@ -31,6 +31,7 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
     nickname: '',
     entryLink: '',
   });
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -73,6 +74,7 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleJoinSubmit = async () => {
+    setJoinError(null);
     try {
       // entryLink에서 roomCode 추출 (URL이면 마지막 부분, 아니면 그대로 사용)
       let roomCode = joinFormData.entryLink.trim();
@@ -97,7 +99,8 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
       navigate(`/rooms/${response.roomId}`);
     } catch (error) {
       console.error('방 참여 실패:', error);
-      // TODO: 에러 처리 (토스트 메시지 등)
+      const err = error as { message?: string };
+      setJoinError(err.message || '방 참여에 실패했습니다.');
     }
   };
 
@@ -108,13 +111,13 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
           <div className="room-modal-tabs">
             <button
               className={`room-modal-tab ${activeTab === 'create' ? 'active' : ''}`}
-              onClick={() => setActiveTab('create')}
+              onClick={() => { setActiveTab('create'); setJoinError(null); }}
             >
               방 만들기
             </button>
             <button
               className={`room-modal-tab ${activeTab === 'join' ? 'active' : ''}`}
-              onClick={() => setActiveTab('join')}
+              onClick={() => { setActiveTab('join'); setJoinError(null); }}
             >
               방 참여하기
             </button>
@@ -145,12 +148,19 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
               </div>
             )
           ) : (
-            <JoinRoomForm
-              formData={joinFormData}
-              onChange={setJoinFormData}
-              onSubmit={handleJoinSubmit}
-              isLoggedIn={isLoggedIn}
-            />
+            <>
+              {joinError && (
+                <div className="error-message" style={{ color: '#e53935', marginBottom: '12px', textAlign: 'center' }}>
+                  {joinError}
+                </div>
+              )}
+              <JoinRoomForm
+                formData={joinFormData}
+                onChange={setJoinFormData}
+                onSubmit={handleJoinSubmit}
+                isLoggedIn={isLoggedIn}
+              />
+            </>
           )}
         </div>
       </div>
