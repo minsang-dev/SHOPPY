@@ -243,6 +243,8 @@ export const ChatRealtimeProvider: React.FC<ChatRealtimeProviderProps> = ({
   );
 };
 
+// Context 소비용 훅 - Provider와 함께 사용되므로 동일 파일에서 export
+// eslint-disable-next-line react-refresh/only-export-components
 export const useChatRealtimeContext = (): ChatRealtimeContextValue => {
   const ctx = useContext(ChatRealtimeContext);
   if (!ctx) {

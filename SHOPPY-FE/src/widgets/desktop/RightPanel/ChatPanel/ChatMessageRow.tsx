@@ -46,7 +46,6 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({ message, onMessageUpdat
       setIsEditing(false);
     } catch (error) {
       // TODO: 에러 토스트 처리 가능
-      // eslint-disable-next-line no-console
       console.error('채팅 메시지 수정 실패:', error);
     } finally {
       setSaving(false);
@@ -62,7 +61,6 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({ message, onMessageUpdat
       setIsMenuOpen(false);
     } catch (error) {
       // TODO: 에러 토스트 처리 가능
-      // eslint-disable-next-line no-console
       console.error('채팅 메시지 삭제 실패:', error);
     } finally {
       setDeleting(false);

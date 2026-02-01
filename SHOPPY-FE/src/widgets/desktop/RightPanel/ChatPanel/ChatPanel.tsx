@@ -42,7 +42,9 @@ const ChatPanel: React.FC = () => {
   }, [roomId]);
 
   useEffect(() => {
-    loadParticipants();
+    queueMicrotask(() => {
+      loadParticipants();
+    });
   }, [loadParticipants]);
 
   const handleSendMessage = async () => {
