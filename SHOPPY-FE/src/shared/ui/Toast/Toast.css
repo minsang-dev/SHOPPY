@@ -75,7 +75,6 @@
   background-color: #2d9d5f;
 }
 
-/* 장바구니 추가 알림: 기존 토스트와 유사한 느낌, 노란색 계열 */
 .toast--cart {
   background: linear-gradient(135deg, #f8f4e4 0%, #f5f0d8 100%);
 }

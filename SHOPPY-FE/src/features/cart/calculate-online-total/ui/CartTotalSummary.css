@@ -1,0 +1,20 @@
+.cart-total-summary {
+  padding: 12px 0;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.cart-total-summary__label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.cart-total-summary__value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
