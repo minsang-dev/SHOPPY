@@ -11,6 +11,8 @@ interface ParticipantCardProps {
   isSelf?: boolean;
   micOn?: boolean;
   camOn?: boolean;
+  remoteMicMuted?: boolean;
+  remoteCamHidden?: boolean;
   onToggleMic?: () => void;
   onToggleCam?: () => void;
   onToggleRemoteMic?: () => void;
@@ -24,13 +26,17 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({
   isSelf = false,
   micOn,
   camOn,
+  remoteMicMuted = false,
+  remoteCamHidden = false,
   onToggleMic,
   onToggleCam,
   onToggleRemoteMic,
   onToggleRemoteCam,
 }) => {
-  const isActive = isSelf ? camOn ?? participant.isCameraOn : participant.isCameraOn;
-  const isMicOn = isSelf ? micOn ?? true : participant.isCameraOn;
+  const isActive = isSelf
+    ? camOn ?? participant.isCameraOn
+    : participant.isCameraOn && !remoteCamHidden;
+  const isMicOn = isSelf ? micOn ?? true : !remoteMicMuted;
   const isHost = participant.role === 'HOST';
 
   return (
