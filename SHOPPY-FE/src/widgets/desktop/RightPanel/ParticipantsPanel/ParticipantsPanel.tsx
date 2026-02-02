@@ -34,6 +34,8 @@ const ParticipantsPanel: React.FC = () => {
   const toggleCam = useMediaControlStore((state) => state.toggleCam);
   const toggleRemoteMic = useRemoteMediaControlStore((state) => state.toggleMute);
   const toggleRemoteCam = useRemoteMediaControlStore((state) => state.toggleHide);
+  const mutedByNickname = useRemoteMediaControlStore((state) => state.mutedByNickname);
+  const hiddenByNickname = useRemoteMediaControlStore((state) => state.hiddenByNickname);
   const storedMemberId = useMemo(() => {
     const raw = localStorage.getItem('memberId');
     return raw ? Number(raw) : null;
@@ -150,6 +152,8 @@ const ParticipantsPanel: React.FC = () => {
               isSelf={isSelf}
               micOn={micOn}
               camOn={camOn}
+              remoteMicMuted={Boolean(mutedByNickname[participant.nickname])}
+              remoteCamHidden={Boolean(hiddenByNickname[participant.nickname])}
               onToggleMic={toggleMic}
               onToggleCam={toggleCam}
               onToggleRemoteMic={() => toggleRemoteMic(participant.nickname)}

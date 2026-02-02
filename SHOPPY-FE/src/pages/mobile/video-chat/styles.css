@@ -1,24 +1,27 @@
 .mobile-room-page {
-  min-height: var(--app-height, 100vh);
-  height: var(--app-height, 100vh);
+  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   justify-content: center;
-  padding: 24px 12px 32px;
+  padding: clamp(8px, 1.5vw, 12px);
   background: #f1f5f9;
   font-family: 'Sora', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
   color: #111827;
 }
 
 .mobile-room-shell {
-  width: min(100%, 360px);
-  height: min(800px, calc(var(--app-height, 100vh) - 56px));
+  width: 100%;
+  max-width: 430px;
+  height: 100dvh;
   background: #ffffff;
-  border-radius: 24px;
-  padding: 14px;
+  border-radius: clamp(12px, 2.5vw, 20px);
+  padding: clamp(10px, 2.5vw, 14px);
   box-shadow: 0 16px 36px rgba(15, 23, 42, 0.1);
   display: grid;
   grid-template-rows: auto auto auto 1fr auto;
-  gap: 12px;
+  gap: clamp(8px, 2vw, 12px);
+  padding-top: calc(clamp(10px, 2.5vw, 14px) + env(safe-area-inset-top));
+  padding-bottom: calc(clamp(10px, 2.5vw, 14px) + env(safe-area-inset-bottom));
 }
 
 @media (max-width: 480px) {
@@ -29,9 +32,10 @@
 
   .mobile-room-shell {
     width: 100%;
-    height: var(--app-height, 100vh);
+    max-width: 100%;
+    height: 100dvh;
     border-radius: 0;
-    padding: 12px;
+    padding: clamp(12px, 3vw, 16px);
     box-shadow: none;
   }
 }
