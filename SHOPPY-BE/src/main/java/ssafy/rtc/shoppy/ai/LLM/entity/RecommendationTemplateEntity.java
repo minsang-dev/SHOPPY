@@ -36,6 +36,9 @@ public class RecommendationTemplateEntity {
     @Column(name = "item_name", nullable = false, length = 255)
     private String itemName;
 
+    @Column(name = "item_size", length = 50)
+    private String itemSize;
+
     @Convert(converter = JsonStringListConverter.class)
     @Column(name = "trait_excludes", columnDefinition = "json")
     private List<String> traitExcludes;

@@ -2,10 +2,8 @@ package ssafy.rtc.shoppy.ai.llm.service;
 
 import org.junit.jupiter.api.Test;
 import ssafy.rtc.shoppy.ai.llm.dto.AiRoomCreateRequestDto;
-import ssafy.rtc.shoppy.ai.llm.dto.RoomConstraintsRequestDto;
 import ssafy.rtc.shoppy.ai.llm.dto.RoomMetaRequestDto;
 import ssafy.rtc.shoppy.global.exception.BusinessException;
-import ssafy.rtc.shoppy.room.enums.SyncMode;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -32,17 +30,13 @@ class RoomConstraintsValidatorTest {
     private AiRoomCreateRequestDto sampleRequest(List<String> traits) {
         RoomMetaRequestDto meta = new RoomMetaRequestDto(
                 "Room A",
-                "offline",
-                new BigDecimal("10000"),
-                BigDecimal.ZERO,
-                SyncMode.FOLLOW
-        );
-        RoomConstraintsRequestDto constraints = new RoomConstraintsRequestDto(
                 "MT",
                 3,
-                List.of("MEAT", "DRINK"),
-                traits
+                List.of("MEAT_RAW", "DRINK_NON_ALCOHOL"),
+                traits,
+                new BigDecimal("10000"),
+                BigDecimal.ZERO
         );
-        return new AiRoomCreateRequestDto(meta, constraints);
+        return new AiRoomCreateRequestDto(meta);
     }
 }
