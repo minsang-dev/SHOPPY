@@ -14,7 +14,7 @@
     "SUPPLY": {
       "unit": "개",
       "fixed": true,
-      "fixedItems": { "휴지": 1, "키친타월": 1 },
+      "fixedItems": { "일회용 컵": 1, "일회용 접시": 1 },
       "itemMin": 2,
       "itemMax": 6
     }

@@ -22,7 +22,7 @@ class AiChecklistServiceTest {
         AiChecklistService service = new AiChecklistService(checklistRepository, itemRepository);
 
         AiChecklistEntity checklist = AiChecklistEntity.withId(1L, 10L);
-        AiChecklistItemEntity item = AiChecklistItemEntity.create(checklist, "DRINK", "Water", "Reason", 1);
+        AiChecklistItemEntity item = AiChecklistItemEntity.create(checklist, "DRINK", "Water", "500ml", "Reason", 1);
 
         when(checklistRepository.findByRoomId(anyLong())).thenReturn(Optional.of(checklist));
         when(itemRepository.findByChecklist_ChecklistIdAndChecklistItemId(1L, 100L)).thenReturn(Optional.of(item));

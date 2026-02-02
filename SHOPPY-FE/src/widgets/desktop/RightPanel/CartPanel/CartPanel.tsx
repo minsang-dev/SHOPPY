@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getShoppingList, updateShoppingItem, deleteShoppingItem, addShoppingItem } from '@/entities/shopping/api/shopping';
+import { getAiChecklist, toggleAiChecklistItem, deleteAiChecklistItem } from '@/entities/shopping/api/aiChecklist';
+import type { AiChecklistItem, AiChecklistCategory } from '@/entities/shopping/api/aiChecklist';
 import type { ShoppingItem, ShoppingItemAddRequest } from '@/entities/shopping/types/shopping.types';
 import { getProductList } from '@/entities/product/api/productListApi';
 import {
@@ -34,7 +36,9 @@ interface ShoppingItemRaw {
   display_name: string;
   quantity: number;
   is_checked: boolean;
-  purchase_type: 'online' | 'offline' | null;
+  purchase_type: 'online' | 'offline' | 'ai' | null;
+  item_size: string | null;
+  reason: string | null;
 }
 
 // snake_case → camelCase 변환
@@ -47,31 +51,63 @@ const toShoppingItem = (raw: ShoppingItemRaw): ShoppingItem => ({
   quantity: raw.quantity,
   isChecked: raw.is_checked,
   purchaseType: raw.purchase_type,
+  itemSize: raw.item_size,
+  reason: raw.reason,
 });
 
 const CartPanel: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const [cartType, setCartType] = useState<'online' | 'offline'>('online');
+  // 방 입장 시 기본으로 오프라인(AI 추천) 장바구니 표시
+  const [cartType, setCartType] = useState<'online' | 'offline'>('offline');
   const [isManualInputModalOpen, setIsManualInputModalOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
+  const [aiChecklistItems, setAiChecklistItems] = useState<AiChecklistItem[]>([]);
   const [productMetaMap, setProductMetaMap] = useState<ProductMetaMap>({});
   const [, setLoading] = useState(false);
 
   // 온라인 상품 여부 판별 헬퍼
   const isOnlineItem = (item: ShoppingItem) => item.purchaseType === 'online';
 
+  // AI 체크리스트 아이템을 ShoppingItem 형태로 변환 (표시용)
+  const aiItemsAsShoppingItems: ShoppingItem[] = aiChecklistItems.map((ai) => ({
+    shoppingItemId: -ai.checklistItemId, // 음수 ID로 구분
+    roomId: Number(roomId) || 0,
+    addedByUserId: null,
+    productId: null,
+    displayName: ai.name,
+    quantity: 1,
+    isChecked: ai.checked,
+    purchaseType: 'ai' as const,
+    itemSize: ai.itemSize,
+    reason: ai.reason,
+  }));
+
   // 데이터 로드
   const loadItems = useCallback(async () => {
     if (!roomId) return;
     setLoading(true);
     try {
-      const response = await getShoppingList(roomId);
-      setShoppingItems(response.items);
-      const onlineIds = response.items
+      // 일반 장바구니 & AI 체크리스트 동시 로드
+      const [shoppingResponse, aiResponse] = await Promise.all([
+        getShoppingList(roomId),
+        getAiChecklist(roomId).catch(() => null), // AI 체크리스트 없으면 null
+      ]);
+
+      setShoppingItems(shoppingResponse.items);
+
+      // AI 체크리스트: 모든 카테고리의 아이템을 평탄화
+      if (aiResponse?.categories) {
+        const allAiItems = aiResponse.categories.flatMap((cat: AiChecklistCategory) => cat.items);
+        setAiChecklistItems(allAiItems);
+      } else {
+        setAiChecklistItems([]);
+      }
+
+      const onlineIds = shoppingResponse.items
         .filter((i) => isOnlineItem(i) && i.productId != null)
         .map((i) => i.productId as number);
       if (onlineIds.length > 0) {
@@ -213,14 +249,24 @@ const CartPanel: React.FC = () => {
     };
   }, [roomId]);
 
-  // purchaseType에 따라 필터링 (null도 offline으로 처리)
-  const currentCartItems = shoppingItems.filter((item) => {
+  // AI 아이템 여부 판별 헬퍼 (음수 ID로 구분)
+  const isAIItemById = (shoppingItemId: number) => shoppingItemId < 0;
+
+  // purchaseType에 따라 필터링
+  // - online: purchaseType === 'online'
+  // - offline: 일반 offline 아이템 + AI 추천 아이템 (AI 체크리스트 API에서 가져옴)
+  const currentCartItems = (() => {
     if (cartType === 'online') {
-      return isOnlineItem(item);
+      return shoppingItems.filter((item) => isOnlineItem(item));
     } else {
-      return !isOnlineItem(item);
+      // 오프라인 장바구니: offline, null 아이템만 (ai 타입 제외 - AI 체크리스트 API에서 별도 로드)
+      const offlineItems = shoppingItems.filter(
+        (item) => !isOnlineItem(item) && item.purchaseType !== 'ai'
+      );
+      // AI 아이템을 먼저 표시
+      return [...aiItemsAsShoppingItems, ...offlineItems];
     }
-  });
+  })();
 
   const isOnline = cartType === 'online';
 
@@ -275,18 +321,44 @@ const CartPanel: React.FC = () => {
 
   const handleToggleChecked = async (item: ShoppingItem) => {
     if (!roomId) return;
-    await updateShoppingItem(roomId, item.shoppingItemId, {
-      quantity: item.quantity,
-      isChecked: !item.isChecked,
-      productId: item.productId,
-    });
-    await loadItems();
+
+    // AI 아이템인 경우 (음수 ID)
+    if (isAIItemById(item.shoppingItemId)) {
+      const checklistItemId = -item.shoppingItemId; // 원래 ID로 복원
+      // 로컬 상태 먼저 업데이트
+      setAiChecklistItems((prev) =>
+        prev.map((ai) =>
+          ai.checklistItemId === checklistItemId ? { ...ai, checked: !ai.checked } : ai
+        )
+      );
+      await toggleAiChecklistItem(roomId, checklistItemId, !item.isChecked);
+    } else {
+      // 일반 ShoppingItem
+      await updateShoppingItem(roomId, item.shoppingItemId, {
+        quantity: item.quantity,
+        isChecked: !item.isChecked,
+        productId: item.productId,
+      });
+      await loadItems();
+    }
   };
 
   const handleRemoveItem = async (item: ShoppingItem) => {
     if (!roomId) return;
-    await deleteShoppingItem(roomId, item.shoppingItemId);
-    await loadItems();
+
+    // AI 아이템인 경우 (음수 ID)
+    if (isAIItemById(item.shoppingItemId)) {
+      const checklistItemId = -item.shoppingItemId; // 원래 ID로 복원
+      // 로컬 상태 먼저 업데이트
+      setAiChecklistItems((prev) =>
+        prev.filter((ai) => ai.checklistItemId !== checklistItemId)
+      );
+      await deleteAiChecklistItem(roomId, checklistItemId);
+    } else {
+      // 일반 ShoppingItem
+      await deleteShoppingItem(roomId, item.shoppingItemId);
+      await loadItems();
+    }
   };
 
   /** 오프라인 상품명으로 왼쪽 상품 목록에서 검색 (products 페이지로 이동 + keyword 쿼리) */

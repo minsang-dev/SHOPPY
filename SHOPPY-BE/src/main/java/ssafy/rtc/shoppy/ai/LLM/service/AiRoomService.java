@@ -29,8 +29,14 @@ import ssafy.rtc.shoppy.ai.llm.service.model.ChecklistCategoryDraft;
 import ssafy.rtc.shoppy.ai.llm.service.model.ChecklistDraft;
 import ssafy.rtc.shoppy.ai.llm.service.model.ChecklistItemDraft;
 import ssafy.rtc.shoppy.room.domain.Room;
+import ssafy.rtc.shoppy.room.domain.RoomMember;
 import ssafy.rtc.shoppy.room.entity.RoomEntity;
+import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
+import ssafy.rtc.shoppy.room.enums.MemberRole;
 import ssafy.rtc.shoppy.room.repository.RoomRepository;
+import ssafy.rtc.shoppy.room.repository.RoomMemberRepository;
+import ssafy.rtc.shoppy.auth.entity.Member;
+import ssafy.rtc.shoppy.auth.repository.MemberRepository;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -45,6 +51,8 @@ import java.util.stream.Collectors;
 public class AiRoomService {
 
     private final RoomRepository roomRepository;
+    private final RoomMemberRepository roomMemberRepository;
+    private final MemberRepository memberRepository;
     private final RoomConstraintsRepository constraintsRepository;
     private final RecommendationTemplateRepository templateRepository;
     private final AiChecklistRepository checklistRepository;
@@ -59,6 +67,18 @@ public class AiRoomService {
 
         Room room = Room.create(hostId, request.roomMeta().roomName(), request.roomMeta().targetBudget());
         RoomEntity savedRoom = roomRepository.save(RoomEntity.fromDomain(room));
+
+        // 호스트를 RoomMember로 추가
+        Member hostMember = memberRepository.findById(hostId)
+                .orElseThrow(() -> new RuntimeException("호스트 정보를 찾을 수 없습니다."));
+        RoomMember hostRoomMember = RoomMember.join(
+                savedRoom.getRoomId(),
+                hostId,
+                hostMember.getNickname(),
+                MemberRole.HOST
+        );
+        RoomMemberEntity hostRoomMemberEntity = RoomMemberEntity.fromDomain(hostRoomMember, savedRoom);
+        roomMemberRepository.save(hostRoomMemberEntity);
 
         RoomConstraintsEntity constraints = RoomConstraintsEntity.from(
                 savedRoom.getRoomId(),

@@ -32,12 +32,20 @@ const CartItem: React.FC<CartItemProps> = ({
   const quantity = item.quantity;
   const isOnline = cartType === 'online';
   const isChecked = item.isChecked;
+  const isAI = item.purchaseType === 'ai';
   const [imageError, setImageError] = useState(false);
 
   const showImage = productMeta?.imageUrl && !imageError;
 
   return (
-    <div className="cart-item">
+    <div className={`cart-item ${isAI ? 'cart-item--ai' : ''}`}>
+      {/* AI 추천 배지 */}
+      {isAI && (
+        <div className="cart-item-ai-badge">
+          <span className="cart-item-ai-badge-icon">✨</span>
+          <span className="cart-item-ai-badge-text">AI 추천</span>
+        </div>
+      )}
       {/* 상품 이미지 / 상품명 / 가격 / 수량 / 삭제 */}
       <div className="cart-item-content">
         {isOnline && item.productId != null && (
@@ -55,7 +63,7 @@ const CartItem: React.FC<CartItemProps> = ({
           </div>
         )}
         <div className="cart-item-info">
-          <div className="cart-item-name-wrapper">
+          <div className={`cart-item-name-wrapper ${isAI ? 'cart-item-name-wrapper--ai' : ''}`}>
             {!isOnline && onToggleChecked && (
               <input
                 type="checkbox"
@@ -67,6 +75,10 @@ const CartItem: React.FC<CartItemProps> = ({
             )}
             <div className="cart-item-name-section">
               <h4 className="cart-item-name">{item.displayName}</h4>
+              {/* AI 추천: 사이즈만 (같은 행 유지용, null이 아닐 때만) */}
+              {isAI && item.itemSize && (
+                <p className="cart-item-size">{item.itemSize}</p>
+              )}
               {isOnline && !!item.addedByUserId && (
                 <p className="cart-item-added-by">
                   {item.addedByUserId}님이 추가한 상품
@@ -102,6 +114,10 @@ const CartItem: React.FC<CartItemProps> = ({
               </>
             )}
           </div>
+          {/* AI 추천: reason은 행 아래 전체 너비로 (가독성) */}
+          {isAI && item.reason && (
+            <p className="cart-item-reason cart-item-reason--block">{item.reason}</p>
+          )}
 
           {isOnline && (
             <div className="cart-item-controls">

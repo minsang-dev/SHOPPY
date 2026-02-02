@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,6 +38,16 @@ public class AiChecklistController {
             @RequestBody ToggleChecklistItemRequestDto request
     ) {
         checklistService.toggleChecklistItem(roomId, checklistItemId, request.checked());
+        return ResponseEntity.ok(SuccessResponse.ok());
+    }
+
+    @DeleteMapping("/{roomId}/ai-checklist/items/{checklistItemId}")
+    @Operation(summary = "Delete AI checklist item", description = "Delete an AI checklist item.")
+    public ResponseEntity<SuccessResponse<Void>> deleteChecklistItem(
+            @PathVariable long roomId,
+            @PathVariable long checklistItemId
+    ) {
+        checklistService.deleteChecklistItem(roomId, checklistItemId);
         return ResponseEntity.ok(SuccessResponse.ok());
     }
 }
