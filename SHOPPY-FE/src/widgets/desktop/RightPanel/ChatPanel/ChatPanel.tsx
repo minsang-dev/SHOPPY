@@ -22,12 +22,18 @@ const ChatPanel: React.FC = () => {
   const [participants, setParticipants] = useState<RoomMember[]>([]);
   const [inputContent, setInputContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const { user } = useAuthStore();
 
   const currentMemberId = useMemo(() => {
+    const storedMemberId = sessionStorage.getItem('memberId');
+    if (storedMemberId) {
+      const parsed = Number(storedMemberId);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
     if (!user?.id) return null;
-    const currentParticipant = participants.find((p) => p.userId === user.id);
+    const currentParticipant = participants.find(
+      (p) => p.userId === user.id || p.memberId === user.id,
+    );
     return currentParticipant?.memberId ?? null;
   }, [participants, user]);
 
@@ -37,7 +43,7 @@ const ChatPanel: React.FC = () => {
       const data = await getRoomMembers(roomId);
       setParticipants(data);
     } catch (error) {
-      console.error('참여자 목록 조회 실패:', error);
+      console.error('Failed to load participants:', error);
     }
   }, [roomId]);
 
@@ -60,7 +66,7 @@ const ChatPanel: React.FC = () => {
       }
       setInputContent('');
     } catch (error) {
-      console.error('메시지 전송 실패:', error);
+      console.error('Failed to send message:', error);
     }
   };
 
@@ -78,25 +84,32 @@ const ChatPanel: React.FC = () => {
     textarea.style.height = `${Math.min(textarea.scrollHeight, 96)}px`;
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const getParticipant = (senderMemberId: number): RoomMember | undefined => {
-    return participants.find((p) => p.memberId === senderMemberId);
+  const getParticipant = (senderMemberId: number): RoomMember | undefined =>
+    participants.find((p) => p.memberId === senderMemberId);
+
+  const isMyMessage = (senderMemberId: number, senderName: string): boolean => {
+    if (currentMemberId !== null) {
+      return senderMemberId === currentMemberId;
+    }
+    const storedMemberId = sessionStorage.getItem('memberId');
+    if (storedMemberId) {
+      const parsed = Number(storedMemberId);
+      if (!Number.isNaN(parsed) && parsed === senderMemberId) {
+        return true;
+      }
+    }
+    return Boolean(user?.nickname && user.nickname === senderName);
   };
 
-  /** 입장 순서(joinedAt) 기준으로 정렬된 참여자 목록 - 색상 인덱스 계산용 */
   const participantsByJoinOrder = useMemo(
     () => [...participants].sort((a, b) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime()),
     [participants],
   );
 
-  /** memberId로 입장 순서 인덱스를 찾아 색상 키로 사용 */
   const getColorKeyByMemberId = (memberId: number): number => {
     const index = participantsByJoinOrder.findIndex((p) => p.memberId === memberId);
     return index >= 0 ? index : memberId;
@@ -104,19 +117,19 @@ const ChatPanel: React.FC = () => {
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const weekdays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
-    const weekday = weekdays[date.getDay()];
-    return `${year}년 ${month}월 ${day}일 ${weekday}`;
+    const weekday = new Intl.DateTimeFormat('ko-KR', { weekday: 'long' }).format(date);
+    return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${weekday}`;
   };
 
   const formatTime = (dateString: string): string => {
     const date = new Date(dateString);
-    const hours = date.getHours();
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${hours}시 ${minutes}분`;
+    return new Intl.DateTimeFormat('ko-KR', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    })
+      .format(date)
+      .replace(' ', '');
   };
 
   const isSameMinute = (dateString1: string, dateString2: string): boolean => {
@@ -131,8 +144,7 @@ const ChatPanel: React.FC = () => {
     );
   };
 
-  const today = new Date();
-  const todayString = formatDate(today.toISOString());
+  const todayString = formatDate(new Date().toISOString());
 
   const messageGroups = useMemo(() => {
     const groups: {
@@ -183,9 +195,7 @@ const ChatPanel: React.FC = () => {
   }, [messages]);
 
   const handleMessageUpdated = (updated: ChatMessage) => {
-    setMessages((prev) =>
-      prev.map((msg) => (msg.chatId === updated.chatId ? updated : msg)),
-    );
+    setMessages((prev) => prev.map((msg) => (msg.chatId === updated.chatId ? updated : msg)));
   };
 
   const handleMessageDeleted = (chatId: number) => {
@@ -196,38 +206,42 @@ const ChatPanel: React.FC = () => {
     <div className="panel-content chat-panel">
       <div className="chat-date-header">{todayString}</div>
 
-      <div className="chat-messages-container" ref={messagesContainerRef}>
+      <div className="chat-messages-container">
         {loading ? (
-          <div className="chat-loading">로딩 중...</div>
+          <div className="chat-loading">Loading...</div>
         ) : messages.length === 0 ? (
-          <div className="chat-empty">채팅 메시지가 없습니다.</div>
+          <div className="chat-empty">No messages yet.</div>
         ) : (
           messageGroups.map((group) => {
             const participant = getParticipant(group.senderMemberId);
-            const senderName = participant?.nickname || `사용자 ${group.senderMemberId}`;
-            const isCurrentUser =
-              currentMemberId !== null && group.senderMemberId === currentMemberId;
+            const senderName = participant?.nickname || `User ${group.senderMemberId}`;
+            const isCurrentUser = isMyMessage(group.senderMemberId, senderName);
 
             return (
-              <div key={group.id} className="chat-message-group">
-                <UserAvatar
-                  name={senderName}
-                  colorKey={getColorKeyByMemberId(group.senderMemberId)}
-                  size="sm"
-                  className="chat-avatar"
-                />
+              <div
+                key={group.id}
+                className={`chat-message-group ${isCurrentUser ? 'is-current-user' : ''}`}
+              >
+                {!isCurrentUser && (
+                  <UserAvatar
+                    name={senderName}
+                    colorKey={getColorKeyByMemberId(group.senderMemberId)}
+                    size="sm"
+                    className="chat-avatar"
+                  />
+                )}
                 <div className="chat-message-content">
-                  <div className="chat-message-header">
-                    <span className="chat-sender-name">
-                      {senderName}
-                      {isCurrentUser && ' (나)'}
-                    </span>
-                    <span className="chat-timestamp">{formatTime(group.createdAt)}</span>
-                  </div>
-                  {group.messages.map((message) => (
+                  {!isCurrentUser && (
+                    <div className="chat-message-header">
+                      <span className="chat-sender-name">{senderName}</span>
+                    </div>
+                  )}
+                  {group.messages.map((message, index) => (
                     <ChatMessageRow
                       key={message.chatId}
                       message={message}
+                      timestamp={formatTime(message.createdAt)}
+                      showTimestamp={index === group.messages.length - 1}
                       onMessageUpdated={handleMessageUpdated}
                       onMessageDeleted={handleMessageDeleted}
                     />
@@ -246,14 +260,10 @@ const ChatPanel: React.FC = () => {
           value={inputContent}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          placeholder="메시지를 입력하세요.."
+          placeholder="메시지를 입력하세요."
           rows={1}
         />
-        <button
-          className="chat-send-button"
-          onClick={handleSendMessage}
-          disabled={!inputContent.trim()}
-        >
+        <button className="chat-send-button" onClick={handleSendMessage} disabled={!inputContent.trim()}>
           <i className="ri-send-plane-line"></i>
         </button>
       </div>
