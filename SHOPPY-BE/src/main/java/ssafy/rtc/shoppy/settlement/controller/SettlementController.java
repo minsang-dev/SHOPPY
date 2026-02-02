@@ -12,11 +12,9 @@ import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
 import ssafy.rtc.shoppy.room.enums.MemberStatus;
 import ssafy.rtc.shoppy.room.repository.RoomMemberRepository;
 import ssafy.rtc.shoppy.settlement.dto.*;
-import ssafy.rtc.shoppy.settlement.entity.Purchase;
 import ssafy.rtc.shoppy.settlement.service.SettlementService;
 
 @RestController
-@RequestMapping("/api")
 @RequiredArgsConstructor
 @Tag(name = "Settlement", description = "정산 API")
 public class SettlementController {
@@ -42,19 +40,19 @@ public class SettlementController {
 
     @Operation(summary = "정산 마스터 생성")
     @PostMapping("/rooms/{roomId}/settlements")
-    public ResponseEntity<SuccessResponse<Purchase>> createSettlement(
+    public ResponseEntity<SuccessResponse<PurchaseResponse>> createSettlement(
             @PathVariable Long roomId,
             @RequestBody SettlementCreateRequest request,
             @AuthenticationPrincipal Long userId) {
 
-        Purchase purchase = settlementService.createSettlement(
+        PurchaseResponse response = settlementService.createSettlement(
                 roomId,
                 request.getPayerMemberId(),
                 request.getTotalAmount(),
                 request.getItems(),
                 userId
         );
-        return ResponseEntity.ok(SuccessResponse.of(purchase));
+        return ResponseEntity.ok(SuccessResponse.of(response));
     }
 
     @Operation(summary = "영수증에 품목 수동 추가")
@@ -100,9 +98,9 @@ public class SettlementController {
 
     @Operation(summary = "전체 정산 상세 조회")
     @GetMapping("/settlements/{settlementId}")
-    public ResponseEntity<SuccessResponse<Purchase>> getSettlement(@PathVariable Long settlementId) {
-        Purchase purchase = settlementService.getSettlement(settlementId);
-        return ResponseEntity.ok(SuccessResponse.of(purchase));
+    public ResponseEntity<SuccessResponse<PurchaseResponse>> getSettlement(@PathVariable Long settlementId) {
+        PurchaseResponse response = settlementService.getSettlement(settlementId);
+        return ResponseEntity.ok(SuccessResponse.of(response));
     }
 
     @Operation(summary = "정산 완료 및 리포트 생성")
