@@ -227,11 +227,9 @@ const VotePanel: React.FC = () => {
             )}
           </div>
 
-          {isHost && (
-            <button className="vote-create-button" onClick={handleCreateVote}>
-              + 새 투표 생성하기
-            </button>
-          )}
+          <button className="vote-create-button" onClick={handleCreateVote}>
+            + 새 투표 생성하기
+          </button>
         </>
       )}
 
