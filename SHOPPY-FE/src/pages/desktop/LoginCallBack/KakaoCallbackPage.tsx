@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useKakaoAuth } from '@/features/auth/LoginByKakao';
+import './KakaoCallbackPage.css';
 
 export const KakaoCallbackPage = () => {
   const [searchParams] = useSearchParams();
@@ -15,5 +16,10 @@ export const KakaoCallbackPage = () => {
     }
   }, [code, login]);
 
-  return <div>로그인 처리 중...</div>;
+  return (
+    <div className="kakao-callback-page">
+      <div className="kakao-callback-loading" />
+      <p className="kakao-callback-text">카카오 로그인 중...</p>
+    </div>
+  );
 };
