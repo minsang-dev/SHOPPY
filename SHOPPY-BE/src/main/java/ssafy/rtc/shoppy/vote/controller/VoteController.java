@@ -21,7 +21,7 @@ public class VoteController {
     private final VoteService voteService;
 
     @PostMapping
-    @Operation(summary = "투표 생성", description = "호스트가 새로운 투표를 생성합니다.")
+    @Operation(summary = "투표 생성", description = "참여자가 새로운 투표를 생성합니다.")
     public ResponseEntity<SuccessResponse<VoteCreateResponseDto>> createVote(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long roomId,
