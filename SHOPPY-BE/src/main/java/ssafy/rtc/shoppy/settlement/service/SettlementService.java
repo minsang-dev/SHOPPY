@@ -14,6 +14,7 @@ import ssafy.rtc.shoppy.global.exception.ErrorCode;
 import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
 import ssafy.rtc.shoppy.room.enums.MemberStatus;
 import ssafy.rtc.shoppy.room.repository.RoomMemberRepository;
+import ssafy.rtc.shoppy.settlement.dto.PurchaseResponse;
 import ssafy.rtc.shoppy.settlement.dto.ReceiptUploadResponse;
 import ssafy.rtc.shoppy.settlement.dto.SettlementItemCreateRequest;
 import ssafy.rtc.shoppy.settlement.dto.SettlementItemCreateResponse;
@@ -173,7 +174,7 @@ public class SettlementService {
     /**
      * 정산 마스터(Purchase) 생성 및 초기 분배 (모든 멤버 참여)
      */
-    public Purchase createSettlement(Long roomId, Long payerMemberId, BigDecimal totalAmount, List<PurchaseItemDto> itemDtos, Long currentUserId) {
+    public PurchaseResponse createSettlement(Long roomId, Long payerMemberId, BigDecimal totalAmount, List<PurchaseItemDto> itemDtos, Long currentUserId) {
         // 0. 검증: 요청자(User)가 해당 payerMemberId의 주인인지 확인
         RoomMemberEntity payerMember = roomMemberRepository.findById(payerMemberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
@@ -203,7 +204,7 @@ public class SettlementService {
             createPurchaseItemWithAllocations(purchase, itemDto, members);
         }
 
-        return purchase;
+        return PurchaseResponse.from(purchase);
     }
 
     private void createPurchaseItemWithAllocations(Purchase purchase, PurchaseItemDto itemDto, List<RoomMemberEntity> members) {
@@ -341,14 +342,16 @@ public class SettlementService {
     }
 
     @Transactional(readOnly = true)
-    public Purchase getSettlement(Long settlementId) {
-        return purchaseRepository.findById(settlementId)
+    public PurchaseResponse getSettlement(Long settlementId) {
+        Purchase purchase = purchaseRepository.findById(settlementId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
+        return PurchaseResponse.from(purchase);
     }
     
     // 정산 완료 및 리포트 생성
     public String completeAndGetReport(Long settlementId) {
-        Purchase purchase = getSettlement(settlementId);
+        Purchase purchase = purchaseRepository.findById(settlementId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
         purchase.updateStatus("COMPLETE");
         
         return generateReport(purchase);
