@@ -3,7 +3,7 @@ package ssafy.rtc.shoppy.ai.llm.service;
 import org.springframework.stereotype.Component;
 import ssafy.rtc.shoppy.ai.llm.domain.AiChecklistCodes;
 import ssafy.rtc.shoppy.ai.llm.dto.AiRoomCreateRequestDto;
-import ssafy.rtc.shoppy.ai.llm.dto.RoomConstraintsRequestDto;
+import ssafy.rtc.shoppy.ai.llm.dto.RoomMetaRequestDto;
 import ssafy.rtc.shoppy.global.exception.BusinessException;
 import ssafy.rtc.shoppy.global.exception.ErrorCode;
 
@@ -16,13 +16,13 @@ import java.util.Set;
 public class RoomConstraintsValidator {
 
     public void validate(AiRoomCreateRequestDto request) {
-        RoomConstraintsRequestDto constraints = request.roomConstraints();
-        if (!AiChecklistCodes.PURPOSE_CODES.contains(constraints.purpose())) {
+        RoomMetaRequestDto meta = request.roomMeta();
+        if (!AiChecklistCodes.PURPOSE_CODES.contains(meta.purpose())) {
             throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "유효하지 않은 목적 코드입니다.");
         }
-        validateCategories(constraints.interestCategories());
-        validateTraits(constraints.traits());
-        validateBudgets(request.roomMeta().minBudget(), request.roomMeta().targetBudget());
+        validateCategories(meta.interestCategories());
+        validateTraits(meta.traits());
+        validateBudgets(meta.minBudget(), meta.targetBudget());
     }
 
     private void validateCategories(List<String> categories) {

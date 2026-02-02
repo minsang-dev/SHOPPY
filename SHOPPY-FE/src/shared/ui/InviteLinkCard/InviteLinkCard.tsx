@@ -54,13 +54,13 @@ const InviteLinkCard: React.FC<InviteLinkCardProps> = ({
             onChange={(event) => setNickname(event.target.value)}
           />
           <label htmlFor="inviteLink" className="invite-card-label">
-            초대 링크
+            초대 코드
           </label>
           <input
             id="inviteLink"
             className="invite-card-input"
             type="text"
-            placeholder="초대 링크를 입력하세요"
+            placeholder="초대 코드를 입력하세요"
             value={link}
             onChange={(event) => setLink(event.target.value)}
           />

@@ -39,11 +39,7 @@ public class VoteService {
 
     @Transactional
     public VoteCreateResponseDto createVote(Long roomId, Long userId, VoteCreateRequestDto request) {
-        Room room = getRoomById(roomId);
-
-        if (!room.isHost(userId)) {
-            throw new BusinessException(ErrorCode.HOST_ONLY);
-        }
+        getRoomById(roomId);
 
         Vote vote = Vote.create(roomId, request.title());
         VoteEntity voteEntity = VoteEntity.fromDomain(vote);

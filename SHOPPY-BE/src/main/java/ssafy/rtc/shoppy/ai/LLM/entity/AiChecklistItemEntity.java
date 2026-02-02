@@ -34,6 +34,9 @@ public class AiChecklistItemEntity {
     @Column(name = "item_name", nullable = false, length = 255)
     private String itemName;
 
+    @Column(name = "item_size", length = 50)
+    private String itemSize;
+
     @Column(name = "reason", length = 255)
     private String reason;
 
@@ -47,6 +50,7 @@ public class AiChecklistItemEntity {
             AiChecklistEntity checklist,
             String categoryCode,
             String itemName,
+            String itemSize,
             String reason,
             boolean isChecked,
             Integer sortOrder
@@ -54,6 +58,7 @@ public class AiChecklistItemEntity {
         this.checklist = checklist;
         this.categoryCode = categoryCode;
         this.itemName = itemName;
+        this.itemSize = itemSize;
         this.reason = reason;
         this.isChecked = isChecked;
         this.sortOrder = sortOrder;
@@ -63,10 +68,11 @@ public class AiChecklistItemEntity {
             AiChecklistEntity checklist,
             String categoryCode,
             String itemName,
+            String itemSize,
             String reason,
             Integer sortOrder
     ) {
-        return new AiChecklistItemEntity(checklist, categoryCode, itemName, reason, false, sortOrder);
+        return new AiChecklistItemEntity(checklist, categoryCode, itemName, itemSize, reason, false, sortOrder);
     }
 
     public void updateChecked(boolean checked) {

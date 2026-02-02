@@ -8,6 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import ssafy.rtc.shoppy.auth.jwt.JwtTokenProvider;
+import ssafy.rtc.shoppy.global.exception.BusinessException;
+import ssafy.rtc.shoppy.global.exception.ErrorCode;
 import ssafy.rtc.shoppy.global.response.SuccessResponse;
 import ssafy.rtc.shoppy.room.domain.Room;
 import ssafy.rtc.shoppy.room.domain.RoomMember;
@@ -26,6 +29,7 @@ public class RoomController {
 
     private final RoomService roomService;
     private final RoomMemberService roomMemberService;
+    private final JwtTokenProvider jwtTokenProvider;
     @PostMapping
     @Operation(summary = "방 생성", description = "새로운 쇼핑 방을 생성합니다.")
     public ResponseEntity<SuccessResponse<RoomCreateResponseDto>> createRoom(
@@ -118,6 +122,26 @@ public class RoomController {
     ) {
         roomMemberService.leaveRoomByUserId(roomId, userId);
         return ResponseEntity.ok(SuccessResponse.ok("방에서 나갔습니다."));
+    }
+
+    @PostMapping("/{roomId}/leave/beacon")
+    @Operation(summary = "Leave room (beacon)", description = "Best-effort leave on unload")
+    public ResponseEntity<SuccessResponse<Void>> leaveRoomByBeacon(
+            @PathVariable Long roomId,
+            @RequestBody(required = false) RoomLeaveBeaconRequestDto request
+    ) {
+        if (request == null || request.accessToken() == null || request.accessToken().isBlank()) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
+
+        String token = request.accessToken().trim();
+        if (!jwtTokenProvider.validateToken(token)) {
+            throw new BusinessException(ErrorCode.TOKEN_INVALID);
+        }
+
+        Long userId = jwtTokenProvider.getMemberIdFromToken(token);
+        roomMemberService.leaveRoomByUserIdIfActive(roomId, userId);
+        return ResponseEntity.ok(SuccessResponse.ok("leave processed"));
     }
 
     @PatchMapping("/{roomId}/sync-mode")

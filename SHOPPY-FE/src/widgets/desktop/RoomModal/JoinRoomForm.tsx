@@ -31,11 +31,11 @@ const JoinRoomForm: React.FC<JoinRoomFormProps> = ({ formData, onChange, onSubmi
       )}
 
       <div className="form-field">
-        <label className="form-label">입장 링크</label>
+        <label className="form-label">입장 코드</label>
         <input
           type="text"
           className="form-input"
-          placeholder="전달 받은 링크를 붙여 넣어 주세요."
+          placeholder="전달받은 코드를 붙여주세요"
           value={formData.entryLink}
           onChange={(e) => handleChange('entryLink', e.target.value)}
         />

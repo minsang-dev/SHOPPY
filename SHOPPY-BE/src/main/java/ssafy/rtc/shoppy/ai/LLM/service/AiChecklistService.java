@@ -64,6 +64,7 @@ public class AiChecklistService {
                                         .map(item -> new ChecklistItemResponseDto(
                                                         item.getChecklistItemId(),
                                                         item.getItemName(),
+                                                        item.getItemSize(),
                                                         item.isChecked(),
                                                         item.getReason(),
                                                         item.getSortOrder()))
