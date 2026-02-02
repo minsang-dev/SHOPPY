@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface RoomMemberRepository extends JpaRepository<RoomMemberEntity, Long> {
     List<RoomMemberEntity> findByRoom_RoomIdAndStatus(Long roomId, MemberStatus status);
     Optional<RoomMemberEntity> findByRoom_RoomIdAndUserIdAndStatus(Long roomId, Long userId, MemberStatus status);
+    Optional<RoomMemberEntity> findFirstByUserIdAndStatus(Long userId, MemberStatus status);
 }
