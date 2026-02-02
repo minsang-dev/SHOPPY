@@ -4,8 +4,10 @@ import type { VideoChatMode, RightPanelType } from '../../../entities/room/types
 import VideoChatHeader from '../../../widgets/desktop/VideoChatHeader/VideoChatHeader';
 import RightPanel from '../../../widgets/desktop/RightPanel/RightPanel';
 import { ChatRealtimeProvider } from '../../../features/chat/model/useChatRealtime';
+import { RoomMembersProvider } from '../../../features/room/fetch-members/model/RoomMembersProvider';
 import VideoStage from '../../../widgets/desktop/VideoStage/VideoStage';
-import { leaveRoom, patchSyncMode, patchHostUrl, getRoom } from '../../../entities/room/api/room';
+import { patchSyncMode, patchHostUrl, getRoom } from '../../../entities/room/api/room';
+import { useLeaveRoom, resolveAccessToken } from '@/features/room/leave-room';
 import { useRoomInfo } from '../../../features/room/fetch-room/model/useRoomInfo';
 import { useAuthStore } from '../../../entities/user/model/useAuthStore';
 import { realtimeConfig } from '../../../shared/config/realtime';
@@ -28,49 +30,18 @@ import { useCartNotificationStore } from '../../../features/cart/model/useCartNo
 import CartNotificationToasts from '../../../features/cart/ui/CartNotificationToasts';
 import './styles.css';
 
-const resolveAccessToken = () =>
-  window.sessionStorage.getItem('access_token') ??
-  window.sessionStorage.getItem('accessToken') ??
-  undefined;
-
-const sendKeepAliveLeave = (roomId: string, token?: string) => {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
-  const url = `${baseUrl}/rooms/${roomId}/leave`;
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  try {
-    void fetch(url, { method: 'DELETE', headers, keepalive: true });
-  } catch {
-    // best-effort on unload
-  }
-};
-
 const DesktopVideoChatPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { roomId } = useParams<{ roomId?: string }>();
   const [mode, setMode] = useState<VideoChatMode>('personal');
   const [activePanel, setActivePanel] = useState<RightPanelType>('cart');
-  const leftRef = useRef(false);
 
-  // 방 정보 및 사용자 정보
   const { room } = useRoomInfo(roomId);
   const user = useAuthStore((state) => state.user);
-
-  // 호스트 여부 판단
   const isHost = room && user ? room.hostId === user.id : false;
 
-  const handleExit = () => {
-    if (roomId && !leftRef.current) {
-      leftRef.current = true;
-      void leaveRoom(roomId).catch(() => {
-        sendKeepAliveLeave(roomId, resolveAccessToken());
-      });
-    }
-    navigate('/');
-  };
+  const { leaveByButton } = useLeaveRoom({ roomId, navigateTo: '/' });
 
   const handleModeChange = async (newMode: VideoChatMode) => {
     // 각 사용자가 자신의 syncMode를 변경 (FOLLOW: 호스트 따라가기, FREE: 자유 탐색)
@@ -103,27 +74,6 @@ const DesktopVideoChatPage: React.FC = () => {
   const handlePanelToggle = (panel: RightPanelType) => {
     setActivePanel(panel);
   };
-
-  useEffect(() => {
-    if (!roomId) {
-      return;
-    }
-    const token = resolveAccessToken();
-    const handleLeave = () => {
-      if (leftRef.current) {
-        return;
-      }
-      leftRef.current = true;
-      sendKeepAliveLeave(roomId, token);
-    };
-
-    window.addEventListener('beforeunload', handleLeave);
-    window.addEventListener('pagehide', handleLeave);
-    return () => {
-      window.removeEventListener('beforeunload', handleLeave);
-      window.removeEventListener('pagehide', handleLeave);
-    };
-  }, [roomId]);
 
   // WebSocket 구독: host-url 변경 수신
   // mode를 ref로 추적하여 최신 값 참조
@@ -346,57 +296,59 @@ const DesktopVideoChatPage: React.FC = () => {
 
   return (
     <div className="video-chat-page">
-      <ChatRealtimeProvider activePanel={activePanel}>
-        <VideoChatHeader
-          mode={mode}
-          onModeChange={handleModeChange}
-          onExit={handleExit}
-          activePanel={activePanel}
-          onPanelToggle={handlePanelToggle}
-        />
-        <div className="video-chat-content">
-          <div
-            className="video-chat-left"
-            style={{
-              pointerEvents: mode === 'host' && !isHost ? 'none' : 'auto',
-              position: 'relative',
-            }}
-          >
-            {/* 중첩 라우터 -> Outlet으로 router에서 정의한 화면 랜더링 */}
-            <div className="video-chat-body">
-              <Outlet />
-            </div>
-            {/* 호스트 모드일 때 참여자에게 안내 오버레이 */}
-            {mode === 'host' && !isHost && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 8,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                  color: 'white',
-                  padding: '8px 16px',
-                  borderRadius: 8,
-                  fontSize: 14,
-                  zIndex: 10,
-                }}
-              >
-                호스트 모드: 호스트가 화면을 제어 중입니다
+      <RoomMembersProvider roomId={roomId}>
+        <ChatRealtimeProvider activePanel={activePanel}>
+          <VideoChatHeader
+            mode={mode}
+            onModeChange={handleModeChange}
+            onExit={leaveByButton}
+            activePanel={activePanel}
+            onPanelToggle={handlePanelToggle}
+          />
+          <div className="video-chat-content">
+            <div
+              className="video-chat-left"
+              style={{
+                pointerEvents: mode === 'host' && !isHost ? 'none' : 'auto',
+                position: 'relative',
+              }}
+            >
+              {/* 중첩 라우터 -> Outlet으로 router에서 정의한 화면 랜더링 */}
+              <div className="video-chat-body">
+                <Outlet />
               </div>
-            )}
-            <VideoStage roomId={roomId} />
+              {/* 호스트 모드일 때 참여자에게 안내 오버레이 */}
+              {mode === 'host' && !isHost && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 8,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    color: 'white',
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    zIndex: 10,
+                  }}
+                >
+                  호스트 모드: 호스트가 화면을 제어 중입니다
+                </div>
+              )}
+              <VideoStage roomId={roomId} />
+            </div>
+            <div className="video-chat-right">
+              <RightPanel panelType={activePanel} />
+            </div>
           </div>
-          <div className="video-chat-right">
-            <RightPanel panelType={activePanel} />
+          <div className="video-chat-notification-toasts">
+            <EntranceNotificationToasts />
+            <CartNotificationToasts />
+            <VoteNotificationToasts />
           </div>
-        </div>
-        <div className="video-chat-notification-toasts">
-          <EntranceNotificationToasts />
-          <CartNotificationToasts />
-          <VoteNotificationToasts />
-        </div>
-      </ChatRealtimeProvider>
+        </ChatRealtimeProvider>
+      </RoomMembersProvider>
     </div>
   );
 };

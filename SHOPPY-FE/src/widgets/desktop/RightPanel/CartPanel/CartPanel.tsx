@@ -17,10 +17,6 @@ import CartTypeToggle from '../CartTypeToggle/CartTypeToggle';
 import CartItem from '../CartItem/CartItem';
 import OfflineCartInput from '@/features/cart/add-offline-item/ui/OfflineCartInput';
 import ManualInputModal from '@/features/cart/add-offline-item/ui/ManualInputModal';
-import { calcOnlineCartTotal } from '@/features/cart/calculate-online-total/model/calcOnlineCartTotal';
-import CartTotalSummary from '@/features/cart/calculate-online-total/ui/CartTotalSummary';
-import CartCheckoutButton from '@/features/cart/proceed-checkout/ui/CartCheckoutButton';
-import { useAuthStore } from '@/entities/user/model/useAuthStore';
 import './CartPanel.css';
 
 export type ProductMetaMap = Record<number, { imageUrl: string; price: number }>;
@@ -52,7 +48,6 @@ const toShoppingItem = (raw: ShoppingItemRaw): ShoppingItem => ({
 const CartPanel: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const [cartType, setCartType] = useState<'online' | 'offline'>('online');
   const [expandedParticipants, setExpandedParticipants] = useState<Record<number, boolean>>({});
   const [isManualInputModalOpen, setIsManualInputModalOpen] = useState(false);
@@ -146,24 +141,12 @@ const CartPanel: React.FC = () => {
               const raw = JSON.parse(body) as ShoppingItemRaw;
               const newItem = toShoppingItem(raw);
               setShoppingItems((prev) => {
+                // 중복 방지
                 if (prev.some((i) => i.shoppingItemId === newItem.shoppingItemId)) {
                   return prev;
                 }
                 return [...prev, newItem];
               });
-              // 새 온라인 상품의 가격 정보 조회 → productMetaMap 갱신 (총액 실시간 반영)
-              if (isOnlineItem(newItem) && newItem.productId != null) {
-                void getProductList().then((products) => {
-                  const found = products.find((p) => p.product_id === newItem.productId);
-                  if (found) {
-                    setProductMetaMap((prev) =>
-                      prev[found.product_id]
-                        ? prev
-                        : { ...prev, [found.product_id]: { imageUrl: found.image_url, price: found.price } }
-                    );
-                  }
-                });
-              }
             } catch (err) {
               console.error('장바구니 추가 이벤트 파싱 실패:', err);
             }
@@ -226,9 +209,6 @@ const CartPanel: React.FC = () => {
   });
 
   const isOnline = cartType === 'online';
-
-  // 온라인 장바구니 총액 (shoppingItems·productMetaMap 변경 시 자동 재계산)
-  const onlineCartTotal = isOnline ? calcOnlineCartTotal(currentCartItems, productMetaMap) : 0;
 
   const handleToggleParticipants = (productId: number) => {
     setExpandedParticipants(prev => ({
@@ -343,19 +323,6 @@ const CartPanel: React.FC = () => {
           ))
         )}
       </div>
-
-      {isOnline && currentCartItems.length > 0 && (
-        <>
-          <CartTotalSummary total={onlineCartTotal} />
-          <CartCheckoutButton
-            onClick={() => roomId && navigate(`/rooms/${roomId}/checkout`)}
-            disabled={!isLoggedIn}
-          />
-          {!isLoggedIn && (
-            <p className="cart-checkout-hint">로그인 후 이용 가능합니다</p>
-          )}
-        </>
-      )}
 
       {/* 수동입력 모달 */}
       <ManualInputModal

@@ -21,7 +21,7 @@ const MobilePanelHost: React.FC<MobilePanelHostProps> = ({
     case 'vote':
       return <MobileVotePanel roomId={roomId} />;
     case 'members':
-      return <MobileMembersPanel roomId={roomId} />;
+      return <MobileMembersPanel />;
     case 'chat':
       return <MobileChatPanel roomId={roomId} />;
     case 'cart':
