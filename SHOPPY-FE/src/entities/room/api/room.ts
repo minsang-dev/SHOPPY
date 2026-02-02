@@ -1,6 +1,8 @@
 import type {
   CreateRoomRequest,
   CreateRoomResponse,
+  CreateRoomWithAIRequest,
+  CreateRoomWithAIResponse,
   JoinRoomAsUserRequest,
   JoinRoomAsGuestRequest,
   JoinRoomResponse,
@@ -18,6 +20,19 @@ export const createRoom = async (payload: CreateRoomRequest): Promise<CreateRoom
     method: 'POST',
     url: '/rooms',
     data: payload,
+  });
+};
+
+// 방 생성 + AI 장바구니 생성 (LLM 요청)
+// LLM 응답이 오래 걸릴 수 있으므로 타임아웃을 60초로 설정
+export const createRoomWithAI = async (payload: CreateRoomWithAIRequest): Promise<CreateRoomWithAIResponse> => {
+  return apiRequest<CreateRoomWithAIResponse>({
+    method: 'POST',
+    url: '/rooms/ai/LLM',
+    data: payload,
+    config: {
+      timeout: 60000, // 60초
+    },
   });
 };
 

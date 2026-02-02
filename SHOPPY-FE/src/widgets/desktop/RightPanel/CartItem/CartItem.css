@@ -63,6 +63,34 @@
   gap: 0.75rem;
 }
 
+/* AI/오프라인: 1행 = 체크박스 + 상품명(+사이즈) + 돋보기 + 휴지통 */
+.cart-item-name-wrapper--ai {
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.cart-item-name-wrapper--ai .cart-item-checkbox {
+  flex-shrink: 0;
+}
+
+.cart-item-name-wrapper--ai .cart-item-name-section {
+  flex: 1;
+  min-width: 0;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.5rem;
+}
+
+.cart-item-name-wrapper--ai .cart-item-name {
+  margin: 0;
+  line-height: 1.3;
+}
+
+.cart-item-name-wrapper--ai .cart-item-size {
+  margin: 0;
+}
+
 .cart-item-checkbox {
   width: 18px;
   height: 18px;
@@ -232,5 +260,65 @@
 .remove-btn:hover {
   background-color: #fee;
   color: #c82333;
+}
+
+/* AI 추천 아이템 - 무채색 미니멀 카드 (글래스 제거) */
+.cart-item--ai {
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.cart-item-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  background: #27272a;
+  border: none;
+  border-radius: 4px;
+  width: fit-content;
+  margin-bottom: 0.5rem;
+}
+
+.cart-item-ai-badge-icon {
+  font-size: 0.8rem;
+}
+
+.cart-item-ai-badge-text {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #fafafa;
+  letter-spacing: 0.02em;
+}
+
+.cart-item--ai .cart-item-checkbox {
+  accent-color: #52525b;
+}
+
+.cart-item-size {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #52525b;
+  margin: 0.15rem 0 0 0;
+}
+
+.cart-item-reason {
+  font-size: 0.75rem;
+  color: #3f3f46;
+  margin: 0.25rem 0 0 0;
+  line-height: 1.4;
+}
+
+/* AI 추천: reason 2행 - 카드와 동일 톤 */
+.cart-item-reason--block {
+  display: block;
+  width: 100%;
+  margin: 0.5rem 0 0 0;
+  padding: 0;
+  line-height: 1.5;
+  font-size: 0.8rem;
+  color: #52525b;
 }
 

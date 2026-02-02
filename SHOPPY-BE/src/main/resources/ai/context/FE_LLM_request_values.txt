@@ -1,0 +1,82 @@
+﻿# FE → LLM 요청 값 정리
+
+## 엔드포인트
+- POST /api/rooms/ai/LLM
+
+## 요청 바디 구조
+{
+  "roomMeta": {
+    "roomName": "string",
+    "purpose": "string",
+    "headcount": 1,
+    "interestCategories": ["FOOD_READY"],
+    "traits": ["NO_COOKING"],
+    "targetBudget": 0,
+    "minBudget": 0
+  }
+}
+
+## 필드별 유효 값/조건
+
+### roomName
+- 자유 입력 문자열
+- 빈 문자열 불가
+
+### purpose (허용 값)
+- TRAVEL
+- MT
+- PARTY
+- CAMPING
+- DAILY
+- GIFT
+
+### headcount
+- 정수
+- 1 이상
+
+### interestCategories (허용 값)
+- FOOD_READY
+- MEAT_RAW
+- VEGETABLE_RAW
+- FRESH_READY
+- DRINK_NON_ALCOHOL
+- ALCOHOL
+- SNACK
+- COOKING_TOOL
+- SUPPLY
+- 빈 배열 불가
+
+### traits (허용 값)
+- VALUE
+- PREMIUM
+- BULK
+- MINIMAL
+- BALANCED
+- ALCOHOL_YES
+- ALCOHOL_NO
+- EASY_COOK
+- MEAT_LOVER
+- VEGGIE
+- OUTDOOR
+- INDOOR
+- COOKING_OK
+- COOKING_AVAILABLE
+- NO_COOKING
+- MEAL_MAIN
+- SNACK_MAIN
+- VARIETY_OK
+- CONSUMABLE
+- EQUIPMENT
+- TOOL
+- null 불가 (빈 배열 OK)
+
+### traits 상호 배타 조합
+- VALUE ↔ PREMIUM
+- BULK ↔ MINIMAL
+- ALCOHOL_YES ↔ ALCOHOL_NO
+- OUTDOOR ↔ INDOOR
+- COOKING_OK ↔ NO_COOKING
+- COOKING_AVAILABLE ↔ NO_COOKING
+
+### targetBudget / minBudget
+- 숫자(0 이상)

@@ -51,6 +51,19 @@ public class AiChecklistService {
                 item.updateChecked(checked);
         }
 
+        @Transactional
+        public void deleteChecklistItem(long roomId, long checklistItemId) {
+                AiChecklistEntity checklist = checklistRepository.findByRoomId(roomId)
+                                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "체크리스트를 찾을 수 없습니다."));
+
+                AiChecklistItemEntity item = checklistItemRepository
+                                .findByChecklist_ChecklistIdAndChecklistItemId(checklist.getChecklistId(),
+                                                checklistItemId)
+                                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "체크리스트 항목을 찾을 수 없습니다."));
+
+                checklistItemRepository.delete(item);
+        }
+
         private AiChecklistResponseDto buildChecklistResponse(AiChecklistEntity checklist,
                         List<AiChecklistItemEntity> items) {
                 Map<String, List<AiChecklistItemEntity>> grouped = items.stream()

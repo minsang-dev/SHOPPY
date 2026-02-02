@@ -79,3 +79,43 @@ export interface CreateRoomResponse {
   hostCurrentUrl: string | null;
   roomMeta: RoomMeta;
 }
+
+// LLM 방 생성 요청 (POST /api/rooms/ai/LLM)
+export interface CreateRoomWithAIRequest {
+  roomMeta: {
+    roomName: string;
+    purpose: string;
+    headcount: number;
+    interestCategories: string[];
+    traits: string[];
+    targetBudget: number;
+    minBudget: number;
+  };
+}
+
+// LLM 방 생성 응답 (백엔드 구조에 맞춤)
+export interface CreateRoomWithAIResponse {
+  roomInfo: {
+    roomId: number;
+    hostId: number;
+  };
+  roomMeta: {
+    purpose: string;
+    interestCategories: string[];
+    traits: string[];
+  };
+  roomConstraints: {
+    headcount: number;
+    targetBudget: number;
+    minBudget: number;
+  };
+  ai_checkList: {
+    categories: Array<{
+      code: string;
+      items: Array<{
+        name: string;
+        reason: string;
+      }>;
+    }>;
+  };
+}

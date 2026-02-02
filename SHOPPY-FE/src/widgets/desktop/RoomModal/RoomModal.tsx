@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useCreateRoom } from '@/features/room/model/useCreateRoom';
 import { useJoinRoom } from '@/features/room/model/useJoinRoom';
 import { useAuthStore } from '@/entities/user/model/useAuthStore';
-import type {
-  DesktopRoomModalProps,
-  RoomModalTab,
-  CreateRoomFormData,
-  JoinRoomFormData,
+import {
+  ALL_INTEREST_CATEGORIES,
+  type CreateRoomFormData,
+  type DesktopRoomModalProps,
+  type JoinRoomFormData,
+  type RoomModalTab,
 } from '@/entities/room/types/desktopRoomModal.types';
 import CreateRoomForm from './CreateRoomForm';
 import JoinRoomForm from './JoinRoomForm';
@@ -15,14 +16,15 @@ import './RoomModal.css';
 
 const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const { run: createRoom } = useCreateRoom();
+  const { runWithAI: createRoomWithAI, loading: createLoading } = useCreateRoom();
   const { run: joinRoom } = useJoinRoom();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const [activeTab, setActiveTab] = useState<RoomModalTab>(isLoggedIn ? 'create' : 'join');
   const [createFormData, setCreateFormData] = useState<CreateRoomFormData>({
     title: '',
     purpose: '',
-    category: '',
+    categories: [...ALL_INTEREST_CATEGORIES],
+    traits: [],
     participants: 1,
     targetBudget: '',
     minBudget: 1000,
@@ -32,10 +34,14 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
     entryLink: '',
   });
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleCreateSubmit = async () => {
+    if (createLoading) return;
+    setCreateError(null);
+
     try {
       // 예산 문자열을 숫자로 변환 (쉼표 제거)
       const parseBudget = (budgetStr: string): number => {
@@ -45,31 +51,28 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
       };
 
       const targetBudget = parseBudget(createFormData.targetBudget);
-      
-      // 카테고리 문자열을 배열로 변환 (쉼표로 구분)
-      const interestCategories = createFormData.category
-        .split(',')
-        .map(cat => cat.trim())
-        .filter(cat => cat.length > 0);
 
+      // LLM API 요청 페이로드
       const payload = {
-        roomName: createFormData.title,
-        targetBudget,
         roomMeta: {
-          shoppingPurpose: createFormData.purpose,
-          interestCategories,
+          roomName: createFormData.title,
+          purpose: createFormData.purpose,
           headcount: createFormData.participants,
-          budgetMin: createFormData.minBudget,
+          interestCategories: createFormData.categories,
+          traits: createFormData.traits,
+          targetBudget,
+          minBudget: createFormData.minBudget,
         },
       };
-      console.log('방 생성 요청 payload:', payload);
-      const response = await createRoom(payload);
+      console.log('AI 방 생성 요청 payload:', payload);
+      const response = await createRoomWithAI(payload);
 
       // 방 생성 성공 시 /rooms/:roomId로 이동
       navigate(`/rooms/${response.roomId}`);
+      onClose();
     } catch (error) {
       console.error('방 생성 실패:', error);
-      // TODO: 에러 처리 (토스트 메시지 등)
+      setCreateError('방 생성에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -108,6 +111,7 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
     <div className="room-modal-overlay" onClick={onClose}>
       <div className="room-modal" onClick={(e) => e.stopPropagation()}>
         <div className="room-modal-header">
+          <div className="room-modal-header-spacer" aria-hidden="true" />
           <div className="room-modal-tabs">
             <button
               className={`room-modal-tab ${activeTab === 'create' ? 'active' : ''}`}
@@ -122,19 +126,35 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
               방 참여하기
             </button>
           </div>
-          <button className="room-modal-close" onClick={onClose} aria-label="닫기">
-            ×
-          </button>
+          <div className="room-modal-header-spacer room-modal-header-close-wrap">
+            <button className="room-modal-close" onClick={onClose} aria-label="닫기">
+              ×
+            </button>
+          </div>
         </div>
 
         <div className="room-modal-content">
           {activeTab === 'create' ? (
             isLoggedIn ? (
-              <CreateRoomForm
-                formData={createFormData}
-                onChange={setCreateFormData}
-                onSubmit={handleCreateSubmit}
-              />
+              <>
+                {createError && (
+                  <div className="error-message" style={{ color: '#e53935', marginBottom: '12px', textAlign: 'center' }}>
+                    {createError}
+                  </div>
+                )}
+                {createLoading && (
+                  <div className="loading-overlay">
+                    <div className="loading-spinner"></div>
+                    <p className="loading-text">AI가 장바구니를 준비하고 있습니다...</p>
+                    <p className="loading-subtext">최대 1분 정도 소요될 수 있습니다</p>
+                  </div>
+                )}
+                <CreateRoomForm
+                  formData={createFormData}
+                  onChange={setCreateFormData}
+                  onSubmit={handleCreateSubmit}
+                />
+              </>
             ) : (
               <div className="login-required-message">
                 <p>방을 만들려면 로그인이 필요합니다.</p>

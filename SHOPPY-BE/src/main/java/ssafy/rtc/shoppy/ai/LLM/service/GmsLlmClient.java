@@ -88,7 +88,7 @@ private static final String DEFAULT_REASON = "조건 기반 추천";
         payload.put("model", "gpt-4o-mini");
         payload.put("messages", messages);
         payload.put("temperature", 0.25);
-        payload.put("max_tokens", 1024);
+        payload.put("max_tokens", 4096);
         payload.put("top_p", 0.8);
 
         try {
