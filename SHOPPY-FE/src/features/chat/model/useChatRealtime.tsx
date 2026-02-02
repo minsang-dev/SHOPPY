@@ -91,7 +91,7 @@ export const ChatRealtimeProvider: React.FC<ChatRealtimeProviderProps> = ({
     try {
       setLoading(true);
       const response = await getChatMessages(Number(roomId), 0, 50);
-      setMessages(response.messages);
+      setMessages([...response.messages].reverse());
     } catch (err) {
       console.error('채팅 메시지 조회 실패:', err);
     } finally {

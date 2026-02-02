@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import type { ShoppingItem } from '@/entities/shopping/types/shopping.types';
-import CartItemParticipants from '../CartItemParticipants/CartItemParticipants';
 import './CartItem.css';
 
 export interface ProductMeta {
@@ -12,14 +11,11 @@ interface CartItemProps {
   item: ShoppingItem;
   cartType: 'online' | 'offline';
   productMeta?: ProductMeta; // 온라인 상품: 이미지·가격 (productId로 조회)
-  isExpanded: boolean;
   onQuantityDecrease: () => void;
   onQuantityIncrease: () => void;
   onRemove: () => void;
-  onToggleParticipants: () => void;
   onToggleChecked?: () => void; // 오프라인 장바구니 체크박스
   onSearchClick?: () => void; // 오프라인 장바구니 검색(돋보기) 버튼
-  participants?: string[];
 }
 
 
@@ -27,14 +23,11 @@ const CartItem: React.FC<CartItemProps> = ({
   item,
   cartType,
   productMeta,
-  isExpanded,
   onQuantityDecrease,
   onQuantityIncrease,
   onRemove,
-  onToggleParticipants,
   onToggleChecked,
   onSearchClick,
-  participants = [],
 }) => {
   const quantity = item.quantity;
   const isOnline = cartType === 'online';
@@ -140,17 +133,6 @@ const CartItem: React.FC<CartItemProps> = ({
             </div>
           )}
         </div>
-      </div>
-
-      {/* 참여자 (온라인/오프라인 모두 표시) */}
-      <div className="cart-item-divider"></div>
-      <div className="cart-item-footer">
-        <CartItemParticipants
-          productId={item.shoppingItemId}
-          participantCount={participants.length}
-          isExpanded={isExpanded}
-          onToggle={onToggleParticipants}
-        />
       </div>
     </div>
   );

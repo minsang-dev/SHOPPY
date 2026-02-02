@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useKakaoAuth } from '@/features/auth/LoginByKakao';
+import './KakaoCallbackPage.css';
 
 export const KakaoCallbackPage = () => {
   const [searchParams] = useSearchParams();

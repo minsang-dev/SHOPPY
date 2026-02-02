@@ -210,7 +210,7 @@ const ChatPanel: React.FC = () => {
         {loading ? (
           <div className="chat-loading">Loading...</div>
         ) : messages.length === 0 ? (
-          <div className="chat-empty">No messages yet.</div>
+          <div className="chat-empty">채팅 메세지가 없습니다.<br />채팅을 시작해 보세요!</div>
         ) : (
           messageGroups.map((group) => {
             const participant = getParticipant(group.senderMemberId);

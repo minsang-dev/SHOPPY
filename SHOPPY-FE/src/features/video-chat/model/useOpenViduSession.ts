@@ -188,8 +188,16 @@ export const useOpenViduSession = ({
         const publisher = await createPublisher(ov, videoFacingMode);
         session.publish(publisher);
         publisherRef.current = publisher;
-        if (localVideoRef?.current) {
-          publisher.addVideoElement(localVideoRef.current);
+        // 모바일 등에서 ref가 아직 붙기 전일 수 있으므로 다음 틱에서 한 번 더 시도
+        const el = localVideoRef?.current;
+        if (el) {
+          publisher.addVideoElement(el);
+        } else {
+          requestAnimationFrame(() => {
+            if (localVideoRef?.current && publisherRef.current) {
+              publisherRef.current.addVideoElement(localVideoRef.current);
+            }
+          });
         }
       }
 
@@ -347,6 +355,14 @@ export const useOpenViduSession = ({
   }, [accessToken, connect, enabled, roomId]);
 
   useEffect(() => () => disconnect(), [disconnect]);
+
+  // 연결 직후 ref가 늦게 붙은 경우(모바일 등)를 위해, isConnected 시점에 비디오 엘리먼트 재연결
+  useEffect(() => {
+    if (!isConnected || !publisherRef.current || !localVideoRef?.current) {
+      return;
+    }
+    publisherRef.current.addVideoElement(localVideoRef.current);
+  }, [isConnected, localVideoRef]);
 
   useEffect(() => {
     if (!autoStartScreenShare || !isConnected) {

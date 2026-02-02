@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getChatMessages, sendChatMessage } from '@/entities/chat/api/chatApi';
 import type { ChatMessage } from '@/entities/chat/types/chat.types';
 import { getRoomMembers } from '@/entities/room/api/room';
@@ -59,7 +59,7 @@ const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ roomId }) => {
     try {
       setLoading(true);
       const response = await getChatMessages(Number(roomId), 0, 50);
-      setMessages(response.messages);
+      setMessages([...response.messages].reverse());
     } catch (error) {
       console.error('Failed to load chat messages:', error);
     } finally {
@@ -240,7 +240,7 @@ const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ roomId }) => {
         {loading ? (
           <div className="mobile-panel-empty">불러오는 중...</div>
         ) : messages.length === 0 ? (
-          <div className="mobile-panel-empty">아직 메시지가 없습니다.</div>
+          <div className="mobile-panel-empty">채팅 메세지가 없습니다.<br />채팅을 시작해 보세요!</div>
         ) : (
           <div className="mobile-panel-chat-list" ref={listRef}>
             {messages.map((message, index) => {
