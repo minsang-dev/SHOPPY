@@ -1,0 +1,61 @@
+﻿# LLM ERD 참고사항
+
+## 1) 기준
+- LLM 관련 테이블 구조는 엔티티(ORM) 기준으로 정리한다.
+- 경로: SHOPPY-BE/src/main/java/ssafy/rtc/shoppy/ai/LLM/entity/
+
+## 2) LLM 관련 테이블 목록
+- RecommendationTemplate
+- room_constraints
+- AiChecklist
+- AiChecklistItem
+
+## 3) 테이블 상세
+
+### 3.1 RecommendationTemplate
+- template_id (PK, BIGINT, IDENTITY)
+- purpose_code (VARCHAR(20))
+- category_code (VARCHAR(30), NOT NULL)
+- new_category_code (VARCHAR(50))
+- item_name (VARCHAR(255), NOT NULL)
+- item_size (VARCHAR(50))
+- trait_excludes (JSON, List<String>)
+- ban_traits (JSON, List<String>)
+- template_tags (JSON, List<String>)
+- priority (INT, NOT NULL)
+- is_active (BOOLEAN, NOT NULL)
+
+### 3.2 room_constraints
+- room_id (PK, BIGINT)
+- purpose_code (VARCHAR(20), NOT NULL)
+- people_count (INT, NOT NULL)
+- min_budget (DECIMAL(12,2), NOT NULL)
+- target_budget (DECIMAL(12,2), NOT NULL)
+- interest_category_codes (JSON, List<String>, NOT NULL)
+- trait_codes (JSON, List<String>, NOT NULL)
+- created_at (DATETIME, NOT NULL)
+- updated_at (DATETIME, NOT NULL)
+
+### 3.3 AiChecklist
+- checklist_id (PK, BIGINT, IDENTITY)
+- room_id (BIGINT, NOT NULL, UNIQUE)
+- status (VARCHAR(10), NOT NULL)
+- generated_at (DATETIME, NOT NULL)
+
+### 3.4 AiChecklistItem
+- checklist_item_id (PK, BIGINT, IDENTITY)
+- checklist_id (FK -> AiChecklist.checklist_id)
+- category_code (VARCHAR(30), NOT NULL)
+- item_name (VARCHAR(255), NOT NULL)
+- item_size (VARCHAR(50))
+- reason (VARCHAR(255))
+- is_checked (BOOLEAN, NOT NULL)
+- sort_order (INT)
+
+## 4) 관계 요약
+- AiChecklist (1) --- (N) AiChecklistItem
+- Room (1) --- (1) room_constraints (room_id 기준)
+
+## 5) 비고
+- RecommendationTemplate의 JSON 컬럼은 JsonStringListConverter로 매핑된다.
+- 실제 컬럼 타입/길이는 엔티티 정의를 최우선으로 한다.
