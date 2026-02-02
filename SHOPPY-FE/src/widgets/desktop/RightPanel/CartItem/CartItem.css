@@ -9,6 +9,10 @@
   border-radius: 8px;
   border: 1px solid #e5e5e5;
   transition: margin-bottom 0.3s ease;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .cart-item-content {
@@ -18,10 +22,10 @@
 }
 
 .cart-item-image {
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
+  max-width: 120px;
   height: 150px;
-  flex-shrink: 0;
   border-radius: 4px;
   overflow: hidden;
   background-color: #f0f0f0;

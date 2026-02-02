@@ -8,6 +8,7 @@ import DesktopVideoChatPage from '@/pages/desktop/VideoChat';
 
 // 헤더
 import DesktopProductList from '@/pages/desktop/ProductList';
+import DesktopCheckoutPage from '@/pages/desktop/Checkout';
 
 // OAuth 콜백
 import { KakaoCallbackPage } from '@/pages/desktop/LoginCallBack/KakaoCallbackPage';
@@ -30,6 +31,7 @@ const AppRouter = () => {
         {/* index를 쓰면 '/room'으로 들어왔을 때 이 컴포넌트를 Outlet에 보여줌 */}
         <Route index element={<DesktopMainPage />} />
         <Route path="products" element={<DesktopProductList />} />
+        <Route path="checkout" element={<DesktopCheckoutPage />} />
       </Route>
 
     </Routes>
