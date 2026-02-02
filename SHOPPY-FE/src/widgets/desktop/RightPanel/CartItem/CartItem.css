@@ -234,22 +234,3 @@
   color: #c82333;
 }
 
-/* 구분선 */
-.cart-item-divider {
-  width: 100%;
-  height: 1px;
-  background-color: #e5e5e5;
-  margin: 0;
-}
-
-/* 장바구니 아이템 푸터 */
-.cart-item-footer {
-  width: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-top: 0;
-  position: relative;
-  gap: 0 1rem;
-}
