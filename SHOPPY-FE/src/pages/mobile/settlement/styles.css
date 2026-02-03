@@ -226,6 +226,12 @@
   background: #e5e7eb;
 }
 
+.mobile-settlement-receiver-info {
+  margin-top: -4px;
+  font-size: 0.78rem;
+  color: #475569;
+}
+
 .mobile-settlement-members {
   display: grid;
   gap: 8px;

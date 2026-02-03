@@ -2,6 +2,27 @@
   padding: 2rem;
   min-height: 100%;
   background-color: #f8f9fa;
+  position: relative;
+}
+
+.checkout-go-settlement-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 30;
+  border: 1px solid #d0d7e3;
+  background: #ffffff;
+  color: #1f2a37;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.checkout-go-settlement-btn:hover {
+  background: #f8fafc;
 }
 
 .checkout-container {

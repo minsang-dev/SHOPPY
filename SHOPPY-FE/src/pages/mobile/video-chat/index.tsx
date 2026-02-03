@@ -20,10 +20,6 @@ const MobileVideoChatPage: React.FC = () => {
   const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('environment');
   const localVideoRef = useRef<HTMLVideoElement>(null);
 
-  const handleEndShopping = () => {
-    navigate('/m/settlement');
-  };
-
   const handleToggleMic = () => {
     setMicOn((prev) => !prev);
   };
@@ -61,6 +57,14 @@ const MobileVideoChatPage: React.FC = () => {
 
   const { room } = useRoomInfo(roomId);
   const { leaveByButton } = useLeaveRoom({ roomId, navigateTo: '/m' });
+
+  const handleEndShopping = () => {
+    if (!roomId) {
+      navigate('/m/settlement');
+      return;
+    }
+    navigate(`/m/settlement?room_id=${encodeURIComponent(roomId)}`);
+  };
 
   const { isConnected, setPublishAudio, setPublishVideo, switchCamera } = useOpenViduSession({
     enabled: realtimeReady,
@@ -115,6 +119,11 @@ const MobileVideoChatPage: React.FC = () => {
   useEffect(() => {
     setPublishVideo(camOn);
   }, [camOn, setPublishVideo]);
+
+  useEffect(() => {
+    if (!roomId) return;
+    sessionStorage.setItem('roomId', roomId);
+  }, [roomId]);
 
   return (
     <RoomMembersProvider roomId={roomId}>

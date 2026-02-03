@@ -9,6 +9,8 @@ import DesktopVideoChatPage from '@/pages/desktop/VideoChat';
 // 헤더
 import DesktopProductList from '@/pages/desktop/ProductList';
 import DesktopCheckoutPage from '@/pages/desktop/Checkout';
+import DesktopSettlementPage from '@/pages/desktop/Settlement';
+import DesktopSettlementResultPage from '@/pages/desktop/SettlementResult';
 
 // OAuth 콜백
 import { KakaoCallbackPage } from '@/pages/desktop/LoginCallBack/KakaoCallbackPage';
@@ -22,6 +24,8 @@ const AppRouter = () => {
       <Route index element={<DesktopMainPage />} />
       <Route path="products" element={<DesktopProductList />} />
       <Route path="myPage/:userId" element={<MyPage />} />
+      <Route path="rooms/:roomId/settlement" element={<DesktopSettlementPage />} />
+      <Route path="rooms/:roomId/settlement/result" element={<DesktopSettlementResultPage />} />
 
       {/* 카카오 OAuth 콜백 */}
       <Route path="auth/kakao/callback" element={<KakaoCallbackPage />} />

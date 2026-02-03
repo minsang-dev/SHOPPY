@@ -3,42 +3,51 @@ import { useNavigate } from 'react-router-dom';
 import { getRoomMembers } from '../../../entities/room/api/room';
 import type { RoomMember } from '../../../entities/room/types/room.types';
 import UserAvatar from '../../../shared/ui/UserAvatar';
+import { useSettlementStore } from '@/entities/settlement/model/useSettlementStore';
+import { recognizeReceiptItems } from '@/entities/settlement/api/settlementApi';
+import { useSettlementRealtime } from '@/features/settlement/model/useSettlementRealtime';
 import './styles.css';
 
-interface SettlementItem {
-  id: string;
-  name: string;
-  price?: number;
-  quantity?: number;
-  payerIds?: number[];
-  sourceType: 'manual' | 'receipt';
-  sourceLabel: string;
-}
+const EMPTY_ITEMS: ReturnType<typeof useSettlementStore.getState>['settlementItemsByRoom'][string] = [];
 
 const MobileSettlementPage: React.FC = () => {
   const navigate = useNavigate();
   const [showReceiptModal, setShowReceiptModal] = useState(false);
-  const [items, setItems] = useState<SettlementItem[]>([]);
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [showManualInput, setShowManualInput] = useState(false);
   const [manualName, setManualName] = useState('');
   const [manualQty, setManualQty] = useState('1');
   const [manualPrice, setManualPrice] = useState('');
+  const [manualPayerId, setManualPayerId] = useState('');
+  const [manualBankName, setManualBankName] = useState('');
+  const [manualAccountNumber, setManualAccountNumber] = useState('');
   const [manualError, setManualError] = useState('');
   const [members, setMembers] = useState<RoomMember[]>([]);
   const [openPayerByItem, setOpenPayerByItem] = useState<Record<string, boolean>>({});
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string>('all');
+
   const [receiptTitle, setReceiptTitle] = useState('');
+  const [receiptPayerId, setReceiptPayerId] = useState('');
+  const [receiptBankName, setReceiptBankName] = useState('');
+  const [receiptAccountNumber, setReceiptAccountNumber] = useState('');
   const [receiptError, setReceiptError] = useState('');
   const [cameraError, setCameraError] = useState('');
+
   const receiptVideoRef = useRef<HTMLVideoElement>(null);
   const receiptCanvasRef = useRef<HTMLCanvasElement>(null);
   const receiptStreamRef = useRef<MediaStream | null>(null);
 
   const roomId = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('room_id') ?? sessionStorage.getItem('roomId');
+    return params.get('room_id') ?? sessionStorage.getItem('roomId') ?? '';
   }, []);
+
+  const settlementItemsByRoom = useSettlementStore((state) => state.settlementItemsByRoom);
+  const items = roomId ? settlementItemsByRoom[roomId] ?? EMPTY_ITEMS : EMPTY_ITEMS;
+  const appendSettlementItems = useSettlementStore((state) => state.appendSettlementItems);
+  const updateSettlementItemPayers = useSettlementStore((state) => state.updateSettlementItemPayers);
+  useSettlementRealtime({ roomId });
 
   useEffect(() => {
     if (!roomId) return;
@@ -141,6 +150,7 @@ const MobileSettlementPage: React.FC = () => {
   const filteredItems = useMemo(() => {
     if (activeFilter === 'all') return items;
     if (activeFilter === 'manual') return items.filter((item) => item.sourceType === 'manual');
+    if (activeFilter === 'online') return items.filter((item) => item.sourceType === 'online');
     if (activeFilter.startsWith('receipt:')) {
       const title = activeFilter.replace('receipt:', '');
       return items.filter((item) => item.sourceType === 'receipt' && item.sourceLabel === title);
@@ -150,23 +160,35 @@ const MobileSettlementPage: React.FC = () => {
 
   const handleManualSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!roomId) {
+      setManualError('방 정보가 없어 수동입력을 저장할 수 없습니다.');
+      return;
+    }
+
     const name = manualName.trim();
     const quantity = Number(manualQty);
     const price = Number(manualPrice);
+    const payerMemberId = Number(manualPayerId);
 
     if (!name || Number.isNaN(quantity) || Number.isNaN(price) || quantity <= 0 || price < 0) {
       setManualError('상품명, 개수, 개당 금액을 확인해주세요.');
       return;
     }
+    if (Number.isNaN(payerMemberId) || payerMemberId <= 0) {
+      setManualError('결제자를 선택해주세요.');
+      return;
+    }
 
-    setItems((prev) => [
-      ...prev,
+    appendSettlementItems(roomId, [
       {
-        id: `${Date.now()}-${prev.length}`,
+        id: `manual-${Date.now()}`,
         name,
         quantity,
         price,
         payerIds: members.map((member) => member.memberId),
+        payerMemberId,
+        payerBankName: manualBankName.trim(),
+        payerAccountNumber: manualAccountNumber.trim(),
         sourceType: 'manual',
         sourceLabel: '수동입력',
       },
@@ -175,14 +197,34 @@ const MobileSettlementPage: React.FC = () => {
     setManualName('');
     setManualQty('1');
     setManualPrice('');
+    setManualPayerId('');
+    setManualBankName('');
+    setManualAccountNumber('');
     setManualError('');
     setShowManualInput(false);
   };
 
-  const handleCaptureReceipt = () => {
+  const handleCaptureReceipt = async () => {
+    if (!roomId) {
+      setReceiptError('방 정보가 없어 영수증 항목을 저장할 수 없습니다.');
+      return;
+    }
+
     const title = receiptTitle.trim();
+    const payerMemberId = Number(receiptPayerId);
+    const bankName = receiptBankName.trim();
+    const accountNumber = receiptAccountNumber.trim();
+
     if (!title) {
-      setReceiptError('영수증 제목을 입력해주세요. (예: 주유비)');
+      setReceiptError('영수증 제목을 입력해주세요.');
+      return;
+    }
+    if (Number.isNaN(payerMemberId) || payerMemberId <= 0) {
+      setReceiptError('결제자를 선택해주세요.');
+      return;
+    }
+    if (!bankName || !accountNumber) {
+      setReceiptError('은행명과 계좌번호를 입력해주세요.');
       return;
     }
 
@@ -203,22 +245,78 @@ const MobileSettlementPage: React.FC = () => {
       setReceiptError('카메라 캡처를 처리할 수 없습니다.');
       return;
     }
-    context.drawImage(video, 0, 0, width, height);
 
-    setItems((prev) => [
-      ...prev,
-      {
-        id: `receipt-${Date.now()}-${prev.length}`,
-        name: `${title} 항목`,
-        quantity: 1,
-        price: 0,
-        payerIds: members.map((member) => member.memberId),
-        sourceType: 'receipt',
-        sourceLabel: title,
-      },
-    ]);
+    context.drawImage(video, 0, 0, width, height);
+    const imageBase64 = canvas.toDataURL('image/jpeg').split(',')[1] ?? '';
+
+    try {
+      const ocr = await recognizeReceiptItems(roomId, {
+        title,
+        payerMemberId,
+        bankName,
+        accountNumber,
+        imageBase64,
+      });
+
+      const parsedItems = ocr.items ?? [];
+      if (parsedItems.length > 0) {
+        appendSettlementItems(
+          roomId,
+          parsedItems.map((parsed, index) => ({
+            id: `receipt-${Date.now()}-${index}`,
+            name: parsed.name,
+            quantity: parsed.quantity,
+            price: parsed.price,
+            payerIds: members.map((member) => member.memberId),
+            payerMemberId,
+            payerBankName: bankName,
+            payerAccountNumber: accountNumber,
+            receiptTitle: title,
+            sourceType: 'receipt' as const,
+            sourceLabel: title,
+          })),
+        );
+      } else {
+        appendSettlementItems(roomId, [
+          {
+            id: `receipt-${Date.now()}`,
+            name: `${title} 항목`,
+            quantity: 1,
+            price: 0,
+            payerIds: members.map((member) => member.memberId),
+            payerMemberId,
+            payerBankName: bankName,
+            payerAccountNumber: accountNumber,
+            receiptTitle: title,
+            sourceType: 'receipt',
+            sourceLabel: title,
+          },
+        ]);
+      }
+    } catch (error) {
+      // API 연결 전/실패시 fallback
+      appendSettlementItems(roomId, [
+        {
+          id: `receipt-${Date.now()}`,
+          name: `${title} 항목`,
+          quantity: 1,
+          price: 0,
+          payerIds: members.map((member) => member.memberId),
+          payerMemberId,
+          payerBankName: bankName,
+          payerAccountNumber: accountNumber,
+          receiptTitle: title,
+          sourceType: 'receipt',
+          sourceLabel: title,
+        },
+      ]);
+      console.warn('OCR API not ready or failed. Fallback item created.', error);
+    }
 
     setReceiptTitle('');
+    setReceiptPayerId('');
+    setReceiptBankName('');
+    setReceiptAccountNumber('');
     setReceiptError('');
     setShowReceiptModal(false);
     setActiveFilter(`receipt:${title}`);
@@ -229,17 +327,13 @@ const MobileSettlementPage: React.FC = () => {
   };
 
   const handleTogglePayer = (itemId: string, memberId: number) => {
-    setItems((prev) =>
-      prev.map((item) => {
-        if (item.id !== itemId) return item;
-        const current = item.payerIds ?? [];
-        const hasMember = current.includes(memberId);
-        const nextPayerIds = hasMember
-          ? current.filter((id) => id !== memberId)
-          : [...current, memberId];
-        return { ...item, payerIds: nextPayerIds };
-      }),
-    );
+    const target = items.find((item) => item.id === itemId);
+    if (!target) return;
+
+    const current = target.payerIds ?? [];
+    const hasMember = current.includes(memberId);
+    const nextPayerIds = hasMember ? current.filter((id) => id !== memberId) : [...current, memberId];
+    updateSettlementItemPayers(roomId, itemId, nextPayerIds);
   };
 
   return (
@@ -268,59 +362,31 @@ const MobileSettlementPage: React.FC = () => {
                       ? '전체 품목'
                       : activeFilter === 'manual'
                         ? '수동입력'
-                        : activeFilter.replace('receipt:', '')}
+                        : activeFilter === 'online'
+                          ? '온라인 품목'
+                          : activeFilter.replace('receipt:', '')}
                     <i className="ri-arrow-down-s-line" />
                   </button>
                   {isFilterOpen && (
                     <div className="mobile-settlement-filter-dropdown">
-                      <button
-                        type="button"
-                        className={`mobile-settlement-filter-option ${activeFilter === 'all' ? 'is-active' : ''}`}
-                        onClick={() => {
-                          setActiveFilter('all');
-                          setIsFilterOpen(false);
-                        }}
-                      >
-                        전체 품목
-                      </button>
-                      <button
-                        type="button"
-                        className={`mobile-settlement-filter-option ${activeFilter === 'manual' ? 'is-active' : ''}`}
-                        onClick={() => {
-                          setActiveFilter('manual');
-                          setIsFilterOpen(false);
-                        }}
-                      >
-                        수동입력
-                      </button>
+                      <button type="button" className={`mobile-settlement-filter-option ${activeFilter === 'all' ? 'is-active' : ''}`} onClick={() => { setActiveFilter('all'); setIsFilterOpen(false); }}>전체 품목</button>
+                      <button type="button" className={`mobile-settlement-filter-option ${activeFilter === 'online' ? 'is-active' : ''}`} onClick={() => { setActiveFilter('online'); setIsFilterOpen(false); }}>온라인 품목</button>
+                      <button type="button" className={`mobile-settlement-filter-option ${activeFilter === 'manual' ? 'is-active' : ''}`} onClick={() => { setActiveFilter('manual'); setIsFilterOpen(false); }}>수동입력</button>
                       {receiptTitles.map((title) => {
                         const key = `receipt:${title}`;
                         return (
-                          <button
-                            key={key}
-                            type="button"
-                            className={`mobile-settlement-filter-option ${activeFilter === key ? 'is-active' : ''}`}
-                            onClick={() => {
-                              setActiveFilter(key);
-                              setIsFilterOpen(false);
-                            }}
-                          >
-                            {title}
-                          </button>
+                          <button key={key} type="button" className={`mobile-settlement-filter-option ${activeFilter === key ? 'is-active' : ''}`} onClick={() => { setActiveFilter(key); setIsFilterOpen(false); }}>{title}</button>
                         );
                       })}
                     </div>
                   )}
                 </div>
-                <button
-                  type="button"
-                  className="mobile-settlement-manual-button"
-                  onClick={() => setShowManualInput(true)}
-                >
+                <button type="button" className="mobile-settlement-manual-button" onClick={() => setShowManualInput(true)}>
                   수동입력
                 </button>
               </div>
             </div>
+
             {filteredItems.length === 0 ? (
               <div className="mobile-settlement-empty">정산할 물품이 없습니다.</div>
             ) : (
@@ -340,15 +406,16 @@ const MobileSettlementPage: React.FC = () => {
                         <input type="number" value={item.quantity ?? 1} readOnly />
                       </label>
                     </div>
+                    {!!item.payerMemberId && (
+                      <div className="mobile-settlement-receiver-info">
+                        결제자: {members.find((m) => m.memberId === item.payerMemberId)?.nickname ?? item.payerMemberId} / {item.payerBankName} {item.payerAccountNumber}
+                      </div>
+                    )}
                     <div className="mobile-settlement-divider" />
                     <div className="mobile-settlement-members">
                       <div className="mobile-settlement-payer-header">
-                        <span>결제 인원</span>
-                        <button
-                          type="button"
-                          className="mobile-settlement-payer-toggle"
-                          onClick={() => togglePayerPanel(item.id)}
-                        >
+                        <span>정산 참여자</span>
+                        <button type="button" className="mobile-settlement-payer-toggle" onClick={() => togglePayerPanel(item.id)}>
                           <i className="ri-user-line" />
                           <span>{(item.payerIds ?? []).length}</span>
                         </button>
@@ -367,17 +434,10 @@ const MobileSettlementPage: React.FC = () => {
                                   <button
                                     key={`${item.id}-${member.memberId}`}
                                     type="button"
-                                    className={`mobile-settlement-member-avatar-option ${
-                                      selected ? 'is-selected' : ''
-                                    }`}
+                                    className={`mobile-settlement-member-avatar-option ${selected ? 'is-selected' : ''}`}
                                     onClick={() => handleTogglePayer(item.id, member.memberId)}
                                   >
-                                    <UserAvatar
-                                      name={member.nickname}
-                                      colorKey={member.memberId}
-                                      size="md"
-                                      className="mobile-settlement-member-avatar"
-                                    />
+                                    <UserAvatar name={member.nickname} colorKey={member.memberId} size="md" className="mobile-settlement-member-avatar" />
                                     {selected && (
                                       <span className="mobile-settlement-member-check">
                                         <i className="ri-check-line" />
@@ -427,18 +487,14 @@ const MobileSettlementPage: React.FC = () => {
         </div>
 
         <div className="mobile-settlement-actions">
-          <button
-            type="button"
-            className="mobile-settlement-action outline"
-            onClick={() => setShowReceiptModal(true)}
-          >
+          <button type="button" className="mobile-settlement-action outline" onClick={() => setShowReceiptModal(true)}>
             <i className="ri-camera-line" />
             영수증 등록
           </button>
           <button
             type="button"
             className="mobile-settlement-action primary"
-            onClick={() => navigate('/m/room')}
+            onClick={() => setShowFinalizeConfirm(true)}
           >
             등록 완료
           </button>
@@ -458,41 +514,30 @@ const MobileSettlementPage: React.FC = () => {
             </div>
 
             <div className="receipt-modal-body">
+              <input className="mobile-settlement-manual-input" type="text" placeholder="영수증 제목 (예: 주유비)" value={receiptTitle} onChange={(event) => { setReceiptTitle(event.target.value); if (receiptError) setReceiptError(''); }} />
+              <select className="mobile-settlement-manual-input" value={receiptPayerId} onChange={(event) => setReceiptPayerId(event.target.value)}>
+                <option value="">결제자 선택</option>
+                {members.map((member) => (
+                  <option key={member.memberId} value={member.memberId}>{member.nickname}</option>
+                ))}
+              </select>
+              <div className="mobile-settlement-manual-row">
+                <input className="mobile-settlement-manual-input" type="text" placeholder="은행명" value={receiptBankName} onChange={(event) => setReceiptBankName(event.target.value)} />
+                <input className="mobile-settlement-manual-input" type="text" placeholder="계좌번호" value={receiptAccountNumber} onChange={(event) => setReceiptAccountNumber(event.target.value)} />
+              </div>
+
               <div className="receipt-camera-frame">
-                {cameraError ? (
-                  <div className="receipt-camera-placeholder">{cameraError}</div>
-                ) : (
-                  <video
-                    ref={receiptVideoRef}
-                    className="receipt-camera-video"
-                    autoPlay
-                    playsInline
-                    muted
-                  />
-                )}
+                {cameraError ? <div className="receipt-camera-placeholder">{cameraError}</div> : <video ref={receiptVideoRef} className="receipt-camera-video" autoPlay playsInline muted />}
                 <div className="receipt-frame-guide" />
               </div>
               <p className="receipt-guide-text">영수증을 프레임 안에 맞춰 촬영해주세요.</p>
-              <input
-                className="mobile-settlement-manual-input"
-                type="text"
-                placeholder="영수증 제목 (예: 주유비)"
-                value={receiptTitle}
-                onChange={(event) => {
-                  setReceiptTitle(event.target.value);
-                  if (receiptError) setReceiptError('');
-                }}
-              />
+
               {receiptError && <div className="mobile-settlement-manual-error">{receiptError}</div>}
             </div>
 
             <div className="receipt-modal-actions">
-              <button type="button" className="receipt-action ghost" onClick={() => setShowReceiptModal(false)}>
-                취소
-              </button>
-              <button type="button" className="receipt-action primary" onClick={handleCaptureReceipt}>
-                촬영
-              </button>
+              <button type="button" className="receipt-action ghost" onClick={() => setShowReceiptModal(false)}>취소</button>
+              <button type="button" className="receipt-action primary" onClick={handleCaptureReceipt}>촬영</button>
             </div>
           </div>
         </div>
@@ -506,45 +551,60 @@ const MobileSettlementPage: React.FC = () => {
           <div className="mobile-settlement-manual-card">
             <div className="mobile-settlement-manual-title">수동 입력</div>
             <form className="mobile-settlement-manual-form" onSubmit={handleManualSubmit}>
-              <input
-                className="mobile-settlement-manual-input"
-                type="text"
-                placeholder="상품명"
-                value={manualName}
-                onChange={(event) => setManualName(event.target.value)}
-              />
+              <input className="mobile-settlement-manual-input" type="text" placeholder="상품명" value={manualName} onChange={(event) => setManualName(event.target.value)} />
               <div className="mobile-settlement-manual-row">
-                <input
-                  className="mobile-settlement-manual-input"
-                  type="number"
-                  min={1}
-                  placeholder="개수"
-                  value={manualQty}
-                  onChange={(event) => setManualQty(event.target.value)}
-                />
-                <input
-                  className="mobile-settlement-manual-input"
-                  type="number"
-                  min={0}
-                  placeholder="개당 금액"
-                  value={manualPrice}
-                  onChange={(event) => setManualPrice(event.target.value)}
-                />
+                <input className="mobile-settlement-manual-input" type="number" min={1} placeholder="개수" value={manualQty} onChange={(event) => setManualQty(event.target.value)} />
+                <input className="mobile-settlement-manual-input" type="number" min={0} placeholder="개당 금액" value={manualPrice} onChange={(event) => setManualPrice(event.target.value)} />
+              </div>
+              <select className="mobile-settlement-manual-input" value={manualPayerId} onChange={(event) => setManualPayerId(event.target.value)}>
+                <option value="">결제자 선택</option>
+                {members.map((member) => (
+                  <option key={member.memberId} value={member.memberId}>{member.nickname}</option>
+                ))}
+              </select>
+              <div className="mobile-settlement-manual-row">
+                <input className="mobile-settlement-manual-input" type="text" placeholder="은행명" value={manualBankName} onChange={(event) => setManualBankName(event.target.value)} />
+                <input className="mobile-settlement-manual-input" type="text" placeholder="계좌번호" value={manualAccountNumber} onChange={(event) => setManualAccountNumber(event.target.value)} />
               </div>
               {manualError && <div className="mobile-settlement-manual-error">{manualError}</div>}
               <div className="mobile-settlement-manual-actions">
-                <button
-                  type="button"
-                  className="mobile-settlement-manual-cancel"
-                  onClick={() => setShowManualInput(false)}
-                >
-                  취소
-                </button>
-                <button type="submit" className="mobile-settlement-manual-submit">
-                  추가
-                </button>
+                <button type="button" className="mobile-settlement-manual-cancel" onClick={() => setShowManualInput(false)}>취소</button>
+                <button type="submit" className="mobile-settlement-manual-submit">추가</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showFinalizeConfirm && (
+        <div className="mobile-settlement-manual-modal">
+          <div className="mobile-settlement-manual-backdrop" onClick={() => setShowFinalizeConfirm(false)} />
+          <div className="mobile-settlement-manual-card">
+            <div className="mobile-settlement-manual-title">등록 완료 확인</div>
+            <div className="mobile-settlement-manual-error" style={{ color: '#374151' }}>
+              등록완료 후 정산으로 넘어가면 더 이상 영수증 추가가 불가합니다.
+              <br />
+              완료 하시겠습니까?
+            </div>
+            <div className="mobile-settlement-manual-actions">
+              <button
+                type="button"
+                className="mobile-settlement-manual-cancel"
+                onClick={() => setShowFinalizeConfirm(false)}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className="mobile-settlement-manual-submit"
+                onClick={() => {
+                  setShowFinalizeConfirm(false);
+                  navigate(`/m/settlement/result?room_id=${encodeURIComponent(roomId)}`);
+                }}
+              >
+                완료
+              </button>
+            </div>
           </div>
         </div>
       )}

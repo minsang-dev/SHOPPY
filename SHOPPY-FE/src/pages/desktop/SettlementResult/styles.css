@@ -1,0 +1,228 @@
+.desktop-settlement-result-page {
+  min-height: 100dvh;
+  background: linear-gradient(180deg, #f8fafc 0%, #f3f4f6 100%);
+  padding: 28px;
+}
+
+.desktop-settlement-result-shell {
+  max-width: 1080px;
+  margin: 0 auto;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.desktop-settlement-result-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.desktop-settlement-result-back {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  border: 1px solid #dbe0e8;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  cursor: pointer;
+  position: absolute;
+  left: 0;
+}
+
+.desktop-settlement-result-header h1 {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1;
+  color: #0f2945;
+}
+
+.desktop-settlement-result-spacer {
+  display: none;
+}
+
+.desktop-settlement-result-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.desktop-settlement-result-section {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px;
+  background: #ffffff;
+}
+
+.desktop-settlement-result-section h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f2945;
+}
+
+.desktop-settlement-result-list {
+  display: grid;
+  gap: 10px;
+}
+
+.desktop-settlement-result-empty {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px dashed #d1d5db;
+  background: #f9fafb;
+  color: #6b7280;
+  text-align: center;
+  font-size: 18px;
+}
+
+.desktop-settlement-transfer-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 16px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.desktop-settlement-transfer-card.is-done {
+  opacity: 0.6;
+}
+
+.desktop-settlement-transfer-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.desktop-settlement-transfer-left strong {
+  font-size: 18px;
+}
+
+.desktop-settlement-transfer-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.desktop-settlement-transfer-right span {
+  font-weight: 700;
+  color: #10b981;
+  font-size: 22px;
+}
+
+.desktop-settlement-transfer-right button {
+  border: none;
+  border-radius: 10px;
+  background: #10b981;
+  color: #ffffff;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 980px) {
+  .desktop-settlement-result-page {
+    padding: 12px;
+  }
+
+  .desktop-settlement-result-shell {
+    padding: 16px;
+  }
+
+  .desktop-settlement-result-header h1 {
+    font-size: 24px;
+  }
+
+  .desktop-settlement-result-section h2 {
+    font-size: 18px;
+  }
+
+  .desktop-settlement-transfer-right span {
+    font-size: 18px;
+  }
+}
+
+.desktop-settlement-transfer-right em {
+  font-style: normal;
+  color: #16a34a;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.desktop-settlement-transfer-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.desktop-settlement-transfer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.desktop-settlement-transfer-sheet {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 420px);
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.2);
+  display: grid;
+  gap: 8px;
+}
+
+.desktop-settlement-transfer-sheet h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.desktop-settlement-transfer-sheet p {
+  margin: 0;
+  color: #374151;
+}
+
+.desktop-settlement-transfer-actions {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.desktop-settlement-transfer-actions .ghost {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 10px 0;
+  font-weight: 700;
+}
+
+.desktop-settlement-transfer-actions .primary {
+  border: none;
+  border-radius: 10px;
+  background: #10b981;
+  color: #ffffff;
+  padding: 10px 0;
+  font-weight: 700;
+}
