@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate, Outlet, useParams, useLocation } from 'react-router-dom';
 import type { VideoChatMode, RightPanelType } from '../../../entities/room/types/desktopVideoChat.types';
 import VideoChatHeader from '../../../widgets/desktop/VideoChatHeader/VideoChatHeader';
@@ -28,6 +28,7 @@ import { useEntranceNotificationStore } from '../../../features/participant/mode
 import EntranceNotificationToasts from '../../../features/participant/ui/EntranceNotificationToasts';
 import { useCartNotificationStore } from '../../../features/cart/model/useCartNotificationStore';
 import CartNotificationToasts from '../../../features/cart/ui/CartNotificationToasts';
+import { CursorOverlay } from '@/features/cursor';
 import './styles.css';
 
 const DesktopVideoChatPage: React.FC = () => {
@@ -40,6 +41,20 @@ const DesktopVideoChatPage: React.FC = () => {
   const { room } = useRoomInfo(roomId);
   const user = useAuthStore((state) => state.user);
   const isHost = room && user ? room.hostId === user.id : false;
+
+  // JWT에서 실제 user_id (sub) 추출 - 백엔드 인증과 일치해야 함
+  const cursorUserId = useMemo(() => {
+    const token = sessionStorage.getItem('accessToken');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return Number(payload.sub);
+      } catch {
+        return user?.id;
+      }
+    }
+    return user?.id;
+  }, [user?.id]);
 
   const { leaveByButton } = useLeaveRoom({ roomId, navigateTo: '/' });
 
@@ -313,6 +328,14 @@ const DesktopVideoChatPage: React.FC = () => {
                 position: 'relative',
               }}
             >
+              {/* 공유 커서 오버레이 - 호스트 OR 호스트모드 ON일 때 활성화 */}
+              <CursorOverlay
+                roomId={roomId}
+                userId={cursorUserId}
+                nickname={sessionStorage.getItem('memberNickname') ?? user?.nickname ?? ''}
+                colorKey={sessionStorage.getItem('memberId') ?? '0'}
+                enabled={isHost || mode === 'host'}
+              />
               {/* 중첩 라우터 -> Outlet으로 router에서 정의한 화면 랜더링 */}
               <div className="video-chat-body">
                 <Outlet />

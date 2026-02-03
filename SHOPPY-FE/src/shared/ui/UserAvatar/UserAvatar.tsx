@@ -1,7 +1,7 @@
 import React from 'react';
 import './UserAvatar.css';
 
-const AVATAR_GRADIENTS = [
+export const AVATAR_GRADIENTS = [
   'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)', // 1. Strong Red
   'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', // 2. Sky Blue
   'linear-gradient(135deg, #f6d365 0%, #fda085 100%)', // 3. Citrus Zest

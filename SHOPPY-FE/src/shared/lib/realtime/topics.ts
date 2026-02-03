@@ -67,3 +67,12 @@ export const appVoteParticipate = (roomId: string | number, voteId: number) =>
 
 export const appVoteClose = (roomId: string | number, voteId: number) =>
   `/app/rooms/${roomId}/votes/${voteId}/close`;
+
+// 공유 커서 웹소켓
+// 구독용: 다른 사용자 커서 위치 수신
+export const topicRoomsCursor = (roomId: string | number) =>
+  `/topic/rooms/${roomId}/cursor`;
+
+// 발행용: 내 커서 위치 전송
+export const appRoomsCursor = (roomId: string | number) =>
+  `/app/rooms/${roomId}/cursor`;
