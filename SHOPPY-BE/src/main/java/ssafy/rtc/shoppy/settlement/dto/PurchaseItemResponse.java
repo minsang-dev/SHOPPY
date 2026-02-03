@@ -14,6 +14,9 @@ public class PurchaseItemResponse {
     private String itemName;
     private BigDecimal unitPrice;
     private int quantity;
+    private Long payerMemberId;
+    private String payerBankName;
+    private String payerAccountNumber;
     private List<ItemAllocationResponse> allocations;
 
     public static PurchaseItemResponse from(PurchaseItem entity) {
@@ -22,6 +25,9 @@ public class PurchaseItemResponse {
                 .itemName(entity.getItemName())
                 .unitPrice(entity.getUnitPrice())
                 .quantity(entity.getQuantity())
+                .payerMemberId(entity.getPayerMemberId())
+                .payerBankName(entity.getPayerBankName())
+                .payerAccountNumber(entity.getPayerAccountNumber())
                 .allocations(entity.getItemAllocations().stream()
                         .map(ItemAllocationResponse::from)
                         .toList())

@@ -33,6 +33,15 @@ public class PurchaseItem {
     @Column(name = "quantity", nullable = false)
     private int quantity;
 
+    @Column(name = "payer_member_id")
+    private Long payerMemberId;
+
+    @Column(name = "payer_bank_name", length = 50)
+    private String payerBankName;
+
+    @Column(name = "payer_account_number", length = 50)
+    private String payerAccountNumber;
+
     @Builder.Default
     @OneToMany(mappedBy = "purchaseItem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemAllocation> itemAllocations = new ArrayList<>();
@@ -46,5 +55,11 @@ public class PurchaseItem {
         this.itemName = itemName;
         this.unitPrice = unitPrice;
         this.quantity = quantity;
+    }
+
+    public void updatePayer(Long payerMemberId, String bankName, String accountNumber) {
+        this.payerMemberId = payerMemberId;
+        this.payerBankName = bankName;
+        this.payerAccountNumber = accountNumber;
     }
 }
