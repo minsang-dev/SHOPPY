@@ -42,7 +42,7 @@ const CartItem: React.FC<CartItemProps> = ({
       {/* AI 추천 배지 */}
       {isAI && (
         <div className="cart-item-ai-badge">
-          <span className="cart-item-ai-badge-icon">✨</span>
+          <span className="cart-item-ai-badge-icon">💡</span>
           <span className="cart-item-ai-badge-text">AI 추천</span>
         </div>
       )}

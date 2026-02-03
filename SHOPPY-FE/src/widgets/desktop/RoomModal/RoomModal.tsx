@@ -4,7 +4,6 @@ import { useCreateRoom } from '@/features/room/model/useCreateRoom';
 import { useJoinRoom } from '@/features/room/model/useJoinRoom';
 import { useAuthStore } from '@/entities/user/model/useAuthStore';
 import {
-  ALL_INTEREST_CATEGORIES,
   type CreateRoomFormData,
   type DesktopRoomModalProps,
   type JoinRoomFormData,
@@ -23,7 +22,7 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
   const [createFormData, setCreateFormData] = useState<CreateRoomFormData>({
     title: '',
     purpose: '',
-    categories: [...ALL_INTEREST_CATEGORIES],
+    categories: [],
     traits: [],
     participants: 1,
     targetBudget: '',
@@ -146,7 +145,7 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
                   <div className="loading-overlay">
                     <div className="loading-spinner"></div>
                     <p className="loading-text">AI가 장바구니를 준비하고 있습니다...</p>
-                    <p className="loading-subtext">최대 1분 정도 소요될 수 있습니다</p>
+                    <p className="loading-subtext">최대 30초 정도 소요될 수 있습니다</p>
                   </div>
                 )}
                 <CreateRoomForm
