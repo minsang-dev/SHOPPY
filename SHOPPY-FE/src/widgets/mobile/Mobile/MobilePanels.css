@@ -6,15 +6,6 @@
   height: 100%;
 }
 
-.mobile-panel-pill {
-  background: #ecfdf5;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-weight: 700;
-  color: #047857;
-  width: fit-content;
-}
-
 .mobile-panel-toggle {
   display: inline-flex;
   gap: 6px;
@@ -48,6 +39,7 @@
   grid-template-rows: auto 1fr auto;
   gap: 10px;
   min-height: 0;
+  height: 100%;
   flex: 1 1 auto;
   overflow: hidden;
   border: 1px solid #e5e7eb;
@@ -61,6 +53,8 @@
   display: grid;
   gap: 8px;
   padding-right: 4px;
+  align-content: start;
+  grid-auto-rows: min-content;
 }
 
 .mobile-cart-item {
@@ -484,6 +478,11 @@
   min-width: 0;
 }
 
+.mobile-panel-header.is-inline {
+  justify-content: flex-start;
+  gap: 10px;
+}
+
 .mobile-panel-header-actions {
   display: inline-flex;
   gap: 8px;
@@ -526,6 +525,13 @@
   border-radius: 12px;
   padding: 12px;
   text-align: center;
+}
+
+.mobile-vote-empty-fill {
+  min-height: clamp(120px, 24vh, 220px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mobile-panel-item {
@@ -694,6 +700,8 @@
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
+  align-content: start;
+  grid-auto-rows: min-content;
 }
 
 .mobile-panel-member-role {
@@ -702,8 +710,9 @@
 }
 
 .mobile-panel-chat-list {
-  display: grid;
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -711,15 +720,74 @@
 }
 
 .mobile-panel-chat-item {
-  display: grid;
-  gap: 2px;
-  font-size: 0.85rem;
-  color: #374151;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.mobile-panel-chat-item.is-other {
+  align-self: stretch;
+}
+
+.mobile-panel-chat-item.is-me {
+  align-self: stretch;
+  width: 100%;
+  align-items: flex-end;
+}
+
+.mobile-panel-chat-other-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.mobile-panel-chat-avatar {
+  flex-shrink: 0;
+}
+
+.mobile-panel-chat-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 82%;
 }
 
 .mobile-panel-chat-name {
-  font-size: 0.7rem;
-  color: #9ca3af;
+  font-size: 0.72rem;
+  color: #6b7280;
+  padding-inline: 4px;
+  font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
+
+.mobile-panel-chat-line {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 6px;
+  width: auto;
+  max-width: 100%;
+}
+
+.mobile-panel-chat-item.is-me .mobile-panel-chat-line {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  align-self: flex-end;
+  margin-left: 0;
+  width: auto;
+}
+
+.mobile-panel-chat-meta {
+  font-size: 0.68rem;
+  color: #4b5563;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+}
+
+.mobile-panel-chat-meta.is-hidden {
+  visibility: hidden;
 }
 
 .mobile-panel-chat-form {
@@ -738,16 +806,55 @@
   padding: 8px 10px;
   font-size: 0.85rem;
   background: #ffffff;
+  font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
 }
 
 .mobile-panel-chat-send {
-  border: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid #c9dbf7;
   border-radius: 12px;
-  background: #10b981;
-  color: #fdfbf7;
-  padding: 8px 12px;
-  font-size: 0.85rem;
+  background: #e7f0ff;
+  color: #4a628a;
+  padding: 0;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+}
+
+.mobile-panel-chat-send:hover {
+  background: #dce8ff;
+}
+
+.mobile-panel-chat-content {
+  display: inline-block;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #111827;
+  padding: 9px 12px;
+  border-radius: 14px;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  letter-spacing: 0;
+  font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  width: auto;
+  max-width: min(82vw, 100%);
+  flex-shrink: 0;
+}
+
+.mobile-panel-chat-item.is-other .mobile-panel-chat-content {
+  background: #f7f8fb;
+  border-top-left-radius: 6px;
+}
+
+.mobile-panel-chat-item.is-me .mobile-panel-chat-content {
+  background: #f2f7ff;
+  color: #111827;
+  border-top-right-radius: 6px;
+  margin-left: auto;
 }
 
 .mobile-manual-modal {

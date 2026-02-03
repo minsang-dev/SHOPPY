@@ -165,6 +165,39 @@ public class RoomMemberService {
     }
 
     @Transactional
+    public void leaveActiveRoomByUserId(Long userId) {
+        if (userId == null) {
+            return;
+        }
+
+        Optional<RoomMemberEntity> activeMember = roomMemberRepository
+                .findFirstByUserIdAndStatus(userId, MemberStatus.ACTIVE);
+
+        if (activeMember.isEmpty()) {
+            return;
+        }
+
+        Long roomId = activeMember.get().getRoom().getRoomId();
+        leaveRoomByUserIdSafely(roomId, userId);
+    }
+
+    @Transactional
+    public void leaveRoomByUserIdIfActive(Long roomId, Long userId) {
+        if (roomId == null || userId == null) {
+            return;
+        }
+
+        Optional<RoomMemberEntity> activeMember = roomMemberRepository
+                .findByRoom_RoomIdAndUserIdAndStatus(roomId, userId, MemberStatus.ACTIVE);
+
+        if (activeMember.isEmpty()) {
+            return;
+        }
+
+        leaveRoomByUserIdSafely(roomId, userId);
+    }
+
+    @Transactional
     public void leaveRoom(Long roomId, Long memberId) {
         RoomMemberEntity memberEntity = roomMemberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_MEMBER_NOT_FOUND));
@@ -238,5 +271,16 @@ public class RoomMemberService {
      */
     private void publishMemberEvent(Long roomId, RoomMemberEventDto event) {
         messagingTemplate.convertAndSend("/topic/rooms/" + roomId + "/members", event);
+    }
+
+    private void leaveRoomByUserIdSafely(Long roomId, Long userId) {
+        try {
+            leaveRoomByUserId(roomId, userId);
+        } catch (BusinessException ex) {
+            ErrorCode code = ex.getErrorCode();
+            if (code != ErrorCode.ROOM_MEMBER_NOT_FOUND && code != ErrorCode.MEMBER_ALREADY_LEFT) {
+                throw ex;
+            }
+        }
     }
 }

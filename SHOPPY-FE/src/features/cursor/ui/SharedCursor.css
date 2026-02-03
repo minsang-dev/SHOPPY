@@ -1,0 +1,25 @@
+.shared-cursor {
+  position: absolute;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-2px, -2px);
+  transition: left 0.05s linear, top 0.05s linear;
+}
+
+.shared-cursor-icon {
+  display: block;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.shared-cursor-label {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}

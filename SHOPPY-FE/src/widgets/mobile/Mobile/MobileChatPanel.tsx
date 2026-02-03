@@ -5,6 +5,7 @@ import { getRoomMembers } from '@/entities/room/api/room';
 import type { RoomMember } from '@/entities/room/types/room.types';
 import { useAuthStore } from '@/entities/user/model/useAuthStore';
 import { realtimeConfig } from '@/shared/config/realtime';
+import UserAvatar from '@/shared/ui/UserAvatar';
 import {
   appRoomsChat,
   createRealtimeClient,
@@ -33,8 +34,13 @@ const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ roomId }) => {
   const { user } = useAuthStore();
 
   const currentMemberId = useMemo(() => {
+    const storedMemberId = sessionStorage.getItem('memberId');
+    if (storedMemberId) {
+      const parsed = Number(storedMemberId);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
     if (!user?.id) return null;
-    const currentParticipant = participants.find((p) => p.userId === user.id);
+    const currentParticipant = participants.find((p) => p.userId === user.id || p.memberId === user.id);
     return currentParticipant?.memberId ?? null;
   }, [participants, user]);
 
@@ -44,7 +50,7 @@ const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ roomId }) => {
       const data = await getRoomMembers(roomId);
       setParticipants(data);
     } catch (error) {
-      console.error('참여자 목록 조회 실패:', error);
+      console.error('Failed to load participants:', error);
     }
   }, [roomId]);
 
@@ -53,9 +59,9 @@ const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ roomId }) => {
     try {
       setLoading(true);
       const response = await getChatMessages(Number(roomId), 0, 50);
-      setMessages(response.messages);
+      setMessages([...response.messages].reverse());
     } catch (error) {
-      console.error('채팅 메시지 조회 실패:', error);
+      console.error('Failed to load chat messages:', error);
     } finally {
       setLoading(false);
     }
@@ -81,9 +87,7 @@ const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ roomId }) => {
       return;
     }
     const token =
-      localStorage.getItem('accessToken') ??
-      localStorage.getItem('access_token') ??
-      undefined;
+      sessionStorage.getItem('accessToken') ?? sessionStorage.getItem('access_token') ?? undefined;
     if (!token) {
       return;
     }
@@ -107,7 +111,7 @@ const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ roomId }) => {
                 upsertMessage(payload);
               }
             } catch (err) {
-              console.error('채팅 메시지 파싱 실패:', err);
+              console.error('Failed to parse chat message event:', err);
             }
           }),
         );
@@ -135,7 +139,7 @@ const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ roomId }) => {
                 );
               }
             } catch (err) {
-              console.error('채팅 수정 이벤트 파싱 실패:', err);
+              console.error('Failed to parse chat edited event:', err);
             }
           }),
         );
@@ -147,13 +151,13 @@ const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ roomId }) => {
                 setMessages((prev) => prev.filter((msg) => msg.chatId !== payload.chatId));
               }
             } catch (err) {
-              console.error('채팅 삭제 이벤트 파싱 실패:', err);
+              console.error('Failed to parse chat deleted event:', err);
             }
           }),
         );
       })
       .catch((err) => {
-        console.error('채팅 WS 연결 실패:', err);
+        console.error('Failed to connect chat websocket:', err);
       });
 
     return () => {
@@ -187,37 +191,111 @@ const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ roomId }) => {
       }
       setInput('');
     } catch (error) {
-      console.error('메시지 전송 실패:', error);
+      console.error('Failed to send message:', error);
     }
   };
 
   const getParticipant = (senderMemberId: number): RoomMember | undefined =>
     participants.find((p) => p.memberId === senderMemberId);
 
+  const participantsByJoinOrder = useMemo(
+    () => [...participants].sort((a, b) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime()),
+    [participants],
+  );
+
+  const getColorKeyByMemberId = (memberId: number): number => {
+    const index = participantsByJoinOrder.findIndex((p) => p.memberId === memberId);
+    return index >= 0 ? index : memberId;
+  };
+
+  const isMyMessage = (senderMemberId: number, senderName: string): boolean => {
+    if (currentMemberId !== null) {
+      return senderMemberId === currentMemberId;
+    }
+    const storedMemberId = sessionStorage.getItem('memberId');
+    if (storedMemberId) {
+      const parsed = Number(storedMemberId);
+      if (!Number.isNaN(parsed) && parsed === senderMemberId) {
+        return true;
+      }
+    }
+    return Boolean(user?.nickname && user.nickname === senderName);
+  };
+
+  const isSameMinute = (dateString1: string, dateString2: string): boolean => {
+    const date1 = new Date(dateString1);
+    const date2 = new Date(dateString2);
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate() &&
+      date1.getHours() === date2.getHours() &&
+      date1.getMinutes() === date2.getMinutes()
+    );
+  };
+
+  const formatTime = (dateString: string): string =>
+    new Intl.DateTimeFormat('ko-KR', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    })
+      .format(new Date(dateString))
+      .replace(' ', '');
+
   return (
     <section className="mobile-panel">
-      <div className="mobile-panel-pill">채팅</div>
       <div className="mobile-panel-card">
         <div className="mobile-panel-title">실시간 메시지</div>
         {loading ? (
           <div className="mobile-panel-empty">불러오는 중...</div>
         ) : messages.length === 0 ? (
-          <div className="mobile-panel-empty">아직 메시지가 없습니다.</div>
+          <div className="mobile-panel-empty">채팅 메세지가 없습니다.<br />채팅을 시작해 보세요!</div>
         ) : (
           <div className="mobile-panel-chat-list" ref={listRef}>
-            {messages.map((message) => {
+            {messages.map((message, index) => {
               const participant = getParticipant(message.senderMemberId);
-              const senderName = participant?.nickname || `사용자 ${message.senderMemberId}`;
-              const isMe =
-                currentMemberId !== null && message.senderMemberId === currentMemberId;
+              const senderName = participant?.nickname || `User ${message.senderMemberId}`;
+              const isMe = isMyMessage(message.senderMemberId, senderName);
+              const next = messages[index + 1];
+              const showTimestamp =
+                !next ||
+                next.senderMemberId !== message.senderMemberId ||
+                !isSameMinute(message.createdAt, next.createdAt);
+
               return (
-                <div key={message.chatId} className="mobile-panel-chat-item">
-                  <span className="mobile-panel-chat-name">
-                    {senderName}
-                    {isMe ? ' (나)' : ''} ·{' '}
-                    {new Date(message.createdAt).toLocaleTimeString()}
-                  </span>
-                  <span className="mobile-panel-chat-content">{message.content}</span>
+                <div
+                  key={message.chatId}
+                  className={`mobile-panel-chat-item ${isMe ? 'is-me' : 'is-other'}`}
+                >
+                  {!isMe ? (
+                    <div className="mobile-panel-chat-other-row">
+                      <UserAvatar
+                        name={senderName}
+                        colorKey={getColorKeyByMemberId(message.senderMemberId)}
+                        size="sm"
+                        className="mobile-panel-chat-avatar"
+                      />
+                      <div className="mobile-panel-chat-body">
+                        <span className="mobile-panel-chat-name">{senderName}</span>
+                        <div className="mobile-panel-chat-line">
+                          <span className="mobile-panel-chat-content">{message.content}</span>
+                          <span
+                            className={`mobile-panel-chat-meta ${showTimestamp ? '' : 'is-hidden'}`}
+                          >
+                            {formatTime(message.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mobile-panel-chat-line">
+                      <span className="mobile-panel-chat-content">{message.content}</span>
+                      <span className={`mobile-panel-chat-meta ${showTimestamp ? '' : 'is-hidden'}`}>
+                        {formatTime(message.createdAt)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -232,7 +310,7 @@ const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ roomId }) => {
             onChange={(event) => setInput(event.target.value)}
           />
           <button type="submit" className="mobile-panel-chat-send">
-            전송
+            <i className="ri-send-plane-line" aria-hidden="true"></i>
           </button>
         </form>
       </div>
@@ -241,3 +319,4 @@ const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ roomId }) => {
 };
 
 export default MobileChatPanel;
+

@@ -10,7 +10,7 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import ssafy.rtc.shoppy.ai.llm.dto.RoomConstraintsRequestDto;
+import ssafy.rtc.shoppy.ai.llm.dto.RoomMetaRequestDto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -70,16 +70,15 @@ public class RoomConstraintsEntity {
         this.traitCodes = traitCodes;
     }
 
-    public static RoomConstraintsEntity from(Long roomId, RoomConstraintsRequestDto constraints,
-                                             BigDecimal minBudget, BigDecimal targetBudget) {
+    public static RoomConstraintsEntity from(Long roomId, RoomMetaRequestDto meta) {
         return new RoomConstraintsEntity(
                 roomId,
-                constraints.purpose(),
-                constraints.peopleCount(),
-                minBudget,
-                targetBudget,
-                constraints.interestCategories(),
-                constraints.traits()
+                meta.purpose(),
+                meta.headcount(),
+                meta.minBudget(),
+                meta.targetBudget(),
+                meta.interestCategories(),
+                meta.traits()
         );
     }
 

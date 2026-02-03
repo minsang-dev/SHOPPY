@@ -5,6 +5,12 @@ import {
   getShoppingList,
   updateShoppingItem,
 } from '@/entities/shopping/api/shopping';
+import {
+  getAiChecklist,
+  toggleAiChecklistItem,
+  deleteAiChecklistItem,
+} from '@/entities/shopping/api/aiChecklist';
+import type { AiChecklistItem, AiChecklistCategory } from '@/entities/shopping/api/aiChecklist';
 import type { ShoppingItem, ShoppingItemAddRequest } from '@/entities/shopping/types/shopping.types';
 import {
   createRealtimeClient,
@@ -22,7 +28,8 @@ export interface UiCartItem {
   name: string;
   quantity: number;
   checked: boolean;
-  purchaseType: 'online' | 'offline' | null;
+  purchaseType: 'online' | 'offline' | 'ai' | null;
+  isAiItem?: boolean; // AI 체크리스트 아이템 여부 (API 구분용)
 }
 
 interface UseShoppingItemsState {
@@ -77,8 +84,31 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
     }
     try {
       setLoading(true);
-      const data = await getShoppingList(roomId);
-      setItems(toUiItems(data.items));
+      // ShoppingItem + AI 체크리스트 동시 로드
+      const [shoppingData, aiData] = await Promise.all([
+        getShoppingList(roomId),
+        getAiChecklist(roomId).catch(() => null),
+      ]);
+
+      // ShoppingItem → UiCartItem 변환
+      const shoppingUiItems = toUiItems(shoppingData.items);
+
+      // AI 체크리스트 → UiCartItem 변환 (음수 ID로 구분)
+      const aiUiItems: UiCartItem[] = aiData?.categories
+        ? aiData.categories.flatMap((cat: AiChecklistCategory) =>
+            cat.items.map((ai: AiChecklistItem) => ({
+              id: -ai.checklistItemId, // 음수 ID로 구분
+              name: ai.name,
+              quantity: 1,
+              checked: ai.checked,
+              purchaseType: 'ai' as const,
+              isAiItem: true,
+            }))
+          )
+        : [];
+
+      // AI 아이템 먼저, 그 다음 일반 아이템
+      setItems([...aiUiItems, ...shoppingUiItems]);
       setError(null);
     } catch (err) {
       console.error('Failed to load shopping list:', err);
@@ -102,8 +132,8 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
     }
 
     const token =
-      localStorage.getItem('accessToken') ??
-      localStorage.getItem('access_token') ??
+      sessionStorage.getItem('accessToken') ??
+      sessionStorage.getItem('access_token') ??
       undefined;
     if (!token) {
       return;
@@ -230,7 +260,13 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
         return;
       }
       try {
-        await updateShoppingItem(roomId, id, { isChecked: checked });
+        // AI 아이템인 경우 (음수 ID)
+        if (id < 0) {
+          const checklistItemId = -id;
+          await toggleAiChecklistItem(roomId, checklistItemId, checked);
+        } else {
+          await updateShoppingItem(roomId, id, { isChecked: checked });
+        }
         setItems((prev) =>
           prev.map((item) => (item.id === id ? { ...item, checked } : item)),
         );
@@ -248,7 +284,13 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
         return;
       }
       try {
-        await deleteShoppingItem(roomId, id);
+        // AI 아이템인 경우 (음수 ID)
+        if (id < 0) {
+          const checklistItemId = -id;
+          await deleteAiChecklistItem(roomId, checklistItemId);
+        } else {
+          await deleteShoppingItem(roomId, id);
+        }
         setItems((prev) => prev.filter((item) => item.id !== id));
       } catch (err) {
         console.error('Failed to delete item:', err);

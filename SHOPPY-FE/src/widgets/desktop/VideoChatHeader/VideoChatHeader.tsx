@@ -1,5 +1,6 @@
 import React from 'react';
 import type { DesktopVideoChatHeaderProps } from '../../../entities/room/types/desktopVideoChat.types';
+import { useChatNotificationStore } from '@/features/chat/model/useChatNotificationStore';
 import './VideoChatHeader.css';
 
 // VideoChatHeader는 함수형 컴포넌트(FC). 꺽쇠 안 규칙을 따름
@@ -10,6 +11,14 @@ const VideoChatHeader: React.FC<DesktopVideoChatHeaderProps> = ({
   activePanel,
   onPanelToggle,
 }) => {
+  const unreadChatCount = useChatNotificationStore((state) => state.unreadCount);
+
+  const handleExit = () => {
+    if (window.confirm('정말로 나가시겠습니까?')) {
+      onExit();
+    }
+  };
+
   const handleIconClick = (panelType: 'cart' | 'participants' | 'vote' | 'chat') => {
     if (activePanel === panelType) {
       return; // 현재 열려 있는 토글과 방금 누른 아이콘 일치 -> 아무 변화 X
@@ -21,7 +30,7 @@ const VideoChatHeader: React.FC<DesktopVideoChatHeaderProps> = ({
   return (
     <header className="video-chat-header">
       <div className="video-chat-header-container">
-        <button className="exit-button" onClick={onExit}>
+        <button className="exit-button" onClick={handleExit}>
           나가기
         </button>
 
@@ -73,6 +82,11 @@ const VideoChatHeader: React.FC<DesktopVideoChatHeaderProps> = ({
             aria-label="실시간 채팅"
           >
             <i className="fa-regular fa-comment-dots"></i>
+            {unreadChatCount > 0 && (
+              <span className="header-icon-badge" aria-label={`읽지 않은 채팅 ${unreadChatCount}개`}>
+                {unreadChatCount > 99 ? '99+' : unreadChatCount}
+              </span>
+            )}
             <span className="header-icon-tooltip">채팅</span>
           </button>
         </div>

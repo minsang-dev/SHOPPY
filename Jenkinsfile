@@ -144,6 +144,7 @@ stage('Deploy') {
     post {
             always {
                 // BE 폴더에 들어가서 .env 삭제
+                // test
                 dir('SHOPPY-BE') { 
                     script {
                         sh "rm -f .env"

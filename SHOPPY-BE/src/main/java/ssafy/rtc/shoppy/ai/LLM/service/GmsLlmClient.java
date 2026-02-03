@@ -49,15 +49,19 @@ public class GmsLlmClient implements LlmClient {
     private static final int MAX_DUMP_CHARS = 20000;
     private static final Path DUMP_DIR = Paths.get("..\\..\\ai\\LLM\\JsonParsingFail");
     private static final DateTimeFormatter DUMP_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss_SSS");
-    private static final List<String> FIXED_INTEREST_CATEGORIES = List.of(
-            "FOOD", "MEAT", "VEGETABLE", "FRESH", "DRINK", "ALCOHOL", "SNACK", "COOKING", "SUPPLY"
+    private static final List<String> FIXED_INTEREST_CATEGORIES = List.copyOf(
+            AiChecklistCodes.INTEREST_CATEGORY_CODES
     );
 
-    private static final String SYSTEM_PROMPT = "당신은 AI 장바구니 체크리스트를 생성하는 전문가입니다.\n" +
-            "아래 JSON 형식을 그대로 출력하세요. 마크다운, 설명, 코드 블록을 포함하지 마세요.\n" +
-            "각 item의 reason은 최대 60자이며 가격/브랜드/수량/할인/통계 표현을 포함하지 말고, 사용 목적/인원/예산 범위/traits만 반영하세요.";
+        private static final String SYSTEM_PROMPT = "??? AI ???? ?????? ???? ??????.\n" +
+            "?? JSON ?? ??? ?????. ????, ??, ?? ??? ???? ???.\n" +
+            "? item? reason? ?? 60??? ??/????, ??/??/?? ??? ???? ??, " +
+            "?? ??/??/?? ??/traits? ?????.\n" +
+            "item_size? ???? ?? ????? ???? ???? ?? ??? ?????.\n" +
+            "?? ?? ??: headcount 1-2 = x1, 3-4 = x1.5, 5-6 = x2, 7-8 = x2.5, 9+ = x3\n" +
+            "MEAT_RAW? ? ???? ? ??? ????, 2~3? ??? ?? ????? (?: ? 1.6kg = 700g+500g+400g).";
 
-    private static final String DEFAULT_REASON = "조건 기반 추천";
+private static final String DEFAULT_REASON = "조건 기반 추천";
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
@@ -84,7 +88,7 @@ public class GmsLlmClient implements LlmClient {
         payload.put("model", "gpt-4o-mini");
         payload.put("messages", messages);
         payload.put("temperature", 0.25);
-        payload.put("max_tokens", 1024);
+        payload.put("max_tokens", 4096);
         payload.put("top_p", 0.8);
 
         try {
@@ -131,12 +135,16 @@ public class GmsLlmClient implements LlmClient {
                 ? "없음"
                 : input.candidates().stream()
                         .sorted(Comparator.comparingInt(ChecklistCandidate::priority))
-                        .map(candidate -> String.format("- %s | %s (priority %d)",
-                                candidate.categoryCode(), candidate.itemName(), candidate.priority()))
+                        .map(candidate -> String.format("- %s | %s | size %s (priority %d)",
+                                candidate.categoryCode(),
+                                candidate.itemName(),
+                                StringUtils.hasText(candidate.itemSize()) ? candidate.itemSize() : "N/A",
+                                candidate.priority()))
                         .collect(Collectors.joining("\n"));
         String budgets = String.format("minBudget %s / targetBudget %s",
                 input.minBudget().toPlainString(), input.targetBudget().toPlainString());
-        String normalizedInterestInfo = "MEAT -> MEAT_PROTEIN, 나머지 관심 카테고리는 동일한 코드로 checklist에 사용됩니다.";
+        String normalizedInterestInfo = "레거시 코드 사용 금지: FOOD/MEAT/VEGETABLE/FRESH/DRINK/COOKING 대신 "
+                + "FOOD_READY/MEAT_RAW/VEGETABLE_RAW/FRESH_READY/DRINK_NON_ALCOHOL/COOKING_TOOL를 사용하세요.";
         String allowedChecklistOrder = String.join(", ", AiChecklistCodes.CHECKLIST_CATEGORY_ORDER);
         String allowedInterestList = String.join(", ", FIXED_INTEREST_CATEGORIES);
 
@@ -148,6 +156,10 @@ public class GmsLlmClient implements LlmClient {
                         "- 예산: %s\n" +
                         "- 인원: %d\n" +
                         "- 후보 샘플:\n%s\n" +
+                        "- 후보에 size가 포함되면 기본 용량으로 참고하고 인원수에 따라 수량을 조정하세요.\n" +
+                        "- 수량 배수 규칙: headcount 1-2 = x1, 3-4 = x1.5, 5-6 = x2, 7-8 = x2.5, 9+ = x3 / 수량배수 규칙은 엄격하지 않으니까 참고용으로만 사용하세요.\n" +
+                        "- MEAT_RAW는 총 고기량을 계산한 뒤 2~3개 부위로 나눠 추천하세요 (예: 총 1.6kg = 700g+500g+400g).\n" +
+                        "- MEAT_RAW는 돼지고기/소고기 부위를 우선 추천하고 닭/오리는 보조로만 사용하세요.\n" +
                         "체크리스트 카테고리 순서: %s\n" +
                         "사용 가능한 관심 카테고리: %s\n" +
                         "%s\n" +
@@ -233,10 +245,26 @@ public class GmsLlmClient implements LlmClient {
                 }
             }
             if (!items.isEmpty()) {
-                categories.add(new ChecklistCategoryDraft(category.code(), items));
+                String normalizedCode = normalizeChecklistCode(category.code());
+                categories.add(new ChecklistCategoryDraft(normalizedCode, items));
             }
         }
         return new ChecklistDraft(categories);
+    }
+
+    private String normalizeChecklistCode(String code) {
+        if (!StringUtils.hasText(code)) {
+            return code;
+        }
+        return switch (code.trim()) {
+            case "FOOD" -> "FOOD_READY";
+            case "MEAT" -> "MEAT_RAW";
+            case "VEGETABLE" -> "VEGETABLE_RAW";
+            case "FRESH" -> "FRESH_READY";
+            case "DRINK" -> "DRINK_NON_ALCOHOL";
+            case "COOKING" -> "COOKING_TOOL";
+            default -> code;
+        };
     }
 
     private String sanitizeReason(String reason) {

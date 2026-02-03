@@ -1,0 +1,9 @@
+.vote-notification-toasts {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 12px;
+}
+
+.vote-notification-toasts__item {
+  pointer-events: auto;
+}

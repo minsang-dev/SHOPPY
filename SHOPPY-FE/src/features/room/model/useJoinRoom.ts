@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { normalizeApiError } from '../../../shared/api/error';
-import { getRoomMembers, joinRoomAsUser, joinRoomAsGuest } from '../../../entities/room/api/room';
+import { getRoomMembers, getRoomByCode, joinRoomAsUser, joinRoomAsGuest } from '../../../entities/room/api/room';
+import { useAuthStore } from '../../../entities/user/model/useAuthStore';
 import type { RoomMember } from '../../../entities/room/types/room.types';
 import { createWebRtcSession } from '../../../shared/api/webrtc';
 import type { WebRTCSession } from '../../../shared/api/types';
@@ -18,6 +19,7 @@ export const useJoinRoom = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ReturnType<typeof normalizeApiError> | null>(null);
   const setSessionStore = useSessionStore((state) => state.setSession);
+  const user = useAuthStore((state) => state.user);
 
   const run = async (payload: JoinRoomPayload) => {
     setLoading(true);
@@ -25,22 +27,38 @@ export const useJoinRoom = () => {
     try {
       let roomId: number;
 
+      // 로그인 사용자인 경우 중복 참여 체크
+      if (payload.isLoggedIn && user) {
+        const roomInfo = await getRoomByCode(payload.roomCode);
+        const existingMembers = await getRoomMembers(String(roomInfo.roomId));
+        const alreadyJoined = existingMembers.some((member) => member.userId === user.id);
+        if (alreadyJoined) {
+          throw new Error('이미 참여 중인 방입니다.');
+        }
+      }
+
       if (payload.isLoggedIn) {
         // 로그인 사용자: POST /rooms/join
         const joinRes = await joinRoomAsUser({ roomCode: payload.roomCode });
         roomId = joinRes.roomId;
-        localStorage.setItem('memberId', String(joinRes.memberId));
+        sessionStorage.setItem('memberId', String(joinRes.memberId));
+        // 로그인 사용자 닉네임 저장 (공유 커서용)
+        if (user?.nickname) {
+          sessionStorage.setItem('memberNickname', user.nickname);
+        }
       } else {
         // 게스트: POST /rooms/join/guest
-        const joinRes = await joinRoomAsGuest({ 
-          roomCode: payload.roomCode, 
-          nickname: payload.nickname 
+        const joinRes = await joinRoomAsGuest({
+          roomCode: payload.roomCode,
+          nickname: payload.nickname
         });
         roomId = joinRes.member.roomId;
-        localStorage.setItem('memberId', String(joinRes.member.memberId));
+        sessionStorage.setItem('memberId', String(joinRes.member.memberId));
+        // 게스트 닉네임 저장 (공유 커서용)
+        sessionStorage.setItem('memberNickname', payload.nickname);
         // 게스트 토큰 저장
         if (joinRes.accessToken) {
-          localStorage.setItem('accessToken', joinRes.accessToken);
+          sessionStorage.setItem('accessToken', joinRes.accessToken);
         }
       }
 

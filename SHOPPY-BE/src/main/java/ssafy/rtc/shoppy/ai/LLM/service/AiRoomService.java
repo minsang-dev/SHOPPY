@@ -3,6 +3,7 @@ package ssafy.rtc.shoppy.ai.llm.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.util.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.rtc.shoppy.ai.llm.domain.AiChecklistCodes;
@@ -28,8 +29,14 @@ import ssafy.rtc.shoppy.ai.llm.service.model.ChecklistCategoryDraft;
 import ssafy.rtc.shoppy.ai.llm.service.model.ChecklistDraft;
 import ssafy.rtc.shoppy.ai.llm.service.model.ChecklistItemDraft;
 import ssafy.rtc.shoppy.room.domain.Room;
+import ssafy.rtc.shoppy.room.domain.RoomMember;
 import ssafy.rtc.shoppy.room.entity.RoomEntity;
+import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
+import ssafy.rtc.shoppy.room.enums.MemberRole;
 import ssafy.rtc.shoppy.room.repository.RoomRepository;
+import ssafy.rtc.shoppy.room.repository.RoomMemberRepository;
+import ssafy.rtc.shoppy.auth.entity.Member;
+import ssafy.rtc.shoppy.auth.repository.MemberRepository;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -44,6 +51,8 @@ import java.util.stream.Collectors;
 public class AiRoomService {
 
     private final RoomRepository roomRepository;
+    private final RoomMemberRepository roomMemberRepository;
+    private final MemberRepository memberRepository;
     private final RoomConstraintsRepository constraintsRepository;
     private final RecommendationTemplateRepository templateRepository;
     private final AiChecklistRepository checklistRepository;
@@ -59,11 +68,21 @@ public class AiRoomService {
         Room room = Room.create(hostId, request.roomMeta().roomName(), request.roomMeta().targetBudget());
         RoomEntity savedRoom = roomRepository.save(RoomEntity.fromDomain(room));
 
+        // 호스트를 RoomMember로 추가
+        Member hostMember = memberRepository.findById(hostId)
+                .orElseThrow(() -> new RuntimeException("호스트 정보를 찾을 수 없습니다."));
+        RoomMember hostRoomMember = RoomMember.join(
+                savedRoom.getRoomId(),
+                hostId,
+                hostMember.getNickname(),
+                MemberRole.HOST
+        );
+        RoomMemberEntity hostRoomMemberEntity = RoomMemberEntity.fromDomain(hostRoomMember, savedRoom);
+        roomMemberRepository.save(hostRoomMemberEntity);
+
         RoomConstraintsEntity constraints = RoomConstraintsEntity.from(
                 savedRoom.getRoomId(),
-                request.roomConstraints(),
-                request.roomMeta().minBudget(),
-                request.roomMeta().targetBudget());
+                request.roomMeta());
         constraintsRepository.save(constraints);
 
         List<String> templateCategories = normalizeCategoriesForTemplateQuery(constraints.getInterestCategoryCodes());
@@ -121,7 +140,15 @@ public class AiRoomService {
         checklistRepository.deleteByRoomId(savedRoom.getRoomId());
         AiChecklistEntity checklist = checklistRepository.save(AiChecklistEntity.create(savedRoom.getRoomId()));
 
-        List<AiChecklistItemEntity> items = toEntities(checklist, draft);
+        Map<String, String> itemSizeMap = sortedCandidates.stream()
+                .filter(candidate -> candidate.getItemName() != null && !candidate.getItemName().isBlank())
+                .collect(Collectors.toMap(
+                        RecommendationTemplateEntity::getItemName,
+                        candidate -> candidate.getItemSize() == null ? "" : candidate.getItemSize(),
+                        (a, b) -> StringUtils.hasText(a) ? a : b
+                ));
+
+        List<AiChecklistItemEntity> items = toEntities(checklist, draft, itemSizeMap, constraints.getPeopleCount());
         checklistItemRepository.saveAll(items);
 
         return toCreateResponse(savedRoom, request, constraints, checklist, items);
@@ -130,16 +157,17 @@ public class AiRoomService {
     private ChecklistDraft generateDraftSafely(AiRoomCreateRequestDto request,
             List<RecommendationTemplateEntity> candidates) {
         AiChecklistInput input = new AiChecklistInput(
-                request.roomConstraints().purpose(),
-                request.roomConstraints().peopleCount(),
+                request.roomMeta().purpose(),
+                request.roomMeta().headcount(),
                 request.roomMeta().minBudget(),
                 request.roomMeta().targetBudget(),
-                request.roomConstraints().interestCategories(),
-                request.roomConstraints().traits(),
+                request.roomMeta().interestCategories(),
+                request.roomMeta().traits(),
                 candidates.stream()
                         .map(candidate -> new ChecklistCandidate(
                                 effectiveCategory(candidate),
                                 candidate.getItemName(),
+                                candidate.getItemSize(),
                                 candidate.getPriority()))
                         .toList());
         try {
@@ -324,21 +352,83 @@ public class AiRoomService {
                 .toList();
     }
 
-    private List<AiChecklistItemEntity> toEntities(AiChecklistEntity checklist, ChecklistDraft draft) {
+    private List<AiChecklistItemEntity> toEntities(AiChecklistEntity checklist, ChecklistDraft draft,
+            Map<String, String> itemSizeMap, int headcount) {
         List<AiChecklistItemEntity> items = new ArrayList<>();
         for (ChecklistCategoryDraft category : draft.categories()) {
             int sortOrder = 1;
-            for (ChecklistItemDraft item : category.items()) {
+            List<String> meatSizes = List.of();
+            if ("MEAT_RAW".equals(category.code())) {
+                meatSizes = allocateMeatSizes(headcount, category.items().size());
+            }
+
+            for (int i = 0; i < category.items().size(); i++) {
+                ChecklistItemDraft item = category.items().get(i);
+                String itemSize = "";
+                if ("MEAT_RAW".equals(category.code()) && i < meatSizes.size()) {
+                    itemSize = meatSizes.get(i);
+                } else if ("FOOD_READY".equals(category.code())) {
+                    itemSize = itemSizeMap == null ? "" : itemSizeMap.getOrDefault(item.name(), "");
+                }
                 items.add(AiChecklistItemEntity.create(
                         checklist,
                         category.code(),
                         item.name(),
+                        itemSize,
                         item.reason(),
                         sortOrder));
                 sortOrder++;
             }
         }
         return items;
+    }
+
+    private List<String> allocateMeatSizes(int headcount, int itemCount) {
+        if (itemCount <= 0) {
+            return List.of();
+        }
+        int safeHeadcount = Math.max(1, headcount);
+        int totalGrams = safeHeadcount * 400;
+
+        if (itemCount == 1) {
+            return List.of(formatMeatSize(totalGrams));
+        }
+
+        if (itemCount == 2) {
+            int first = roundToNearest50((int) Math.round(totalGrams * 0.55));
+            int second = Math.max(50, totalGrams - first);
+            return List.of(formatMeatSize(first), formatMeatSize(second));
+        }
+
+        int first = roundToNearest50((int) Math.round(totalGrams * 0.45));
+        int second = roundToNearest50((int) Math.round(totalGrams * 0.35));
+        int third = Math.max(50, totalGrams - first - second);
+        List<String> sizes = new ArrayList<>();
+        sizes.add(formatMeatSize(first));
+        sizes.add(formatMeatSize(second));
+        sizes.add(formatMeatSize(third));
+
+        if (itemCount > 3) {
+            for (int i = 3; i < itemCount; i++) {
+                sizes.add("");
+            }
+        }
+        return sizes;
+    }
+
+    private int roundToNearest50(int grams) {
+        return Math.max(50, ((grams + 25) / 50) * 50);
+    }
+
+    private String formatMeatSize(int grams) {
+        if (grams >= 1000) {
+            if (grams % 1000 == 0) {
+                return (grams / 1000) + "kg";
+            }
+            double kg = grams / 1000.0;
+            return String.format("%.1fkg", kg);
+        }
+        return grams + "g";
     }
 
     private AiRoomCreateResponseDto toCreateResponse(
@@ -353,7 +443,7 @@ public class AiRoomService {
                         request.roomMeta().roomName(),
                         room.getRoomCode(),
                         room.getStatus(),
-                        request.roomMeta().type(),
+                        request.roomMeta().purpose(),
                         request.roomMeta().targetBudget(),
                         request.roomMeta().minBudget()),
                 new RoomConstraintsResponseDto(
@@ -376,6 +466,7 @@ public class AiRoomService {
                     .map(item -> new ChecklistItemResponseDto(
                             item.getChecklistItemId(),
                             item.getItemName(),
+                            item.getItemSize(),
                             item.isChecked(),
                             item.getReason(),
                             item.getSortOrder()))

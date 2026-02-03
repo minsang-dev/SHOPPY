@@ -1,0 +1,124 @@
+1. 질문 트리 소스
+- trait-question-tree.json
+- 이 JSON을 그대로 FE에 가져와서 “질문 → trait 자동매핑” 흐름으로 구성하면 됨.
+
+2. 흐름 로직
+- 시작 노드: startNodeId (q1)
+- 각 노드에서 답변 선택 시:
+    traitsAdd를 누적
+    next로 이동
+- next가 null이면 종료
+
+3.질문/trait 매핑 (깨끗하게 정리)
+
+q1: 조리를 할 수 있나요?
+    예 → COOKING_OK
+    아니오 → NO_COOKING
+q2: 술이 포함되나요?
+    예 → ALCOHOL_YES
+    아니오 → ALCOHOL_NO
+q3: 식사가 메인인가요?
+    식사 → MEAL_MAIN
+    간식/안주 → SNACK_MAIN
+q4: 예산은 어떤 편인가요?
+    가성비 → VALUE
+    균형형 → BALANCED
+    대용량 → BULK
+q5: 장소는 어디인가요?
+    실내 → INDOOR
+    야외 → OUTDOOR
+q6: 준비/정리 시간을 줄이고 싶나요?
+    예 → MINIMAL
+    아니오 → VARIETY_OK
+
+4.카테고리와 연동(권장 룰)
+
+- NO_COOKING 선택 시: MEAT_RAW, VEGETABLE_RAW, COOKING_TOOL 비활성
+- ALCOHOL_NO 선택 시: ALCOHOL 비활성
+- UI에 “카테고리 제한 적용됨” 표시
+
+===================================
+FE UI 컴포넌트 구조
+
+구성 :
+
+- src/features/room/questionnaire/
+    QuestionFlow.tsx : 질문 흐름 제어(현재 노드, 답변 저장, 다음 노드 이동)
+    QuestionCard.tsx : 질문 렌더링 카드(UI)
+    QuestionOption.tsx : 선택지 버튼(YES/NO, CHOICE)
+    traitQuestionTree.ts : trait-question-tree.json 파싱/정규화
+    useQuestionFlow.ts : 상태 관리 훅(answers, traits 누적, next 계산)
+
+역할 정리:
+
+- QuestionFlow가 trait-question-tree.json 읽어서 질문 → traitsAdd → next 순으로 진행
+- 마지막 노드 도달 시 traits 최종 배열 산출 → roomMeta.traits에 넣음
+- 카테고리 선택은 별도 UI(체크박스), traits에 따라 비활성 처리
+    NO_COOKING → MEAT_RAW / VEGETABLE_RAW / COOKING_TOOL 비활성
+    ALCOHOL_NO → ALCOHOL 비활성
+
+===================================
+FE - AI 방 생성/체크리스트 연동 정리
+
+1) 방 생성 API 경로/요청 바디 구조 불일치
+
+위치: room.ts
+현재: POST /rooms + CreateRoomRequest (roomName, targetBudget, syncMode, roomMeta.shoppingPurpose/budgetMin)
+명세: POST /api/rooms/ai/LLM + roomMeta 내부에 roomName/purpose/headcount/interestCategories/traits/targetBudget/minBudget
+수정 방향:
+createRoom의 url을 /rooms/ai/LLM로 변경 (apiRequest가 /api 붙이므로 /api/... 쓰지 말기)
+요청 타입/payload에서 syncMode, shoppingPurpose, budgetMin/budgetMax 제거
+roomMeta 아래 필드명을 명세대로 변경 (purpose, minBudget, traits 추가)
+
+2) 방 생성 요청 payload 만드는 곳
+
+위치: RoomModal.tsx
+현재 payload:
+roomName, targetBudget, syncMode, roomMeta.shoppingPurpose, budgetMin
+명세에 맞게 변경:
+roomMeta: { roomName, purpose, headcount, interestCategories, traits, targetBudget, minBudget }
+UI에 traits 입력/선택이 없다면 최소 traits: []로 보내기
+mode(syncMode)는 UI에서 쓰더라도 API로 보내지 않거나 제거
+
+3) 타입 정의 변경
+
+위치:
+room.types.ts
+desktopRoomModal.types.ts
+변경 방향:
+RoomMeta 타입을 명세 키로 변경
+CreateRoomRequest/Response 구조 변경
+CreateRoomFormData에 traits 추가, mode 제거(혹은 API로 보내지 않게 분리)
+
+4) 방 생성 응답 구조 불일치
+
+위치:
+useCreateRoom.ts
+RoomModal.tsx
+현재는 response.roomId를 사용하지만 명세는
+data.roomInfo.roomId 형태
+수정 방향:
+네비게이션/후속 로직은 response.roomInfo.roomId로 변경
+응답 타입을 roomInfo, roomMeta, roomConstraints, ai_checkList로 맞추기
+inviteCode 등은 roomMeta.room_code로 내려오므로 이름 매핑 필요 (camelCase로 변환하거나 사용하는 곳도 변경)
+
+5) Mock/MSW 응답도 같이 정리
+
+사용 중이면 반드시 맞춰야 함:
+RoomCreateResponse.json
+handlers.ts
+data.ts
+rooms.ts
+types.ts
+모두 명세 응답 키(roomInfo, roomMeta, room_code, ai_checkList)로 변경
+
+6) AI 체크리스트 API는 FE에 아직 없음
+
+명세 엔드포인트:
+GET /api/rooms/{roomId}/ai-checklist
+POST /api/rooms/{roomId}/ai-checklist/items
+PATCH /api/rooms/{roomId}/ai-checklist/items/{itemId}
+DELETE /api/rooms/{roomId}/ai-checklist/items/{itemId}
+현재 FE에는 관련 API/훅/컴포넌트가 없으니, 체크리스트를 화면에 쓰려면
+src/entities/ai-checklist/api/... 추가
+해당 훅/컴포넌트에서 호출 및 렌더링 로직 추가가 필요

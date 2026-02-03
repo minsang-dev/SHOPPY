@@ -1,6 +1,8 @@
 package ssafy.rtc.shoppy.product.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.rtc.shoppy.product.dto.ProductResponseDto;
@@ -28,6 +30,12 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public Page<ProductResponseDto> getAllProducts(Pageable pageable) {
+        return productRepository.findAll(pageable)
+                .map(ProductResponseDto::from);
+    }
+
+    @Override
     public List<ProductResponseDto> searchProducts(String keyword) {
         // 키워드 유효성 검사 (빈 문자열이면 빈 리스트 반환)
         if (keyword == null || keyword.trim().isEmpty()) {
@@ -40,5 +48,15 @@ public class ProductServiceImpl implements ProductService {
         return products.stream()
                 .map(ProductResponseDto::from)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<ProductResponseDto> searchProducts(String keyword, Pageable pageable) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        return productRepository.findByNameContaining(keyword, pageable)
+                .map(ProductResponseDto::from);
     }
 }

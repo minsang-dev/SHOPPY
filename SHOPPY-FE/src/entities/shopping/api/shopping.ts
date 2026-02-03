@@ -19,7 +19,9 @@ interface ShoppingItemRaw {
   display_name: string;
   quantity: number;
   is_checked: boolean;
-  purchase_type: 'online' | 'offline' | null;
+  purchase_type: 'online' | 'offline' | 'ai' | null;
+  item_size: string | null;
+  reason: string | null;
 }
 
 interface ShoppingItemUpdateResponseRaw {
@@ -45,6 +47,8 @@ const toShoppingItem = (raw: ShoppingItemRaw): ShoppingItem => ({
   quantity: raw.quantity,
   isChecked: raw.is_checked,
   purchaseType: raw.purchase_type,
+  itemSize: raw.item_size,
+  reason: raw.reason,
 });
 
 const toUpdateResponse = (raw: ShoppingItemUpdateResponseRaw): ShoppingItemUpdateResponse => ({

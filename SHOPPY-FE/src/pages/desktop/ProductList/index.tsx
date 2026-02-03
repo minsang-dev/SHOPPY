@@ -8,10 +8,13 @@ import SearchBar from '@/widgets/desktop/SearchBar/SearchBar';
 import SortOptions from '@/widgets/desktop/SortOptions/SortOptions';
 import './styles.css';
 
+const PAGE_SIZE = 20;
+const MAX_VISIBLE_PAGES = 5;
+
 const DesktopProductList = () => {
   const { roomId } = useParams<{ roomId?: string }>();
   const [searchParams] = useSearchParams();
-  const { products, loading, error, search } = useProductList();
+  const { products, loading, error, search, pagination } = useProductList({ pageSize: PAGE_SIZE });
   const addToCart = useAddToCart(roomId || null);
 
   const keywordFromUrl = searchParams.get('keyword');
@@ -86,6 +89,75 @@ const DesktopProductList = () => {
             </div>
           ))}
         </div>
+
+        {/* 페이징: << < 1 2 3 ... > >> */}
+        {pagination && pagination.totalPages > 1 && (() => {
+          const { currentPage, totalPages, goToPage } = pagination;
+          const total = totalPages;
+          const current = currentPage;
+          const half = Math.floor(MAX_VISIBLE_PAGES / 2);
+          let start = Math.max(0, current - half);
+          const end = Math.min(total - 1, start + MAX_VISIBLE_PAGES - 1);
+          if (end - start + 1 < MAX_VISIBLE_PAGES) {
+            start = Math.max(0, end - MAX_VISIBLE_PAGES + 1);
+          }
+          const pageNumbers = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+
+          return (
+            <nav className="product-pagination" aria-label="상품 목록 페이지">
+              <button
+                type="button"
+                className="pagination-btn pagination-btn-icon"
+                disabled={current <= 0}
+                onClick={() => goToPage(0)}
+                aria-label="첫 페이지"
+              >
+                &laquo;
+              </button>
+              <button
+                type="button"
+                className="pagination-btn pagination-btn-icon"
+                disabled={current <= 0}
+                onClick={() => goToPage(current - 1)}
+                aria-label="이전 페이지"
+              >
+                &lsaquo;
+              </button>
+              <div className="pagination-numbers">
+                {pageNumbers.map((pageIndex) => (
+                  <button
+                    key={pageIndex}
+                    type="button"
+                    className={`pagination-btn pagination-btn-num ${current === pageIndex ? 'active' : ''}`}
+                    onClick={() => goToPage(pageIndex)}
+                    aria-label={`${pageIndex + 1}페이지`}
+                    aria-current={current === pageIndex ? 'page' : undefined}
+                  >
+                    {pageIndex + 1}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="pagination-btn pagination-btn-icon"
+                disabled={current >= total - 1}
+                onClick={() => goToPage(current + 1)}
+                aria-label="다음 페이지"
+              >
+                &rsaquo;
+              </button>
+              <button
+                type="button"
+                className="pagination-btn pagination-btn-icon"
+                disabled={current >= total - 1}
+                onClick={() => goToPage(total - 1)}
+                aria-label="마지막 페이지"
+              >
+                &raquo;
+              </button>
+            </nav>
+          );
+        })()}
       </div>
     </div>
   );

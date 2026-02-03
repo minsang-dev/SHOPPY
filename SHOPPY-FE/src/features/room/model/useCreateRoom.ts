@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { normalizeApiError } from '../../../shared/api/error';
-import { createRoom, getRoomMembers } from '../../../entities/room/api/room';
-import type { CreateRoomRequest, CreateRoomResponse, RoomMember } from '../../../entities/room/types/room.types';
+import { createRoom, createRoomWithAI, getRoomMembers } from '../../../entities/room/api/room';
+import type { CreateRoomRequest, CreateRoomResponse, CreateRoomWithAIRequest, RoomMember } from '../../../entities/room/types/room.types';
 import { createWebRtcSession } from '../../../shared/api/webrtc';
 import type { WebRTCSession } from '../../../shared/api/types';
 import { useSessionStore } from '../../../entities/session/model/useSessionStore';
@@ -46,5 +46,37 @@ export const useCreateRoom = () => {
     }
   };
 
-  return { data, members, session, loading, error, run };
+  // AI 장바구니 생성 포함 방 생성 (LLM)
+  const runWithAI = async (payload: CreateRoomWithAIRequest) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await createRoomWithAI(payload);
+      console.log('AI 방 생성 응답:', res);
+
+      // 백엔드 응답 구조: res.roomInfo.roomId
+      const roomId = res.roomInfo.roomId;
+      console.log('roomId:', roomId);
+
+      const memberRes = await getRoomMembers(String(roomId));
+      setMembers(memberRes);
+
+      if (realtimeEnabled) {
+        const sessionRes = await createWebRtcSession(roomId);
+        setSession(sessionRes);
+        setSessionStore(roomId, sessionRes);
+        return { room: res, roomId, members: memberRes, session: sessionRes };
+      }
+
+      return { room: res, roomId, members: memberRes, session: null };
+    } catch (e) {
+      const normalized = normalizeApiError(e);
+      setError(normalized);
+      throw normalized;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { data, members, session, loading, error, run, runWithAI };
 };

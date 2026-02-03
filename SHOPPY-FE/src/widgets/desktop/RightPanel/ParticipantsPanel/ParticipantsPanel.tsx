@@ -1,28 +1,21 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useRoomInfo } from '@/features/room/fetch-room/model/useRoomInfo';
-import { useRoomMembers } from '@/features/room/fetch-members/model/useRoomMembers';
+import { useRoomMembersContext } from '@/features/room/fetch-members/model/RoomMembersProvider';
 import ParticipantCard from './ParticipantCard/ParticipantCard';
 import ParticipantVolumeModal from '@/shared/ui/ParticipantVolumeModal';
-import { realtimeConfig } from '@/shared/config/realtime';
 import { useAuthStore } from '@/entities/user';
 import { useMediaControlStore } from '@/features/video-chat/model/useMediaControlStore';
 import { useRemoteMediaControlStore } from '@/features/video-chat/model/useRemoteMediaControlStore';
-import {
-  createRealtimeClient,
-  connectRealtimeClient,
-  disconnectRealtimeClient,
-  subscribeTopic,
-  topicRoomsMembers,
-} from '@/shared/lib/realtime';
 import './ParticipantsPanel.css';
 
 /**
  * 참여자 목록 패널 컴포넌트
+ * WebSocket 구독은 RoomMembersProvider(페이지 레벨)에서 처리
  */
 const ParticipantsPanel: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
-  const { members, loading, error, applyEvent } = useRoomMembers(roomId);
+  const { members, loading, error } = useRoomMembersContext();
   const [volumeStates, setVolumeStates] = useState<Record<number, number>>({});
   const [selectedParticipantId, setSelectedParticipantId] = useState<number | null>(null);
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
@@ -34,8 +27,10 @@ const ParticipantsPanel: React.FC = () => {
   const toggleCam = useMediaControlStore((state) => state.toggleCam);
   const toggleRemoteMic = useRemoteMediaControlStore((state) => state.toggleMute);
   const toggleRemoteCam = useRemoteMediaControlStore((state) => state.toggleHide);
+  const mutedByNickname = useRemoteMediaControlStore((state) => state.mutedByNickname);
+  const hiddenByNickname = useRemoteMediaControlStore((state) => state.hiddenByNickname);
   const storedMemberId = useMemo(() => {
-    const raw = localStorage.getItem('memberId');
+    const raw = sessionStorage.getItem('memberId');
     return raw ? Number(raw) : null;
   }, []);
 
@@ -50,60 +45,7 @@ const ParticipantsPanel: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (!roomId || !realtimeConfig.enabled || !realtimeConfig.websocketUrl) {
-      return;
-    }
-    const token =
-      localStorage.getItem('accessToken') ??
-      localStorage.getItem('access_token') ??
-      undefined;
-    if (!token) {
-      return;
-    }
-
-    const client = createRealtimeClient({ token });
-    let subscription: { unsubscribe: () => void } | null = null;
-    let cancelled = false;
-
-    connectRealtimeClient(client)
-      .then(() => {
-        if (cancelled) {
-          return;
-        }
-        subscription = subscribeTopic(client, topicRoomsMembers(roomId), (body) => {
-          try {
-            const payload = JSON.parse(body) as {
-              type: 'JOINED' | 'LEFT' | 'STATE_UPDATED';
-              member: {
-                memberId: number;
-                roomId: number;
-                userId: number | null;
-                nickname: string;
-                role: string;
-                status: string;
-                isCameraOn: boolean;
-                joinedAt: string;
-              };
-            };
-            if (payload?.member && payload?.type) {
-              applyEvent({ type: payload.type, member: payload.member });
-            }
-          } catch (err) {
-            console.error('Failed to parse member event:', err);
-          }
-        });
-      })
-      .catch((err) => {
-        console.error('Realtime connection failed:', err);
-      });
-
-    return () => {
-      cancelled = true;
-      subscription?.unsubscribe();
-      void disconnectRealtimeClient(client);
-    };
-  }, [applyEvent, roomId]);
+  // WebSocket 구독은 DesktopVideoChatPage에서 처리 (패널 전환 시 연결 끊김 방지)
 
   const selectedParticipant = useMemo(
     () => members.find((p) => p.memberId === selectedParticipantId) ?? null,
@@ -113,6 +55,12 @@ const ParticipantsPanel: React.FC = () => {
   const selectedVolume = selectedParticipant
     ? volumeStates[selectedParticipant.memberId] ?? 100
     : 100;
+
+  /** 입장 순서(joinedAt)에 따라 정렬 - 1번째 입장 = 색상 1번, 2번째 = 2번, ... 11번째 = 1번 */
+  const membersByJoinOrder = useMemo(
+    () => [...members].sort((a, b) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime()),
+    [members],
+  );
 
   return (
     <div className="panel-content">
@@ -131,23 +79,28 @@ const ParticipantsPanel: React.FC = () => {
         </div>
       ) : (
         <div className="participants-list">
-          {members.map((participant) => (
+          {membersByJoinOrder.map((participant, index) => {
+            const isSelf =
+              Boolean(user && participant.userId && user.id === participant.userId) ||
+              (storedMemberId !== null && participant.memberId === storedMemberId);
+            return (
             <ParticipantCard
               key={participant.memberId}
               participant={participant}
+              colorKey={index}
               onSelect={(p) => setSelectedParticipantId(p.memberId)}
-              isSelf={
-                Boolean(user && participant.userId && user.id === participant.userId) ||
-                (storedMemberId !== null && participant.memberId === storedMemberId)
-              }
+              isSelf={isSelf}
               micOn={micOn}
               camOn={camOn}
+              remoteMicMuted={Boolean(mutedByNickname[participant.nickname])}
+              remoteCamHidden={Boolean(hiddenByNickname[participant.nickname])}
               onToggleMic={toggleMic}
               onToggleCam={toggleCam}
               onToggleRemoteMic={() => toggleRemoteMic(participant.nickname)}
               onToggleRemoteCam={() => toggleRemoteCam(participant.nickname)}
             />
-          ))}
+            );
+          })}
         </div>
       )}
 

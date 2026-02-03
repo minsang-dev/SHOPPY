@@ -4,28 +4,34 @@ import { updateChatMessage, deleteChatMessage } from '@/entities/chat/api/chatAp
 
 interface ChatMessageRowProps {
   message: ChatMessage;
+  timestamp: string;
+  showTimestamp?: boolean;
   onMessageUpdated?: (message: ChatMessage) => void;
   onMessageDeleted?: (chatId: number) => void;
 }
 
-/**
- * - 호버 시 회색 배경
- * - 더보기 버튼 클릭 시 파란색 활성화 + 편집/삭제 메뉴 표시
- * - 편집 클릭 시 메시지 수정 UI 노출
- */
-const ChatMessageRow: React.FC<ChatMessageRowProps> = ({ message, onMessageUpdated, onMessageDeleted }) => {
+const ChatMessageRow: React.FC<ChatMessageRowProps> = ({
+  message,
+  timestamp,
+  showTimestamp = true,
+  onMessageUpdated,
+  onMessageDeleted,
+}) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingContent, setEditingContent] = useState(message.content);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const handleToggleMenu = () => {
+    setIsActionsOpen(true);
     setIsMenuOpen((prev) => !prev);
   };
 
   const handleStartEdit = () => {
     setIsMenuOpen(false);
+    setIsActionsOpen(false);
     setIsEditing(true);
     setEditingContent(message.content);
   };
@@ -33,6 +39,7 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({ message, onMessageUpdat
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditingContent(message.content);
+    setIsActionsOpen(false);
   };
 
   const handleSaveEdit = async () => {
@@ -44,76 +51,90 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({ message, onMessageUpdat
       });
       onMessageUpdated?.(updated);
       setIsEditing(false);
+      setIsActionsOpen(false);
     } catch (error) {
-      // TODO: 에러 토스트 처리 가능
-      // eslint-disable-next-line no-console
-      console.error('채팅 메시지 수정 실패:', error);
+      console.error('Failed to update chat message:', error);
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm('정말 이 메시지를 삭제하시겠습니까?')) return;
+    if (!confirm('이 메시지를 삭제할까요?')) return;
     try {
       setDeleting(true);
       await deleteChatMessage(message.roomId, message.chatId);
       onMessageDeleted?.(message.chatId);
       setIsMenuOpen(false);
+      setIsActionsOpen(false);
     } catch (error) {
-      // TODO: 에러 토스트 처리 가능
-      // eslint-disable-next-line no-console
-      console.error('채팅 메시지 삭제 실패:', error);
+      console.error('Failed to delete chat message:', error);
     } finally {
       setDeleting(false);
     }
   };
 
-  return (
-    <div className="chat-message-row">
-      <div className={`chat-message-bubble ${isEditing ? 'chat-message-bubble--editing' : ''}`}>
-        {isEditing ? (
-          <input
-            className="chat-message-edit-input"
-            value={editingContent}
-            onChange={(e) => setEditingContent(e.target.value)}
-          />
-        ) : (
-          <span className="chat-message-text">{message.content}</span>
-        )}
+  const handleBubbleClick = () => {
+    if (isEditing) return;
+    setIsActionsOpen((prev) => !prev);
+    if (isMenuOpen) {
+      setIsMenuOpen(false);
+    }
+  };
 
+  return (
+    <div className={`chat-message-row ${isActionsOpen || isMenuOpen ? 'show-actions' : ''}`}>
+      <div className="chat-message-line">
+        <div
+          className={`chat-message-bubble ${isEditing ? 'chat-message-bubble--editing' : ''}`}
+          onClick={handleBubbleClick}
+        >
+          {isEditing ? (
+            <input
+              className="chat-message-edit-input"
+              value={editingContent}
+              onChange={(e) => setEditingContent(e.target.value)}
+            />
+          ) : (
+            <span className="chat-message-text">{message.content}</span>
+          )}
+        </div>
         {!isEditing && (
-          <div className="chat-message-actions">
-            <button
-              type="button"
-              className="chat-message-action-button"
-              aria-label="이모티콘 추가"
-            >
-              <i className="ri-emotion-happy-line"></i>
-            </button>
-            <button
-              type="button"
-              className={`chat-message-action-button ${
-                isMenuOpen ? 'chat-message-action-button--active' : ''
-              }`}
-              aria-label="더보기"
-              onClick={handleToggleMenu}
-            >
-              <i className="ri-more-fill"></i>
-            </button>
-          </div>
+          <div className={`chat-message-time ${showTimestamp ? '' : 'is-hidden'}`}>{timestamp}</div>
         )}
       </div>
 
-      {isMenuOpen && !isEditing && (
-        <div className="chat-message-more-menu">
+      {!isEditing && (
+        <div className="chat-message-actions">
           <button
             type="button"
-            className="chat-message-more-menu-item"
-            onClick={handleStartEdit}
+            className="chat-message-action-button"
+            aria-label="이모지 추가"
+            onClick={(event) => event.stopPropagation()}
           >
+            <i className="ri-emotion-happy-line"></i>
+          </button>
+          <button
+            type="button"
+            className={`chat-message-action-button ${
+              isMenuOpen ? 'chat-message-action-button--active' : ''
+            }`}
+            aria-label="더보기"
+            onClick={(event) => {
+              event.stopPropagation();
+              handleToggleMenu();
+            }}
+          >
+            <i className="ri-more-fill"></i>
+          </button>
+        </div>
+      )}
+
+      {isMenuOpen && !isEditing && (
+        <div className="chat-message-more-menu">
+          <button type="button" className="chat-message-more-menu-item" onClick={handleStartEdit}>
             <i className="ri-pencil-line"></i>
-            <span>편집</span>
+            <span>수정</span>
           </button>
           <button
             type="button"
@@ -152,5 +173,3 @@ const ChatMessageRow: React.FC<ChatMessageRowProps> = ({ message, onMessageUpdat
 };
 
 export default ChatMessageRow;
-
-

@@ -6,7 +6,9 @@ export interface ShoppingItem {
   displayName: string;
   quantity: number;
   isChecked: boolean;
-  purchaseType: 'online' | 'offline' | null;
+  purchaseType: 'online' | 'offline' | 'ai' | null;
+  itemSize: string | null; // AI 추천 상품 사이즈
+  reason: string | null; // AI 추천 이유
 }
 
 export interface ShoppingListResponse {

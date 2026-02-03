@@ -48,6 +48,69 @@
   width: 100%;
 }
 
+/* 페이징: << < 1 2 3 ... > >> (평소 버튼 없음, 선택된 페이지만 회색 원) */
+.product-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 32px;
+  padding: 20px 0;
+}
+
+.pagination-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 14px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  color: #333;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-btn-icon {
+  font-size: 16px;
+}
+
+.pagination-numbers {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pagination-btn-num {
+  font-weight: 400;
+  color: #555;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.pagination-btn-num:hover:not(:disabled):not(.active) {
+  color: #333;
+}
+
+.pagination-btn-num.active {
+  color: #555;
+  background: #e0e0e0;
+  font-weight: 500;
+}
+
 /* 상품 카드 */
 .product-card {
   background: white;

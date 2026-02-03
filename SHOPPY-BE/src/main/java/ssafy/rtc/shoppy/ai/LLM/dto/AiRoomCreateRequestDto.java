@@ -6,10 +6,6 @@ import jakarta.validation.constraints.NotNull;
 public record AiRoomCreateRequestDto(
         @NotNull
         @Valid
-        RoomMetaRequestDto roomMeta,
-
-        @NotNull
-        @Valid
-        RoomConstraintsRequestDto roomConstraints
+        RoomMetaRequestDto roomMeta
 ) {
 }

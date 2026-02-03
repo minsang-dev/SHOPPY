@@ -1,13 +1,18 @@
 import React from 'react';
 import type { RoomMember } from '@/entities/room/types/room.types';
+import UserAvatar from '@/shared/ui/UserAvatar';
 import './ParticipantCard.css';
 
 interface ParticipantCardProps {
   participant: RoomMember;
+  /** 입장 순서 인덱스 (0~9) - 10개 색상 목록 순서와 일치 */
+  colorKey?: number;
   onSelect?: (participant: RoomMember) => void;
   isSelf?: boolean;
   micOn?: boolean;
   camOn?: boolean;
+  remoteMicMuted?: boolean;
+  remoteCamHidden?: boolean;
   onToggleMic?: () => void;
   onToggleCam?: () => void;
   onToggleRemoteMic?: () => void;
@@ -16,22 +21,22 @@ interface ParticipantCardProps {
 
 const ParticipantCard: React.FC<ParticipantCardProps> = ({
   participant,
+  colorKey,
   onSelect,
   isSelf = false,
   micOn,
   camOn,
+  remoteMicMuted = false,
+  remoteCamHidden = false,
   onToggleMic,
   onToggleCam,
   onToggleRemoteMic,
   onToggleRemoteCam,
 }) => {
-  // 초성 추출 (첫 글자)
-  const getInitial = (name: string): string => {
-    return name.charAt(0);
-  };
-
-  const isActive = isSelf ? camOn ?? participant.isCameraOn : participant.isCameraOn;
-  const isMicOn = isSelf ? micOn ?? true : participant.isCameraOn;
+  const isActive = isSelf
+    ? camOn ?? participant.isCameraOn
+    : participant.isCameraOn && !remoteCamHidden;
+  const isMicOn = isSelf ? micOn ?? true : !remoteMicMuted;
   const isHost = participant.role === 'HOST';
 
   return (
@@ -51,10 +56,12 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({
       }}
     >
       {/* 아바타 */}
-      <div className="participant-card-avatar">
-        <div className={`participant-card-avatar-inner ${isActive ? 'active' : ''}`}>
-          {getInitial(participant.nickname)}
-        </div>
+      <div className={`participant-card-avatar ${isActive ? 'active' : ''}`}>
+        <UserAvatar
+          name={participant.nickname}
+          colorKey={colorKey ?? participant.memberId}
+          size="lg"
+        />
       </div>
 
       {/* 참여자 정보 */}
@@ -62,7 +69,10 @@ const ParticipantCard: React.FC<ParticipantCardProps> = ({
         <div className="participant-card-name">
           <span>{participant.nickname}</span>
           {isHost && (
-            <i className="ri-vip-crown-fill participant-crown-icon" aria-label="호스트"></i>
+            <span className="participant-host-badge" aria-label="호스트">
+              <i className="ri-vip-crown-fill" aria-hidden />
+              호스트
+            </span>
           )}
         </div>
         <div className="participant-card-icons">

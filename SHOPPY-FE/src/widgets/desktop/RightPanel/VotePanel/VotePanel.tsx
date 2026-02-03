@@ -138,7 +138,7 @@ const VotePanel: React.FC = () => {
             </div>
 
             <div className="vote-detail-actions">
-              {voteDetail.status === 'OPEN' && (
+              {isHost && voteDetail.status === 'OPEN' && (
                 <button
                   className="vote-close-button"
                   onClick={() => setIsCloseModalOpen(true)}
@@ -227,11 +227,9 @@ const VotePanel: React.FC = () => {
             )}
           </div>
 
-          {isHost && (
-            <button className="vote-create-button" onClick={handleCreateVote}>
-              + 새 투표 생성하기
-            </button>
-          )}
+          <button className="vote-create-button" onClick={handleCreateVote}>
+            + 새 투표 생성하기
+          </button>
         </>
       )}
 
