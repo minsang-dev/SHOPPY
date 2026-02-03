@@ -1,4 +1,4 @@
-﻿.mobile-settlement-result-page {
+.mobile-settlement-result-page {
   min-height: 100dvh;
   display: flex;
   justify-content: stretch;
@@ -6,6 +6,11 @@
   background: #ffffff;
   font-family: 'Sora', 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
   color: #111827;
+}
+
+.mobile-settlement-result-page.is-embedded {
+  min-height: 100%;
+  height: 100%;
 }
 
 .mobile-settlement-result-shell {
@@ -18,6 +23,11 @@
   align-content: start;
   gap: 14px;
   overflow: auto;
+}
+
+.mobile-settlement-result-shell.is-embedded {
+  height: 100%;
+  padding: 0;
 }
 
 .mobile-settlement-result-header {

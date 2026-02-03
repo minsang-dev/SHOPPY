@@ -39,6 +39,7 @@
   grid-template-rows: auto 1fr auto;
   gap: 10px;
   min-height: 0;
+  height: 100%;
   flex: 1 1 auto;
   overflow: hidden;
   border: 1px solid #e5e7eb;
@@ -524,6 +525,13 @@
   border-radius: 12px;
   padding: 12px;
   text-align: center;
+}
+
+.mobile-vote-empty-fill {
+  min-height: clamp(120px, 24vh, 220px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mobile-panel-item {

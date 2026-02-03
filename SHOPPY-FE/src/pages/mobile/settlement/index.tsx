@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { getRoomMembers } from '../../../entities/room/api/room';
 import type { RoomMember } from '../../../entities/room/types/room.types';
 import UserAvatar from '../../../shared/ui/UserAvatar';
@@ -10,8 +10,13 @@ import './styles.css';
 
 const EMPTY_ITEMS: ReturnType<typeof useSettlementStore.getState>['settlementItemsByRoom'][string] = [];
 
-const MobileSettlementPage: React.FC = () => {
+interface MobileSettlementPageProps {
+  embedded?: boolean;
+}
+
+const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = false }) => {
   const navigate = useNavigate();
+  const routeParams = useParams<{ roomId?: string }>();
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [showManualInput, setShowManualInput] = useState(false);
@@ -40,8 +45,8 @@ const MobileSettlementPage: React.FC = () => {
 
   const roomId = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('room_id') ?? sessionStorage.getItem('roomId') ?? '';
-  }, []);
+    return routeParams.roomId ?? params.get('room_id') ?? sessionStorage.getItem('roomId') ?? '';
+  }, [routeParams.roomId]);
 
   const settlementItemsByRoom = useSettlementStore((state) => state.settlementItemsByRoom);
   const items = roomId ? settlementItemsByRoom[roomId] ?? EMPTY_ITEMS : EMPTY_ITEMS;
@@ -337,15 +342,17 @@ const MobileSettlementPage: React.FC = () => {
   };
 
   return (
-    <div className="mobile-settlement-page">
-      <div className="mobile-settlement-shell">
-        <div className="mobile-settlement-header">
-          <button type="button" className="mobile-settlement-back" onClick={() => navigate(-1)}>
-            <i className="ri-arrow-left-line" />
-          </button>
-          <h1 className="mobile-settlement-title">정산하기</h1>
-          <div className="mobile-settlement-spacer" />
-        </div>
+    <div className={`mobile-settlement-page ${embedded ? 'is-embedded' : ''}`}>
+      <div className={`mobile-settlement-shell ${embedded ? 'is-embedded' : ''}`}>
+        {!embedded && (
+          <div className="mobile-settlement-header">
+            <button type="button" className="mobile-settlement-back" onClick={() => navigate(-1)}>
+              <i className="ri-arrow-left-line" />
+            </button>
+            <h1 className="mobile-settlement-title">정산하기</h1>
+            <div className="mobile-settlement-spacer" />
+          </div>
+        )}
 
         <div className="mobile-settlement-content">
           <section className="mobile-settlement-section">
@@ -599,7 +606,11 @@ const MobileSettlementPage: React.FC = () => {
                 className="mobile-settlement-manual-submit"
                 onClick={() => {
                   setShowFinalizeConfirm(false);
-                  navigate(`/m/settlement/result?room_id=${encodeURIComponent(roomId)}`);
+                  if (!roomId) {
+                    navigate('/m');
+                    return;
+                  }
+                  navigate(`/m/room/${encodeURIComponent(roomId)}/settlement/result`);
                 }}
               >
                 완료
