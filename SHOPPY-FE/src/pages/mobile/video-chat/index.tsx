@@ -1,8 +1,7 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import MobileBottomNav from '../../../widgets/mobile/Mobile/MobileBottomNav';
 import MobileCameraStage from '../../../widgets/mobile/Mobile/MobileCameraStage';
-import MobilePanelHost from '../../../widgets/mobile/Mobile/MobilePanelHost';
 import type { PanelType } from '../../../widgets/mobile/Mobile/MobilePanelHost';
 import MobileTopBar from '../../../widgets/mobile/Mobile/MobileTopBar';
 import { realtimeConfig } from '../../../shared/config/realtime';
@@ -14,6 +13,7 @@ import './styles.css';
 
 const MobileVideoChatPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activePanel, setActivePanel] = useState<PanelType>('cart');
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
@@ -60,11 +60,46 @@ const MobileVideoChatPage: React.FC = () => {
 
   const handleEndShopping = () => {
     if (!roomId) {
-      navigate('/m/settlement');
+      navigate('/m');
       return;
     }
-    navigate(`/m/settlement?room_id=${encodeURIComponent(roomId)}`);
+
+    // ?? ?? ? ???? ?? ?? ???? ??
+    setCamOn(false);
+    navigate(`/m/room/${encodeURIComponent(roomId)}/settlement`);
   };
+
+  const handleChangePanel = (panel: PanelType) => {
+    setActivePanel(panel);
+    if (!roomId) return;
+    if (location.pathname !== `/m/room/${roomId}`) {
+      navigate(`/m/room/${encodeURIComponent(roomId)}`);
+    }
+  };
+  const isSettlementRoute = location.pathname.includes('/settlement');
+
+  const handleTopBarBack = () => {
+    if (isSettlementRoute) {
+      setCamOn(true);
+      if (roomId) {
+        navigate(`/m/room/${encodeURIComponent(roomId)}`);
+      } else {
+        navigate('/m/room');
+      }
+      return;
+    }
+
+    leaveByButton();
+  };
+
+  const wasSettlementRouteRef = useRef(false);
+
+  useEffect(() => {
+    if (wasSettlementRouteRef.current && !isSettlementRoute) {
+      setCamOn(true);
+    }
+    wasSettlementRouteRef.current = isSettlementRoute;
+  }, [isSettlementRoute]);
 
   const { isConnected, setPublishAudio, setPublishVideo, switchCamera } = useOpenViduSession({
     enabled: realtimeReady,
@@ -128,9 +163,9 @@ const MobileVideoChatPage: React.FC = () => {
   return (
     <RoomMembersProvider roomId={roomId}>
       <div className="mobile-room-page" data-realtime-ready={realtimeReady ? 'true' : 'false'}>
-        <div className="mobile-room-shell">
+        <div className={`mobile-room-shell ${isSettlementRoute ? 'is-settlement' : ''}`}>
           <MobileTopBar
-            onExit={leaveByButton}
+            onExit={handleTopBarBack}
             title={room?.roomName ?? 'shoppy'}
             backLabel="Go back"
             micOnLabel="Mute microphone"
@@ -143,54 +178,51 @@ const MobileVideoChatPage: React.FC = () => {
             onToggleCam={handleToggleCam}
             onSwitchCamera={handleSwitchCamera}
             cameraFacingMode={cameraFacingMode}
-            cameraSwitchLabel="카메라 전환"
+            cameraSwitchLabel="카메???�환"
             showControls={false}
           />
-
-          <MobileCameraStage
-            videoRef={localVideoRef}
-            hasVideo={isConnected && camOn}
-            mirror={cameraFacingMode === 'user'}
-          />
-          <div className="mobile-camera-controls">
-            <button
-              type="button"
-              className={`mobile-topbar-icon ${micOn ? '' : 'is-off'}`}
-              onClick={handleToggleMic}
-              aria-label={micOn ? 'Mute microphone' : 'Unmute microphone'}
-            >
-              <i className={micOn ? 'ri-mic-fill' : 'ri-mic-off-fill'} />
-            </button>
-            <button
-              type="button"
-              className={`mobile-topbar-icon ${camOn ? '' : 'is-off'}`}
-              onClick={handleToggleCam}
-              aria-label={camOn ? 'Turn off camera' : 'Turn on camera'}
-            >
-              <i className={camOn ? 'ri-camera-fill' : 'ri-camera-off-line'} />
-            </button>
-            <button
-              type="button"
-              className="mobile-topbar-icon"
-              onClick={handleSwitchCamera}
-              aria-label="카메라 전환"
-              title="카메라 전환"
-              disabled={!camOn}
-              data-facing={cameraFacingMode}
-            >
-              <i className="ri-camera-switch-line" />
-            </button>
+          <div className={`mobile-camera-section ${isSettlementRoute ? 'is-hidden' : ''}`}>
+            <MobileCameraStage
+              videoRef={localVideoRef}
+              hasVideo={isConnected && camOn}
+              mirror={cameraFacingMode === 'user'}
+            />
+            <div className="mobile-camera-controls">
+              <button
+                type="button"
+                className={`mobile-topbar-icon ${micOn ? '' : 'is-off'}`}
+                onClick={handleToggleMic}
+                aria-label={micOn ? 'Mute microphone' : 'Unmute microphone'}
+              >
+                <i className={micOn ? 'ri-mic-fill' : 'ri-mic-off-fill'} />
+              </button>
+              <button
+                type="button"
+                className={`mobile-topbar-icon ${camOn ? '' : 'is-off'}`}
+                onClick={handleToggleCam}
+                aria-label={camOn ? 'Turn off camera' : 'Turn on camera'}
+              >
+                <i className={camOn ? 'ri-camera-fill' : 'ri-camera-off-line'} />
+              </button>
+              <button
+                type="button"
+                className="mobile-topbar-icon"
+                onClick={handleSwitchCamera}
+                aria-label="??? ??"
+                title="??? ??"
+                disabled={!camOn}
+                data-facing={cameraFacingMode}
+              >
+                <i className="ri-camera-switch-line" />
+              </button>
+            </div>
           </div>
 
           <div className="mobile-room-panel">
-            <MobilePanelHost
-              activePanel={activePanel}
-              roomId={roomId}
-              onEndShopping={handleEndShopping}
-            />
+            <Outlet context={{ roomId, activePanel, onEndShopping: handleEndShopping }} />
           </div>
 
-          <MobileBottomNav active={activePanel} onChange={setActivePanel} />
+          {!isSettlementRoute && <MobileBottomNav active={activePanel} onChange={handleChangePanel} />}
         </div>
       </div>
     </RoomMembersProvider>

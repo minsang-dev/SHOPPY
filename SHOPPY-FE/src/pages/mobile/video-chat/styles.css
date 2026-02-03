@@ -17,11 +17,16 @@
   border-radius: 0;
   padding: clamp(10px, 2.5vw, 14px);
   box-shadow: none;
-  display: grid;
-  grid-template-rows: auto auto auto 1fr auto;
+  display: flex;
+  flex-direction: column;
   gap: clamp(8px, 2vw, 12px);
+  overflow: hidden;
   padding-top: calc(clamp(10px, 2.5vw, 14px) + env(safe-area-inset-top));
-  padding-bottom: calc(clamp(10px, 2.5vw, 14px) + env(safe-area-inset-bottom));
+  padding-bottom: clamp(10px, 2.5vw, 14px);
+}
+
+.mobile-room-shell.is-settlement {
+  gap: clamp(8px, 2vw, 12px);
 }
 
 @media (max-width: 480px) {
@@ -57,14 +62,32 @@
 
 .mobile-room-panel {
   min-height: 0;
+  height: 100%;
+  flex: 1 1 auto;
+  display: flex;
   overflow: hidden;
 }
 
+.mobile-room-panel > * {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.mobile-camera-section {
+  display: grid;
+  gap: 8px;
+}
+
 .mobile-camera-controls {
-  display: inline-flex;
+  display: flex;
+  width: 100%;
   gap: 8px;
   align-items: center;
   justify-content: center;
+}
+
+.mobile-camera-section.is-hidden {
+  display: none;
 }
 
 .mobile-room-scan {

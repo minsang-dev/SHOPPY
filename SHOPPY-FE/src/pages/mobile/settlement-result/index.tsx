@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import UserAvatar from '@/shared/ui/UserAvatar';
 import { getRoomMembers } from '@/entities/room/api/room';
 import type { RoomMember } from '@/entities/room/types/room.types';
@@ -16,13 +16,18 @@ type TransferRow = {
 
 const EMPTY_ITEMS: ReturnType<typeof useSettlementStore.getState>['settlementItemsByRoom'][string] = [];
 
-const MobileSettlementResultPage: React.FC = () => {
+interface MobileSettlementResultPageProps {
+  embedded?: boolean;
+}
+
+const MobileSettlementResultPage: React.FC<MobileSettlementResultPageProps> = ({ embedded = false }) => {
   const navigate = useNavigate();
+  const routeParams = useParams<{ roomId?: string }>();
   const [members, setMembers] = useState<RoomMember[]>([]);
   const [selectedTransfer, setSelectedTransfer] = useState<TransferRow | null>(null);
 
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
-  const roomId = params.get('room_id') ?? sessionStorage.getItem('roomId') ?? '';
+  const roomId = routeParams.roomId ?? params.get('room_id') ?? sessionStorage.getItem('roomId') ?? '';
   const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
 
   const settlementItemsByRoom = useSettlementStore((state) => state.settlementItemsByRoom);
@@ -79,7 +84,9 @@ const MobileSettlementResultPage: React.FC = () => {
     return Array.from(map.values());
   }, [items]);
 
-  const myTransfers = transferRows.filter((row) => row.fromMemberId === currentMemberId);
+  const myTransfers = transferRows.filter(
+    (row) => row.fromMemberId === currentMemberId && row.toMemberId !== currentMemberId,
+  );
 
   const getMemberName = (memberId: number) =>
     members.find((member) => member.memberId === memberId)?.nickname ?? `멤버 ${memberId}`;
@@ -87,15 +94,21 @@ const MobileSettlementResultPage: React.FC = () => {
   const getTransferDone = (row: TransferRow) => transferStatus[`${row.fromMemberId}->${row.toMemberId}`] ?? false;
 
   return (
-    <div className="mobile-settlement-result-page">
-      <div className="mobile-settlement-result-shell">
-        <div className="mobile-settlement-result-header">
-          <button type="button" className="mobile-settlement-result-back" onClick={() => navigate(-1)}>
-            <i className="ri-arrow-left-line" />
-          </button>
-          <h1>정산하기</h1>
-          <div className="mobile-settlement-result-spacer" />
-        </div>
+    <div className={`mobile-settlement-result-page ${embedded ? 'is-embedded' : ''}`}>
+      <div className={`mobile-settlement-result-shell ${embedded ? 'is-embedded' : ''}`}>
+        {!embedded && (
+          <div className="mobile-settlement-result-header">
+            <button
+              type="button"
+              className="mobile-settlement-result-back"
+              onClick={() => (roomId ? navigate(`/m/room/${encodeURIComponent(roomId)}/settlement`) : navigate(-1))}
+            >
+              <i className="ri-arrow-left-line" />
+            </button>
+            <h1>정산하기</h1>
+            <div className="mobile-settlement-result-spacer" />
+          </div>
+        )}
 
         <section className="mobile-settlement-result-section">
           <h2>내가 보낼 금액</h2>
