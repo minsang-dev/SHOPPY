@@ -112,7 +112,7 @@ const CartPanel: React.FC = () => {
         .map((i) => i.productId as number);
       if (onlineIds.length > 0) {
         try {
-          const products = await getProductList();
+          const { products } = await getProductList();
           const map: ProductMetaMap = {};
           products.forEach((p) => {
             map[p.product_id] = { imageUrl: p.image_url, price: p.price };
@@ -186,8 +186,8 @@ const CartPanel: React.FC = () => {
               });
               // 새 온라인 상품의 가격 정보 조회 → productMetaMap 갱신 (총액 실시간 반영)
               if (isOnlineItem(newItem) && newItem.productId != null) {
-                void getProductList().then((products) => {
-                  const found = products.find((p) => p.product_id === newItem.productId);
+                void getProductList().then((result) => {
+                  const found = result.products.find((p) => p.product_id === newItem.productId);
                   if (found) {
                     setProductMetaMap((prev) =>
                       prev[found.product_id]

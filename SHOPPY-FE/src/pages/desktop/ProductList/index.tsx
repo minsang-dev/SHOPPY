@@ -8,10 +8,12 @@ import SearchBar from '@/widgets/desktop/SearchBar/SearchBar';
 import SortOptions from '@/widgets/desktop/SortOptions/SortOptions';
 import './styles.css';
 
+const PAGE_SIZE = 20;
+
 const DesktopProductList = () => {
   const { roomId } = useParams<{ roomId?: string }>();
   const [searchParams] = useSearchParams();
-  const { products, loading, error, search } = useProductList();
+  const { products, loading, error, search, pagination } = useProductList({ pageSize: PAGE_SIZE });
   const addToCart = useAddToCart(roomId || null);
 
   const keywordFromUrl = searchParams.get('keyword');
@@ -86,6 +88,33 @@ const DesktopProductList = () => {
             </div>
           ))}
         </div>
+
+        {/* 페이징 */}
+        {pagination && pagination.totalPages > 1 && (
+          <nav className="product-pagination" aria-label="상품 목록 페이지">
+            <button
+              type="button"
+              className="pagination-btn"
+              disabled={pagination.currentPage <= 0}
+              onClick={() => pagination.goToPage(pagination.currentPage - 1)}
+              aria-label="이전 페이지"
+            >
+              이전
+            </button>
+            <span className="pagination-info">
+              {pagination.currentPage + 1} / {pagination.totalPages} (총 {pagination.totalElements}개)
+            </span>
+            <button
+              type="button"
+              className="pagination-btn"
+              disabled={pagination.currentPage >= pagination.totalPages - 1}
+              onClick={() => pagination.goToPage(pagination.currentPage + 1)}
+              aria-label="다음 페이지"
+            >
+              다음
+            </button>
+          </nav>
+        )}
       </div>
     </div>
   );

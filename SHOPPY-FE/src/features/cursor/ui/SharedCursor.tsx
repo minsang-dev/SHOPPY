@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { AVATAR_GRADIENTS } from '@/shared/ui/UserAvatar/UserAvatar';
+import { AVATAR_GRADIENTS } from '@/shared/ui/UserAvatar/UserAvatar.constants';
 import { useRoomMembersContext } from '@/features/room/fetch-members/model/RoomMembersProvider';
 import type { CursorData } from '../model/useCursorRealtime';
 import './SharedCursor.css';
