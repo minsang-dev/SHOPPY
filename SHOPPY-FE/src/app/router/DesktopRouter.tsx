@@ -24,8 +24,8 @@ const AppRouter = () => {
       <Route index element={<DesktopMainPage />} />
       <Route path="products" element={<DesktopProductList />} />
       <Route path="myPage/:userId" element={<MyPage />} />
-      <Route path="rooms/:roomId/settlement" element={<DesktopSettlementPage />} />
-      <Route path="rooms/:roomId/settlement/result" element={<DesktopSettlementResultPage />} />
+      {/* <Route path="rooms/:roomId/settlement" element={<DesktopSettlementPage />} />
+      <Route path="rooms/:roomId/settlement/result" element={<DesktopSettlementResultPage />} /> */}
 
       {/* 카카오 OAuth 콜백 */}
       <Route path="auth/kakao/callback" element={<KakaoCallbackPage />} />
@@ -36,6 +36,8 @@ const AppRouter = () => {
         <Route index element={<DesktopMainPage />} />
         <Route path="products" element={<DesktopProductList />} />
         <Route path="checkout" element={<DesktopCheckoutPage />} />
+        <Route path="settlement" element={<DesktopSettlementPage />} />
+        <Route path="settlement/result" element={<DesktopSettlementResultPage />} />
       </Route>
 
     </Routes>
