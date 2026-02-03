@@ -42,14 +42,20 @@ export const useJoinRoom = () => {
         const joinRes = await joinRoomAsUser({ roomCode: payload.roomCode });
         roomId = joinRes.roomId;
         sessionStorage.setItem('memberId', String(joinRes.memberId));
+        // 로그인 사용자 닉네임 저장 (공유 커서용)
+        if (user?.nickname) {
+          sessionStorage.setItem('memberNickname', user.nickname);
+        }
       } else {
         // 게스트: POST /rooms/join/guest
-        const joinRes = await joinRoomAsGuest({ 
-          roomCode: payload.roomCode, 
-          nickname: payload.nickname 
+        const joinRes = await joinRoomAsGuest({
+          roomCode: payload.roomCode,
+          nickname: payload.nickname
         });
         roomId = joinRes.member.roomId;
         sessionStorage.setItem('memberId', String(joinRes.member.memberId));
+        // 게스트 닉네임 저장 (공유 커서용)
+        sessionStorage.setItem('memberNickname', payload.nickname);
         // 게스트 토큰 저장
         if (joinRes.accessToken) {
           sessionStorage.setItem('accessToken', joinRes.accessToken);
