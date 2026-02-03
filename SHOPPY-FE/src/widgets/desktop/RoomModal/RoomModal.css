@@ -497,10 +497,28 @@
 /* step-content 내 본문 요소: 제목/설명과 왼쪽 정렬, 상하 간격은 gap으로만 */
 .step-content > .form-field,
 .step-content > .option-grid,
+.step-content > .category-step-content,
 .step-content > .trait-groups,
 .step-content > .selected-tags,
 .step-content > .form-tip {
   margin-left: 1rem;
+}
+
+.category-step-content {
+  --category-gap: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--category-gap);
+}
+
+.category-select-all-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--category-gap);
+}
+
+.category-step-content .option-grid {
+  gap: var(--category-gap);
 }
 
 .step-content > .selected-tags {
@@ -688,7 +706,8 @@
     font-size: 0.875rem;
   }
 
-  .option-grid {
+  .option-grid,
+  .category-select-all-row {
     grid-template-columns: repeat(2, 1fr);
   }
 }

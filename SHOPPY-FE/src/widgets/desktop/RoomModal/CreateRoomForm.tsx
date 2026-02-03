@@ -5,7 +5,10 @@ import type {
   InterestCategory,
   ShoppingTrait,
 } from '../../../entities/room/types/desktopRoomModal.types';
-import { MUTUALLY_EXCLUSIVE_TRAITS } from '../../../entities/room/types/desktopRoomModal.types';
+import {
+  MUTUALLY_EXCLUSIVE_TRAITS,
+  ALL_INTEREST_CATEGORIES,
+} from '../../../entities/room/types/desktopRoomModal.types';
 import './RoomModal.css';
 
 interface CreateRoomFormProps {
@@ -52,13 +55,6 @@ const TRAIT_GROUPS: { groupLabel: string; traits: { value: ShoppingTrait; label:
     traits: [
       { value: 'BULK', label: '대용량' },
       { value: 'MINIMAL', label: '소용량' },
-    ],
-  },
-  {
-    groupLabel: '주류',
-    traits: [
-      { value: 'ALCOHOL_YES', label: '주류 포함' },
-      { value: 'ALCOHOL_NO', label: '주류 제외' },
     ],
   },
   {
@@ -203,6 +199,12 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
     handleChange('categories', newCategories);
   };
 
+  // 전체 선택 / 전체 해제 토글
+  const toggleAllCategories = () => {
+    const allSelected = formData.categories.length === ALL_INTEREST_CATEGORIES.length;
+    handleChange('categories', allSelected ? [] : [...ALL_INTEREST_CATEGORIES]);
+  };
+
   // 특성 토글 (상호배타 체크)
   const toggleTrait = (trait: ShoppingTrait) => {
     let newTraits = [...formData.traits];
@@ -330,27 +332,41 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
           </div>
         );
 
-      case 3:
+      case 3: {
+        const allCategoriesSelected = formData.categories.length === ALL_INTEREST_CATEGORIES.length;
         return (
           <div className="step-content">
             <h3 className="step-title">관심 카테고리</h3>
             <p className="step-description">관심있는 카테고리를 선택해주세요. (복수 선택 가능)</p>
 
-            <div className="option-grid">
-              {CATEGORY_OPTIONS.map((option) => (
+            <div className="category-step-content">
+              <div className="category-select-all-row">
                 <button
-                  key={option.value}
                   type="button"
-                  className={`option-card ${formData.categories.includes(option.value) ? 'selected' : ''}`}
-                  onClick={() => toggleCategory(option.value)}
+                  className={`option-card ${allCategoriesSelected ? 'selected' : ''}`}
+                  onClick={toggleAllCategories}
                 >
-                  <span className="option-emoji">{option.emoji}</span>
-                  <span className="option-label">{option.label}</span>
+                  <span className="option-emoji">✓</span>
+                  <span className="option-label">전체 선택</span>
                 </button>
-              ))}
+              </div>
+              <div className="option-grid">
+                {CATEGORY_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`option-card ${formData.categories.includes(option.value) ? 'selected' : ''}`}
+                    onClick={() => toggleCategory(option.value)}
+                  >
+                    <span className="option-emoji">{option.emoji}</span>
+                    <span className="option-label">{option.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         );
+      }
 
       case 4:
         return (

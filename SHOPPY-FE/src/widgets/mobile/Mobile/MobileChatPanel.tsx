@@ -198,6 +198,16 @@ const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ roomId }) => {
   const getParticipant = (senderMemberId: number): RoomMember | undefined =>
     participants.find((p) => p.memberId === senderMemberId);
 
+  const participantsByJoinOrder = useMemo(
+    () => [...participants].sort((a, b) => new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime()),
+    [participants],
+  );
+
+  const getColorKeyByMemberId = (memberId: number): number => {
+    const index = participantsByJoinOrder.findIndex((p) => p.memberId === memberId);
+    return index >= 0 ? index : memberId;
+  };
+
   const isMyMessage = (senderMemberId: number, senderName: string): boolean => {
     if (currentMemberId !== null) {
       return senderMemberId === currentMemberId;
@@ -262,7 +272,7 @@ const MobileChatPanel: React.FC<MobileChatPanelProps> = ({ roomId }) => {
                     <div className="mobile-panel-chat-other-row">
                       <UserAvatar
                         name={senderName}
-                        colorKey={message.senderMemberId}
+                        colorKey={getColorKeyByMemberId(message.senderMemberId)}
                         size="sm"
                         className="mobile-panel-chat-avatar"
                       />
