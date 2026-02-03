@@ -52,6 +52,11 @@ app:
 
 gms:
   api-key: ${GMS_API_KEY}
+  ocr:
+    model: gpt-5.2-pro
+
+ocr:
+  enabled: true
 
 presence:
   ttl-seconds: 60

@@ -5,66 +5,73 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
 /**
- * API 에러 코드 정의
- * HTTP 상태코드와 에러 코드를 매핑합니다.
+ * API ?? ?? ??
+ * HTTP ????? ?? ??? ?????.
  */
 @Getter
 @RequiredArgsConstructor
 public enum ErrorCode {
 
     // 400 Bad Request
-    HOST_URL_REQUIRED(HttpStatus.BAD_REQUEST, "호스트 URL이 필요합니다."),
-    SYNC_MODE_NOT_FOLLOW(HttpStatus.BAD_REQUEST, "FOLLOW 모드에서만 가능합니다."),
-    INVALID_ARGUMENT(HttpStatus.BAD_REQUEST, "잘못된 요청 값입니다."),
-    MISSING_FIELD(HttpStatus.BAD_REQUEST, "필수 필드가 누락되었습니다."),
-    INVALID_FORMAT(HttpStatus.BAD_REQUEST, "올바르지 않은 형식입니다."),
-    OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "허용 범위를 벗어났습니다."),
-    DUPLICATE_VALUE(HttpStatus.BAD_REQUEST, "중복된 값입니다."),
+    HOST_URL_REQUIRED(HttpStatus.BAD_REQUEST, "??? URL? ?????."),
+    SYNC_MODE_NOT_FOLLOW(HttpStatus.BAD_REQUEST, "FOLLOW ????? ?????."),
+    INVALID_ARGUMENT(HttpStatus.BAD_REQUEST, "??? ?? ????."),
+    MISSING_FIELD(HttpStatus.BAD_REQUEST, "?? ??? ???????."),
+    INVALID_FORMAT(HttpStatus.BAD_REQUEST, "???? ?? ?????."),
+    OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "?? ??? ??????."),
+    DUPLICATE_VALUE(HttpStatus.BAD_REQUEST, "??? ????."),
+
+    // OCR (400/413/415/422/502)
+    OCR_400_NO_FILE(HttpStatus.BAD_REQUEST, "OCR ??? ??? ?????."),
+    OCR_413_FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "?? ??? ?? ???."),
+    OCR_415_UNSUPPORTED_FORMAT(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "???? ?? ?????."),
+    OCR_422_PARSE_FAIL(HttpStatus.UNPROCESSABLE_ENTITY, "OCR ?? ?? ??"),
+    OCR_502_GPT_UPSTREAM_FAIL(HttpStatus.BAD_GATEWAY, "OCR ?? ?? ?? ??"),
 
     // 401 Unauthorized
-    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
-    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다."),
-    TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
-    REFRESH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "Refresh Token이 만료되었습니다."),
-    REFRESH_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 Refresh Token입니다."),
+    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "??? ?????."),
+    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "??? ???????."),
+    TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "???? ?? ?????."),
+    REFRESH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "Refresh Token? ???????."),
+    REFRESH_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "???? ?? Refresh Token???."),
 
     // 403 Forbidden
-    FORBIDDEN(HttpStatus.FORBIDDEN, "권한이 없습니다."),
-    HOST_ONLY(HttpStatus.FORBIDDEN, "호스트만 수행할 수 있습니다."),
-    UNAUTHORIZED_MEMBER(HttpStatus.FORBIDDEN, "권한이 없는 멤버입니다."),
+    FORBIDDEN(HttpStatus.FORBIDDEN, "??? ????."),
+    HOST_ONLY(HttpStatus.FORBIDDEN, "???? ??? ? ????."),
+    UNAUTHORIZED_MEMBER(HttpStatus.FORBIDDEN, "??? ?? ?????."),
 
     // 404 Not Found
-    NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다."),
-    ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "방을 찾을 수 없습니다."),
-    ROOM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "방 참여자를 찾을 수 없습니다."),
-    INVALID_ROOM_MEMBER(HttpStatus.BAD_REQUEST, "해당 방의 참여자가 아닙니다."),
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
-    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다."),
-    PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."),
-    VOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "투표를 찾을 수 없습니다."),
-    VOTE_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "투표 항목을 찾을 수 없습니다."),
-    RECEIPT_NOT_FOUND(HttpStatus.NOT_FOUND, "영수증을 찾을 수 없습니다."),
-    SETTLEMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "정산 내역을 찾을 수 없습니다."),
-    ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "물품을 찾을 수 없습니다."),
+    NOT_FOUND(HttpStatus.NOT_FOUND, "??? ???? ?? ? ????."),
+    ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "?? ?? ? ????."),
+    ROOM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "? ???? ?? ? ????."),
+    INVALID_ROOM_MEMBER(HttpStatus.BAD_REQUEST, "?? ?? ???? ????."),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "???? ?? ? ????."),
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "??? ?? ? ????."),
+    PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "??? ?? ? ????."),
+    VOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "??? ?? ? ????."),
+    VOTE_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "?? ??? ?? ? ????."),
+    RECEIPT_NOT_FOUND(HttpStatus.NOT_FOUND, "???? ?? ? ????."),
+    SETTLEMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "?? ??? ?? ? ????."),
+    ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "??? ?? ? ????."),
 
     // 409 Conflict
-    CONFLICT(HttpStatus.CONFLICT, "리소스 충돌이 발생했습니다."),
-    ROOM_ALREADY_CLOSED(HttpStatus.CONFLICT, "이미 종료된 방입니다."),
-    ROOM_CLOSED(HttpStatus.BAD_REQUEST, "종료된 방입니다."),
-    ROOM_FULL(HttpStatus.CONFLICT, "방 인원이 가득 찼습니다."),
-    MEMBER_ALREADY_LEFT(HttpStatus.CONFLICT, "이미 퇴장한 멤버입니다."),
-    ALREADY_VOTED(HttpStatus.CONFLICT, "이미 투표에 참여했습니다."),
-    VOTE_ALREADY_CLOSED(HttpStatus.CONFLICT, "이미 종료된 투표입니다."),
-    ALREADY_DELETED(HttpStatus.CONFLICT, "이미 삭제된 메시지입니다."),
+    CONFLICT(HttpStatus.CONFLICT, "??? ??? ??????."),
+    ROOM_ALREADY_CLOSED(HttpStatus.CONFLICT, "?? ??? ????."),
+    ROOM_CLOSED(HttpStatus.BAD_REQUEST, "??? ????."),
+    ROOM_FULL(HttpStatus.CONFLICT, "? ??? ?? ????."),
+    MEMBER_ALREADY_LEFT(HttpStatus.CONFLICT, "?? ??? ?????."),
+    ALREADY_VOTED(HttpStatus.CONFLICT, "?? ??? ??????."),
+    VOTE_ALREADY_CLOSED(HttpStatus.CONFLICT, "?? ??? ?????."),
+    ALREADY_DELETED(HttpStatus.CONFLICT, "?? ??? ??????."),
 
     // 503 Service Unavailable
     MEDIA_SERVER_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Media server is unavailable."),
 
     // 500 Internal Server Error
-    AI_SERVICE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI 분석 서비스에서 예외가 발생했습니다."),
-    KAKAO_TOKEN_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "카카오 토큰 발급에 실패했습니다."),
-    KAKAO_USER_INFO_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "카카오 사용자 정보를 가져오는데 실패했습니다."),
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
+    AI_SERVICE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "AI ?? ????? ??? ??????."),
+    KAKAO_TOKEN_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "??? ?? ??? ??????."),
+    KAKAO_USER_INFO_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "??? ??? ??? ????? ??????."),
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "?? ?? ??? ??????.");
 
     private final HttpStatus httpStatus;
     private final String message;

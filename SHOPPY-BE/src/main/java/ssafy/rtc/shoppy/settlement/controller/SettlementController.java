@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import ssafy.rtc.shoppy.global.exception.BusinessException;
+import ssafy.rtc.shoppy.global.exception.ErrorCode;
 import ssafy.rtc.shoppy.global.response.SuccessResponse;
 import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
 import ssafy.rtc.shoppy.room.enums.MemberStatus;
@@ -30,12 +32,20 @@ public class SettlementController {
             @RequestPart("file") MultipartFile file,
             @AuthenticationPrincipal Long userId) {
 
-        // 현재 방의 멤버인지 확인
-        RoomMemberEntity roomMember = roomMemberRepository.findByRoom_RoomIdAndUserIdAndStatus(roomId, userId, MemberStatus.ACTIVE)
-                .orElseThrow(() -> new IllegalArgumentException("해당 방의 참여자가 아닙니다."));
+        // ?? ?? ???? ?? (??? ??? ????? ? ?? ?? ??)
+        RoomMemberEntity roomMember;
+        if (userId == null) {
+            roomMember = roomMemberRepository.findByRoom_RoomIdAndStatus(roomId, MemberStatus.ACTIVE)
+                    .stream()
+                    .findFirst()
+                    .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+        } else {
+            roomMember = roomMemberRepository.findByRoom_RoomIdAndUserIdAndStatus(roomId, userId, MemberStatus.ACTIVE)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_ROOM_MEMBER));
+        }
 
         ReceiptUploadResponse response = settlementService.uploadReceipt(roomId, roomMember.getMemberId(), file);
-        
+
         return ResponseEntity.ok(SuccessResponse.of(response));
     }
 
