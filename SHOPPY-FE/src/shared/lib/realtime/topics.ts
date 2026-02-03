@@ -53,6 +53,11 @@ export const topicVoteParticipated = (roomId: string | number) =>
 export const topicVoteClosed = (roomId: string | number) =>
   `/topic/rooms/${roomId}/votes/closed`;
 
+// 정산 웹소켓
+// 구독용: 서버에서 정산 변경 이벤트를 받을 주소
+export const topicRoomsSettlements = (roomId: string | number) =>
+  `/topic/rooms/${roomId}/settlements`;
+
 // 발행용: 서버로 메시지를 보낼 주소
 export const appVoteCreate = (roomId: string | number) =>
   `/app/rooms/${roomId}/votes/create`;

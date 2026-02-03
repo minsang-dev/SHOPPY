@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import MobileMainPage from '../../pages/mobile/main';
 import MobileSettlementPage from '../../pages/mobile/settlement';
+import MobileSettlementResultPage from '../../pages/mobile/settlement-result';
 import MobileVideoChatPage from '../../pages/mobile/video-chat';
 
 export default function MobileRouter() {
@@ -10,6 +11,7 @@ export default function MobileRouter() {
       <Route path="room/:roomId" element={<MobileVideoChatPage />} />
       <Route path="room" element={<MobileVideoChatPage />} />
       <Route path="settlement" element={<MobileSettlementPage />} />
+      <Route path="settlement/result" element={<MobileSettlementResultPage />} />
       <Route path="*" element={<Navigate to="." replace />} />
     </Routes>
   );
