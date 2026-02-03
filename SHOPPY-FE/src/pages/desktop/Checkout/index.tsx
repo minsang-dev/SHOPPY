@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getShoppingList, deleteShoppingItem } from '@/entities/shopping/api/shopping';
 import { getProductList } from '@/entities/product/api/productListApi';
@@ -25,12 +25,12 @@ const DesktopCheckoutPage: React.FC = () => {
     if (!roomId) return;
     try {
       setLoading(true);
-      const [cartRes, products] = await Promise.all([getShoppingList(roomId), getProductList()]);
+      const [cartRes, productResult] = await Promise.all([getShoppingList(roomId), getProductList()]);
       const items = cartRes.items.filter(isOnlineItem);
       setOnlineItems(items);
 
       const map: ProductMetaMap = {};
-      products.forEach((p) => {
+      productResult.products.forEach((p) => {
         map[p.product_id] = { imageUrl: p.image_url, price: p.price };
       });
       setProductMetaMap(map);

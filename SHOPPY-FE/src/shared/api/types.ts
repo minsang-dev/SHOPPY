@@ -58,6 +58,18 @@ export type Product = {
 
 export type ProductListResponse = { items: Product[] } | Product[];
 
+/** 페이징 적용 시 API 응답 (content, totalPages 등) */
+export type PaginatedProductResponse = {
+  content: Product[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+};
+
 export type WebRTCSession = {
   sessionId: string;
   token: string;
