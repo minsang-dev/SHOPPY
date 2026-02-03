@@ -94,15 +94,15 @@ const MobileVotePanel: React.FC<MobileVotePanelProps> = ({ roomId }) => {
   };
 
   return (
-    <section className="mobile-panel">
+    <section className="mobile-panel mobile-vote-panel">
       <div className="mobile-panel-card">
         <div className="mobile-panel-title">진행 중인 투표</div>
         {loading ? (
-          <div className="mobile-panel-empty">로딩 중...</div>
+          <div className="mobile-panel-empty mobile-vote-empty-fill">로딩 중...</div>
         ) : error ? (
-          <div className="mobile-panel-empty">투표 목록을 불러오는데 실패했습니다.</div>
+          <div className="mobile-panel-empty mobile-vote-empty-fill">투표 목록을 불러오는데 실패했습니다.</div>
         ) : votes.length === 0 ? (
-          <div className="mobile-panel-empty">현재 진행 중인 투표가 없습니다.</div>
+          <div className="mobile-panel-empty mobile-vote-empty-fill">현재 진행 중인 투표가 없습니다.</div>
         ) : (
           <div className="mobile-vote-list">
             {votes.map((item) => (

@@ -80,7 +80,9 @@ const DesktopSettlementResultPage: React.FC = () => {
     return Array.from(map.values());
   }, [items]);
 
-  const myTransfers = transferRows.filter((row) => row.fromMemberId === currentMemberId);
+  const myTransfers = transferRows.filter(
+    (row) => row.fromMemberId === currentMemberId && row.toMemberId !== currentMemberId,
+  );
 
   const getMemberName = (memberId: number) =>
     members.find((member) => member.memberId === memberId)?.nickname ?? `멤버 ${memberId}`;
