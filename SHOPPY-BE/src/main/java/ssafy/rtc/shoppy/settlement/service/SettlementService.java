@@ -214,6 +214,9 @@ public class SettlementService {
                 .itemName(itemDto.getItemName())
                 .unitPrice(itemDto.getUnitPrice())
                 .quantity(itemDto.getQuantity())
+                .payerMemberId(itemDto.getPayerMemberId())
+                .payerBankName(itemDto.getPayerBankName())
+                .payerAccountNumber(itemDto.getPayerAccountNumber())
                 .build();
         purchase.addPurchaseItem(purchaseItem);
         purchaseItemRepository.save(purchaseItem);
@@ -423,5 +426,8 @@ public class SettlementService {
         private String itemName;
         private BigDecimal unitPrice;
         private int quantity;
+        private Long payerMemberId;
+        private String payerBankName;
+        private String payerAccountNumber;
     }
 }
