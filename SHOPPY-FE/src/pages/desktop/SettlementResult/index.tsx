@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import UserAvatar from '@/shared/ui/UserAvatar';
 import { getRoomMembers } from '@/entities/room/api/room';
 import type { RoomMember } from '@/entities/room/types/room.types';
+import { getSettlement } from '@/entities/settlement/api/settlementApi';
+import { mapSettlementResponseToStoreItems } from '@/entities/settlement/model/mapper';
 import { useSettlementStore } from '@/entities/settlement/model/useSettlementStore';
 import { useSettlementRealtime } from '@/features/settlement/model/useSettlementRealtime';
 import './styles.css';
@@ -26,6 +28,8 @@ const DesktopSettlementResultPage: React.FC = () => {
   const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
 
   const settlementItemsByRoom = useSettlementStore((state) => state.settlementItemsByRoom);
+  const settlementIdByRoom = useSettlementStore((state) => state.settlementIdByRoom);
+  const setSettlementItems = useSettlementStore((state) => state.setSettlementItems);
   const transferStatusByRoom = useSettlementStore((state) => state.transferStatusByRoom);
   const markTransferDone = useSettlementStore((state) => state.markTransferDone);
   useSettlementRealtime({ roomId });
@@ -45,6 +49,23 @@ const DesktopSettlementResultPage: React.FC = () => {
     };
     void loadMembers();
   }, [roomId]);
+
+  useEffect(() => {
+    if (!roomId || items.length > 0) return;
+    const settlementId = settlementIdByRoom[roomId];
+    if (!settlementId) return;
+
+    const loadSettlement = async () => {
+      try {
+        const response = await getSettlement(settlementId);
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response));
+      } catch (error) {
+        console.error('Failed to load settlement result:', error);
+      }
+    };
+
+    void loadSettlement();
+  }, [items.length, roomId, settlementIdByRoom, setSettlementItems]);
 
   const transferRows = useMemo(() => {
     const map = new Map<string, TransferRow>();
