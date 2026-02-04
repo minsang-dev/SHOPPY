@@ -1,10 +1,12 @@
 ﻿import { Client, type IFrame, type StompSubscription } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { realtimeConfig } from '../../config/realtime';
+import { getOrCreateTabClientId } from './clientId';
 
 export interface RealtimeClientOptions {
   url?: string;
   token?: string;
+  clientId?: string;
   debug?: boolean;
   reconnectDelayMs?: number;
 }
@@ -12,11 +14,20 @@ export interface RealtimeClientOptions {
 export const createRealtimeClient = (options: RealtimeClientOptions = {}) => {
   const url = options.url ?? realtimeConfig.websocketUrl;
   const token = options.token;
+  const clientId = options.clientId ?? getOrCreateTabClientId();
+
+  const connectHeaders: Record<string, string> = {};
+  if (token) {
+    connectHeaders.Authorization = `Bearer ${token}`;
+  }
+  if (clientId) {
+    connectHeaders['X-Client-Id'] = clientId;
+  }
 
   const client = new Client({
     brokerURL: undefined,
     reconnectDelay: options.reconnectDelayMs ?? 5000,
-    connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+    connectHeaders,
     webSocketFactory: () => new SockJS(url),
     debug: options.debug ? (message) => console.log(message) : () => {},
   });

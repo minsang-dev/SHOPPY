@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+﻿import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import MobileBottomNav from '../../../widgets/mobile/Mobile/MobileBottomNav';
 import MobileCameraStage from '../../../widgets/mobile/Mobile/MobileCameraStage';
@@ -56,7 +56,11 @@ const MobileVideoChatPage: React.FC = () => {
   const profileColor = searchParams.get('profile_color') ?? undefined;
 
   const { room } = useRoomInfo(roomId);
-  const { leaveByButton } = useLeaveRoom({ roomId, navigateTo: '/m' });
+  const { leaveByButton } = useLeaveRoom({
+    roomId,
+    navigateTo: '/m',
+    handleRefreshRejoin: true,
+  });
 
   const handleEndShopping = () => {
     if (!roomId) {
@@ -178,7 +182,7 @@ const MobileVideoChatPage: React.FC = () => {
             onToggleCam={handleToggleCam}
             onSwitchCamera={handleSwitchCamera}
             cameraFacingMode={cameraFacingMode}
-            cameraSwitchLabel="카메???�환"
+            cameraSwitchLabel="移대찓???꾪솚"
             showControls={false}
           />
           <div className={`mobile-camera-section ${isSettlementRoute ? 'is-hidden' : ''}`}>
@@ -230,3 +234,4 @@ const MobileVideoChatPage: React.FC = () => {
 };
 
 export default MobileVideoChatPage;
+
