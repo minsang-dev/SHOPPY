@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getRoomMembers } from '../../../entities/room/api/room';
 import type { RoomMember } from '../../../entities/room/types/room.types';
@@ -61,7 +61,46 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
   const setSettlementItems = useSettlementStore((state) => state.setSettlementItems);
   const setSettlementId = useSettlementStore((state) => state.setSettlementId);
   const updateSettlementItemPayers = useSettlementStore((state) => state.updateSettlementItemPayers);
-  useSettlementRealtime({ roomId });
+
+  const settlementSyncLockRef = useRef(false);
+  const refreshSettlementFromServer = useCallback(
+    async (overrideSettlementId?: number) => {
+      if (!roomId || settlementSyncLockRef.current) return;
+      const targetSettlementId = overrideSettlementId ?? settlementIdByRoom[roomId];
+      if (!targetSettlementId) return;
+
+      settlementSyncLockRef.current = true;
+      try {
+        const response = await getSettlement(targetSettlementId);
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response, items));
+      } catch (error) {
+        console.error('Failed to sync settlement from realtime event:', error);
+      } finally {
+        settlementSyncLockRef.current = false;
+      }
+    },
+    [items, roomId, settlementIdByRoom, setSettlementItems],
+  );
+
+  useSettlementRealtime({
+    roomId,
+    onEvent: (event) => {
+      if (!roomId) return;
+
+      const payload = (event.payload as Record<string, unknown> | undefined) ?? {};
+      const payloadSettlementId = Number(
+        payload.settlementId ?? payload.purchaseId ?? event.settlementId ?? event.purchaseId,
+      );
+
+      if (Number.isFinite(payloadSettlementId) && payloadSettlementId > 0) {
+        setSettlementId(roomId, payloadSettlementId);
+        void refreshSettlementFromServer(payloadSettlementId);
+        return;
+      }
+
+      void refreshSettlementFromServer();
+    },
+  });
 
   const toCapturedFile = () => {
     const video = receiptVideoRef.current;

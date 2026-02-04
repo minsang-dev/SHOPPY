@@ -102,7 +102,6 @@ export const useOpenViduSession = ({
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const isConnectedRef = useRef(false);
   const connectInFlightRef = useRef(false);
-  const connectFailedRef = useRef(false);
   const lastRoomIdRef = useRef<string | number | undefined>(undefined);
   const hasRequestedRef = useRef(false);
 
@@ -172,7 +171,7 @@ export const useOpenViduSession = ({
 
   const connect = useCallback(async () => {
     const authToken = accessToken ?? sessionStorage.getItem('accessToken');
-    if (!roomId || !authToken || isConnectedRef.current || connectInFlightRef.current || connectFailedRef.current) {
+    if (!roomId || !authToken || isConnectedRef.current || connectInFlightRef.current) {
       return;
     }
     connectInFlightRef.current = true;
@@ -363,10 +362,8 @@ export const useOpenViduSession = ({
       ovRef.current = ov;
       sessionRef.current = session;
       setConnected(true);
-      connectFailedRef.current = false;
     } catch (error) {
       console.error('[OpenVidu] connect failed:', error);
-      connectFailedRef.current = true;
     } finally {
       connectInFlightRef.current = false;
     }
@@ -503,7 +500,6 @@ export const useOpenViduSession = ({
     }
     if (lastRoomIdRef.current !== roomId) {
       lastRoomIdRef.current = roomId;
-      connectFailedRef.current = false;
       connectInFlightRef.current = false;
       hasRequestedRef.current = false;
     }
