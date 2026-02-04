@@ -96,14 +96,13 @@ const MobileVideoChatPage: React.FC = () => {
     leaveByButton();
   };
 
-  const [prevIsSettlementRoute, setPrevIsSettlementRoute] = useState(false);
-
-  useEffect(() => {
+  const [prevIsSettlementRoute, setPrevIsSettlementRoute] = useState(isSettlementRoute);
+  if (prevIsSettlementRoute !== isSettlementRoute) {
+    setPrevIsSettlementRoute(isSettlementRoute);
     if (prevIsSettlementRoute && !isSettlementRoute) {
       setCamOn(true);
     }
-    setPrevIsSettlementRoute(isSettlementRoute);
-  }, [isSettlementRoute, prevIsSettlementRoute]);
+  }
 
   const { isConnected, setPublishAudio, setPublishVideo, switchCamera } = useOpenViduSession({
     enabled: realtimeReady,

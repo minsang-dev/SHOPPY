@@ -106,7 +106,7 @@ export const useScrollRealtime = ({
       void disconnectRealtimeClient(client);
       clientRef.current = null;
     };
-  }, [roomId, userId]);
+  }, [roomId, userId, containerRef]);
 
   return { publishScroll };
 };
