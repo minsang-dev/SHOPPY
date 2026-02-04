@@ -7,10 +7,10 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionConnectEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
-import ssafy.rtc.shoppy.room.service.RoomMemberService;
+import ssafy.rtc.shoppy.presence.PresenceKey;
+import ssafy.rtc.shoppy.presence.PresenceService;
 
 import java.security.Principal;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -18,24 +18,29 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class WebSocketSessionEventListener {
 
-    private final RoomMemberService roomMemberService;
-    private final ConcurrentHashMap<String, Long> sessionToUser = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<Long, Set<String>> userToSessions = new ConcurrentHashMap<>();
+    private final PresenceService presenceService;
+    private final ConcurrentHashMap<String, PresenceKey> sessionToPresence = new ConcurrentHashMap<>();
 
     @EventListener
     public void handleSessionConnect(SessionConnectEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
         String sessionId = accessor.getSessionId();
         Long userId = extractUserId(accessor.getUser());
+        String clientId = accessor.getFirstNativeHeader("X-Client-Id");
 
         if (sessionId == null || userId == null) {
             return;
         }
+        if (clientId == null || clientId.isBlank()) {
+            log.warn("WebSocket connected without clientId. userId={}, sessionId={}", userId, sessionId);
+            return;
+        }
 
-        sessionToUser.put(sessionId, userId);
-        userToSessions.computeIfAbsent(userId, key -> ConcurrentHashMap.newKeySet()).add(sessionId);
-        log.debug("WebSocket connected: userId={}, sessionId={}, activeSessions={}",
-                userId, sessionId, userToSessions.get(userId).size());
+        String normalizedClientId = clientId.trim();
+        sessionToPresence.put(sessionId, new PresenceKey(userId, normalizedClientId));
+        presenceService.onConnect(userId, normalizedClientId);
+        log.debug("WebSocket connected: userId={}, clientId={}, sessionId={}",
+                userId, normalizedClientId, sessionId);
     }
 
     @EventListener
@@ -43,39 +48,18 @@ public class WebSocketSessionEventListener {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
         String sessionId = accessor.getSessionId();
         Long userId = extractUserId(accessor.getUser());
+        PresenceKey presenceKey = sessionId != null ? sessionToPresence.remove(sessionId) : null;
+        String clientId = presenceKey != null ? presenceKey.clientId() : null;
+        Long resolvedUserId = presenceKey != null ? presenceKey.userId() : userId;
 
-        if (sessionId != null) {
-            Long mappedUserId = sessionToUser.remove(sessionId);
-            if (userId == null) {
-                userId = mappedUserId;
-            }
-        }
-
-        if (userId == null) {
-            log.debug("WebSocket disconnected without user info. sessionId={}", sessionId);
+        if (resolvedUserId == null || clientId == null) {
+            log.debug("WebSocket disconnected without presence info. sessionId={}", sessionId);
             return;
         }
 
-        boolean noActiveSessions = removeSession(userId, sessionId);
-        log.debug("WebSocket disconnected: userId={}, sessionId={}, remainingSessions={}",
-                userId, sessionId, userToSessions.getOrDefault(userId, Set.of()).size());
-
-        if (noActiveSessions) {
-            roomMemberService.leaveActiveRoomByUserId(userId);
-        }
-    }
-
-    private boolean removeSession(Long userId, String sessionId) {
-        if (sessionId == null) {
-            return userToSessions.remove(userId) != null;
-        }
-
-        userToSessions.computeIfPresent(userId, (id, sessions) -> {
-            sessions.remove(sessionId);
-            return sessions.isEmpty() ? null : sessions;
-        });
-
-        return !userToSessions.containsKey(userId);
+        presenceService.onDisconnect(resolvedUserId, clientId);
+        log.debug("WebSocket disconnected: userId={}, clientId={}, sessionId={}",
+                resolvedUserId, clientId, sessionId);
     }
 
     private Long extractUserId(Principal principal) {
