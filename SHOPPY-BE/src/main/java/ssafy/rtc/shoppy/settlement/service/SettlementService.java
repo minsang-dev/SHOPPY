@@ -14,13 +14,12 @@ import ssafy.rtc.shoppy.global.exception.ErrorCode;
 import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
 import ssafy.rtc.shoppy.room.enums.MemberStatus;
 import ssafy.rtc.shoppy.room.repository.RoomMemberRepository;
-import ssafy.rtc.shoppy.settlement.dto.PurchaseResponse;
-import ssafy.rtc.shoppy.settlement.dto.ReceiptUploadResponse;
-import ssafy.rtc.shoppy.settlement.dto.SettlementItemCreateRequest;
-import ssafy.rtc.shoppy.settlement.dto.SettlementItemCreateResponse;
+import ssafy.rtc.shoppy.settlement.dto.*;
+import ssafy.rtc.shoppy.settlement.event.SettlementEventPublisher;
 import ssafy.rtc.shoppy.settlement.entity.ItemAllocation;
 import ssafy.rtc.shoppy.settlement.entity.Purchase;
 import ssafy.rtc.shoppy.settlement.entity.PurchaseItem;
+import ssafy.rtc.shoppy.settlement.entity.PurchaseStatus;
 import ssafy.rtc.shoppy.settlement.entity.Receipt;
 import ssafy.rtc.shoppy.settlement.repository.ItemAllocationRepository;
 import ssafy.rtc.shoppy.settlement.repository.PurchaseItemRepository;
@@ -41,7 +40,7 @@ import java.util.Map;
 @Transactional
 @Slf4j
 public class SettlementService {
-    
+
     private final PurchaseRepository purchaseRepository;
     private final PurchaseItemRepository purchaseItemRepository;
     private final ItemAllocationRepository itemAllocationRepository;
@@ -50,6 +49,7 @@ public class SettlementService {
     private final FileStorageService fileStorageService;
     private final ImageRecognitionService imageRecognitionService;
     private final MemberRepository memberRepository;
+    private final SettlementEventPublisher settlementEventPublisher;
 
     /**
      * 수동으로 정산 품목 추가
@@ -79,7 +79,7 @@ public class SettlementService {
             calculateAndAllocate(purchaseItem, activeMembers);
         }
 
-        return SettlementItemCreateResponse.builder()
+        SettlementItemCreateResponse response = SettlementItemCreateResponse.builder()
                 .settlementItemId(purchaseItem.getPurchaseItemId())
                 .receiptId(receiptId)
                 .itemName(purchaseItem.getItemName())
@@ -87,6 +87,23 @@ public class SettlementService {
                 .quantity(purchaseItem.getQuantity())
                 .totalPrice(purchaseItem.getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity())))
                 .build();
+
+        // WebSocket 이벤트 발행
+        SettlementItemAddedResponseEvent eventResponse = SettlementItemAddedResponseEvent.builder()
+                .type(SettlementEventType.ITEM_ADDED)
+                .roomId(purchase.getRoomId())
+                .updatedAt(java.time.LocalDateTime.now())
+                .settlementItemId(purchaseItem.getPurchaseItemId())
+                .receiptId(receiptId)
+                .itemName(purchaseItem.getItemName())
+                .unitPrice(purchaseItem.getUnitPrice().intValue())
+                .quantity(purchaseItem.getQuantity())
+                .totalPrice(purchaseItem.getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity())).intValue())
+                .build();
+
+        settlementEventPublisher.publishItemAdded(purchase.getRoomId(), eventResponse);
+
+        return response;
     }
 
     /**
@@ -163,12 +180,27 @@ public class SettlementService {
         receiptRepository.save(receipt);
 
         // 6. 응답 반환
-        return ReceiptUploadResponse.builder()
+        ReceiptUploadResponse response = ReceiptUploadResponse.builder()
                 .receiptId(receipt.getReceiptId())
                 .settlementId(purchase.getPurchaseId())
                 .imageUrl(imageUrl)
                 .items(itemDtos)
                 .build();
+
+        // WebSocket 이벤트 발행
+        ReceiptUploadResponseEvent eventResponse = ReceiptUploadResponseEvent.builder()
+                .type(SettlementEventType.RECEIPT_UPLOADED)
+                .roomId(roomId)
+                .updatedAt(java.time.LocalDateTime.now())
+                .receiptId(receipt.getReceiptId())
+                .settlementId(purchase.getPurchaseId())
+                .imageUrl(imageUrl)
+                .items(itemDtos)
+                .build();
+
+        settlementEventPublisher.publishReceiptUploaded(roomId, eventResponse);
+
+        return response;
     }
 
     /**
@@ -204,7 +236,23 @@ public class SettlementService {
             createPurchaseItemWithAllocations(purchase, itemDto, members);
         }
 
-        return PurchaseResponse.from(purchase);
+        PurchaseResponse response = PurchaseResponse.from(purchase);
+
+        // WebSocket 이벤트 발행
+        SettlementCreatedResponseEvent eventResponse = SettlementCreatedResponseEvent.builder()
+                .type(SettlementEventType.SETTLEMENT_CREATED)
+                .roomId(roomId)
+                .updatedAt(java.time.LocalDateTime.now())
+                .purchaseId(purchase.getPurchaseId())
+                .payerMemberId(purchase.getPayerMemberId())
+                .totalAmount(purchase.getTotalAmount().intValue())
+                .status(PurchaseStatus.valueOf(purchase.getStatus()))
+                .items(response.getItems())
+                .build();
+
+        settlementEventPublisher.publishSettlementCreated(roomId, eventResponse);
+
+        return response;
     }
 
     private void createPurchaseItemWithAllocations(Purchase purchase, PurchaseItemDto itemDto, List<RoomMemberEntity> members) {
@@ -309,7 +357,7 @@ public class SettlementService {
     public void updateAllocations(Long purchaseItemId, List<Long> newMemberIds) {
         PurchaseItem purchaseItem = purchaseItemRepository.findById(purchaseItemId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ITEM_NOT_FOUND));
-        
+
         // 기존 Allocation 삭제
         List<ItemAllocation> oldAllocations = itemAllocationRepository.findByPurchaseItem_PurchaseItemId(purchaseItemId);
         itemAllocationRepository.deleteAll(oldAllocations);
@@ -317,8 +365,8 @@ public class SettlementService {
 
         BigDecimal totalItemPrice = purchaseItem.getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity()));
         int participantCount = newMemberIds.size();
-        
-        if (participantCount == 0) return; 
+
+        if (participantCount == 0) return;
 
         BigDecimal amountToPayPerPerson = totalItemPrice.divide(BigDecimal.valueOf(participantCount), 0, RoundingMode.FLOOR);
         BigDecimal totalUserPay = amountToPayPerPerson.multiply(BigDecimal.valueOf(participantCount));
@@ -342,6 +390,21 @@ public class SettlementService {
             purchaseItem.addItemAllocation(allocation);
             itemAllocationRepository.save(allocation);
         }
+
+        // WebSocket 이벤트 발행
+        Purchase purchase = purchaseItem.getPurchase();
+        PurchaseResponse purchaseResponse = PurchaseResponse.from(purchase);
+
+        SettlementItemUpdatedResponseEvent eventResponse = SettlementItemUpdatedResponseEvent.builder()
+                .type(SettlementEventType.ITEM_UPDATED)
+                .roomId(purchase.getRoomId())
+                .updatedAt(java.time.LocalDateTime.now())
+                .purchaseId(purchase.getPurchaseId())
+                .totalAmount(purchase.getTotalAmount().intValue())
+                .items(purchaseResponse.getItems())
+                .build();
+
+        settlementEventPublisher.publishItemUpdated(purchase.getRoomId(), eventResponse);
     }
 
     @Transactional(readOnly = true)
@@ -356,8 +419,22 @@ public class SettlementService {
         Purchase purchase = purchaseRepository.findById(settlementId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
         purchase.updateStatus("COMPLETE");
-        
-        return generateReport(purchase);
+
+        String report = generateReport(purchase);
+
+        // WebSocket 이벤트 발행
+        SettlementCompletedResponseEvent eventResponse = SettlementCompletedResponseEvent.builder()
+                .type(SettlementEventType.SETTLEMENT_COMPLETED)
+                .roomId(purchase.getRoomId())
+                .updatedAt(java.time.LocalDateTime.now())
+                .settlementId(purchase.getPurchaseId())
+                .status("COMPLETE")
+                .report(report)
+                .build();
+
+        settlementEventPublisher.publishSettlementCompleted(purchase.getRoomId(), eventResponse);
+
+        return report;
     }
 
     private String generateReport(Purchase purchase) {
