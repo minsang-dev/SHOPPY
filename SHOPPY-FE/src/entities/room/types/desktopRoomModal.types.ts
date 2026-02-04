@@ -48,7 +48,6 @@ export type ShoppingTrait =
   | 'OUTDOOR'
   | 'INDOOR'
   | 'COOKING_OK'
-  | 'COOKING_AVAILABLE'
   | 'NO_COOKING'
   | 'MEAL_MAIN'
   | 'SNACK_MAIN'
@@ -64,7 +63,6 @@ export const MUTUALLY_EXCLUSIVE_TRAITS: [ShoppingTrait, ShoppingTrait][] = [
   ['ALCOHOL_YES', 'ALCOHOL_NO'],
   ['OUTDOOR', 'INDOOR'],
   ['COOKING_OK', 'NO_COOKING'],
-  ['COOKING_AVAILABLE', 'NO_COOKING'],
 ];
 
 export interface CreateRoomFormData {

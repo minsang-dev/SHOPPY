@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { useModalStore } from '@/shared/model/useModalStore';
 import { useAuthStore } from '@/entities/user';
@@ -60,7 +60,12 @@ const Header: React.FC<HeaderProps> = ({ className = '' }) => {
         </nav>
 
         <div className={`header-actions ${isMenuOpen ? 'open' : ''}`}>
-          {isLoggedIn ? (
+          {isInRoom ? (
+            <button className="btn-profile" onClick={() => navigate(profileButtonPath)}>
+              <i className={profileButtonIcon} aria-hidden />
+              <span className="header-profile-tooltip">정산하기</span>
+            </button>
+          ) : isLoggedIn ? (
             <button className="btn-profile" onClick={() => navigate(profileButtonPath)}>
               <i className={profileButtonIcon} aria-hidden />
               <span className="header-profile-tooltip">{profileButtonLabel}</span>

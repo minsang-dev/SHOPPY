@@ -49,7 +49,8 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
         return isNaN(parsed) ? 0 : parsed;
       };
 
-      const targetBudget = parseBudget(createFormData.targetBudget);
+      const MAX_BUDGET = 10_000_000;
+      const targetBudget = Math.min(parseBudget(createFormData.targetBudget), MAX_BUDGET);
 
       // LLM API 요청 페이로드
       const payload = {
@@ -141,17 +142,11 @@ const RoomModal: React.FC<DesktopRoomModalProps> = ({ isOpen, onClose }) => {
                     {createError}
                   </div>
                 )}
-                {createLoading && (
-                  <div className="loading-overlay">
-                    <div className="loading-spinner"></div>
-                    <p className="loading-text">AI가 장바구니를 준비하고 있습니다...</p>
-                    <p className="loading-subtext">최대 30초 정도 소요될 수 있습니다</p>
-                  </div>
-                )}
                 <CreateRoomForm
                   formData={createFormData}
                   onChange={setCreateFormData}
                   onSubmit={handleCreateSubmit}
+                  isLoading={createLoading}
                 />
               </>
             ) : (
