@@ -20,6 +20,7 @@ export interface SettlementItem {
 interface SettlementStore {
   participantSelections: Record<number, Record<number, ParticipantSelectionStatus>>;
   settlementItemsByRoom: Record<string, SettlementItem[]>;
+  settlementIdByRoom: Record<string, number>;
   transferStatusByRoom: Record<string, Record<string, boolean>>;
 
   toggleParticipantSelection: (productId: number, memberId: number) => void;
@@ -30,6 +31,7 @@ interface SettlementStore {
   resetParticipantSelections: (productId: number) => void;
 
   setSettlementItems: (roomId: string, items: SettlementItem[]) => void;
+  setSettlementId: (roomId: string, settlementId: number) => void;
   appendSettlementItems: (roomId: string, items: SettlementItem[]) => void;
   updateSettlementItemPayers: (roomId: string, itemId: string, payerIds: number[]) => void;
   markTransferDone: (roomId: string, fromMemberId: number, toMemberId: number, done: boolean) => void;
@@ -38,6 +40,7 @@ interface SettlementStore {
 export const useSettlementStore = create<SettlementStore>((set, get) => ({
   participantSelections: {},
   settlementItemsByRoom: {},
+  settlementIdByRoom: {},
   transferStatusByRoom: {},
 
   toggleParticipantSelection: (productId: number, memberId: number) => {
@@ -109,6 +112,15 @@ export const useSettlementStore = create<SettlementStore>((set, get) => ({
       settlementItemsByRoom: {
         ...state.settlementItemsByRoom,
         [roomId]: items,
+      },
+    }));
+  },
+
+  setSettlementId: (roomId: string, settlementId: number) => {
+    set((state) => ({
+      settlementIdByRoom: {
+        ...state.settlementIdByRoom,
+        [roomId]: settlementId,
       },
     }));
   },

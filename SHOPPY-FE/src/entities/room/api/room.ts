@@ -165,3 +165,19 @@ export const updateMemberState = async (
 ): Promise<void> => {
   await updateMemberStateApi(roomId, memberId, { isCameraOn });
 };
+
+export const sendPresenceHeartbeat = async (
+  roomId: string,
+  clientId: string,
+): Promise<void> => {
+  await apiRequest<void>({
+    method: 'POST',
+    url: `/rooms/${roomId}/presence/heartbeat`,
+    data: { clientId },
+    config: {
+      headers: {
+        'X-Client-Id': clientId,
+      },
+    },
+  });
+};

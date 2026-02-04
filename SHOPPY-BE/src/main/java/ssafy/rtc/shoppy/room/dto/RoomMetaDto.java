@@ -1,6 +1,5 @@
 package ssafy.rtc.shoppy.room.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -11,22 +10,15 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record RoomMetaDto(
-        @NotBlank
-        String shoppingPurpose,
+        @NotBlank String shoppingPurpose,
 
-        @NotEmpty
-        List<String> interestCategories,
+        @NotEmpty List<String> interestCategories,
 
-        @NotNull
-        @Min(1)
-        Integer headcount,
+        @NotNull @Min(1) Integer headcount,
 
-        @NotNull
-        @Positive
-        BigDecimal budgetMin,
+        @NotNull @Positive BigDecimal budgetMin,
 
-        BigDecimal budgetMax
-) {
+        BigDecimal budgetMax) {
     public static RoomMetaDto copyWithBudgetMax(RoomMetaDto meta, BigDecimal budgetMax) {
         if (meta == null) {
             return null;
@@ -36,7 +28,6 @@ public record RoomMetaDto(
                 meta.interestCategories(),
                 meta.headcount(),
                 meta.budgetMin(),
-                budgetMax
-        );
+                budgetMax);
     }
 }

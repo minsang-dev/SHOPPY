@@ -31,12 +31,21 @@ import CartNotificationToasts from '../../../features/cart/ui/CartNotificationTo
 import { CursorOverlay } from '@/features/cursor';
 import './styles.css';
 
+/** URL 경로가 결제(checkout) 페이지인지 확인 - 민감정보 보호용 */
+function isCheckoutUrl(url: string): boolean {
+  if (!url?.trim()) return false;
+  const pathPart = url.split('?')[0].split('#')[0].trim();
+  return pathPart.endsWith('/checkout');
+}
+
 const DesktopVideoChatPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { roomId } = useParams<{ roomId?: string }>();
   const [mode, setMode] = useState<VideoChatMode>('personal');
   const [activePanel, setActivePanel] = useState<RightPanelType>('cart');
+  // 호스트가 결제 화면으로 이동했을 때때
+  const [hostUrlIsCheckout, setHostUrlIsCheckout] = useState(false);
 
   const { room } = useRoomInfo(roomId);
   const user = useAuthStore((state) => state.user);
@@ -72,13 +81,19 @@ const DesktopVideoChatPage: React.FC = () => {
       await patchSyncMode(roomId, { syncMode });
       console.log('patchSyncMode success');
       setMode(newMode);
+      if (newMode === 'personal') setHostUrlIsCheckout(false);
 
-      // FOLLOW 모드로 전환 시, 최신 방 정보 조회 후 호스트 URL로 이동
+      // FOLLOW 모드로 전환 시, 최신 방 정보 조회 후 호스트 URL로 이동 (결제 페이지는 미공유)
       if (newMode === 'host' && !isHost) {
         const latestRoom = await getRoom(roomId);
-        if (latestRoom.hostCurrentUrl) {
-          console.log('Navigating to host URL:', latestRoom.hostCurrentUrl);
-          navigate(latestRoom.hostCurrentUrl);
+        const hostUrl = latestRoom.hostCurrentUrl;
+        if (hostUrl && isCheckoutUrl(hostUrl)) {
+          setHostUrlIsCheckout(true);
+          navigate(`/rooms/${roomId}`, { replace: true });
+        } else if (hostUrl) {
+          setHostUrlIsCheckout(false);
+          console.log('Navigating to host URL:', hostUrl);
+          navigate(hostUrl);
         }
       }
     } catch (err) {
@@ -117,13 +132,19 @@ const DesktopVideoChatPage: React.FC = () => {
         // host-url 변경 구독 (FOLLOW 모드인 참여자만 따라감)
         hostUrlSub = subscribeTopic(client, topicRoomsHostUrl(roomId), (body) => {
           try {
-            // 백엔드 이벤트 형식: { type: "HOST_URL_UPDATED", roomId: number, payload: string }
+
             const event = JSON.parse(body) as { type: string; roomId: number; payload: string };
             const hostUrl = event.payload;
             // FOLLOW 모드(mode === 'host')이고 호스트가 아닌 경우에만 따라감
             if (hostUrl && modeRef.current === 'host' && !isHost) {
-              console.log('Received host URL, navigating to:', hostUrl);
-              navigate(hostUrl);
+              if (isCheckoutUrl(hostUrl)) {
+                setHostUrlIsCheckout(true);
+                // 결제 페이지는 민감정보 보호를 위해 참여자에게 공유하지 않음
+              } else {
+                setHostUrlIsCheckout(false);
+                console.log('Received host URL, navigating to:', hostUrl);
+                navigate(hostUrl);
+              }
             }
           } catch (err) {
             console.error('Failed to parse host-url event:', err);
@@ -146,12 +167,12 @@ const DesktopVideoChatPage: React.FC = () => {
     if (!roomId || !isHost) {
       return;
     }
-    const currentUrl = location.pathname;
+    const currentUrl = location.pathname + location.search + location.hash;
     console.log('Host navigated, sending URL:', currentUrl);
     void patchHostUrl(roomId, { currentUrl }).catch((err) => {
       console.error('Failed to update host URL:', err);
     });
-  }, [roomId, isHost, location.pathname]);
+  }, [roomId, isHost, location.pathname, location.search, location.hash]);
 
   // RightPanel 탭과 무관하게 새 투표 생성 시 모두에게 토스트 알림
   const addVoteToast = useVoteNotificationStore((state) => state.addToast);
@@ -341,7 +362,7 @@ const DesktopVideoChatPage: React.FC = () => {
                 <Outlet />
               </div>
               {/* 호스트 모드일 때 참여자에게 안내 오버레이 */}
-              {mode === 'host' && !isHost && (
+              {mode === 'host' && !isHost && !hostUrlIsCheckout && (
                 <div
                   style={{
                     position: 'absolute',
@@ -357,6 +378,22 @@ const DesktopVideoChatPage: React.FC = () => {
                   }}
                 >
                   호스트 모드: 호스트가 화면을 제어 중입니다
+                </div>
+              )}
+              {/* 호스트가 결제 화면일 때: 해당 화면 미공유 안내 */}
+              {mode === 'host' && !isHost && hostUrlIsCheckout && (
+                <div className="video-chat-checkout-block">
+                  <div className="video-chat-checkout-block-content">
+                    <span className="video-chat-checkout-block-icon" aria-hidden>🔒</span>
+                    <p className="video-chat-checkout-block-title">결제 화면은 공유되지 않습니다</p>
+                    <p className="video-chat-checkout-block-desc">
+                      호스트가 결제 화면을 보고 있습니다.
+                      <br />
+                      개인정보·결제 정보 보호를 위해 해당 화면은 
+                      <br />
+                      참여자에게 표시되지 않습니다.
+                    </p>
+                  </div>
                 </div>
               )}
               <VideoStage roomId={roomId} />

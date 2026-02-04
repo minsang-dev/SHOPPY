@@ -102,3 +102,42 @@
 .video-chat-notification-toasts > * {
   pointer-events: auto;
 }
+
+/* 호스트가 결제 화면일 때 참여자에게 보이는 블록 오버레이 */
+.video-chat-checkout-block {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30, 35, 45, 0.92);
+  backdrop-filter: blur(8px);
+}
+
+.video-chat-checkout-block-content {
+  text-align: center;
+  max-width: 360px;
+  padding: 32px 24px;
+}
+
+.video-chat-checkout-block-icon {
+  display: block;
+  font-size: 48px;
+  margin-bottom: 16px;
+  line-height: 1;
+}
+
+.video-chat-checkout-block-title {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.video-chat-checkout-block-desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+}

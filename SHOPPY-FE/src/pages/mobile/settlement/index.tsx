@@ -1,10 +1,16 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getRoomMembers } from '../../../entities/room/api/room';
 import type { RoomMember } from '../../../entities/room/types/room.types';
 import UserAvatar from '../../../shared/ui/UserAvatar';
 import { useSettlementStore } from '@/entities/settlement/model/useSettlementStore';
-import { recognizeReceiptItems } from '@/entities/settlement/api/settlementApi';
+import {
+  createSettlement,
+  getSettlement,
+  updateSettlementItemSplits,
+  uploadReceiptImage,
+} from '@/entities/settlement/api/settlementApi';
+import { mapSettlementResponseToStoreItems } from '@/entities/settlement/model/mapper';
 import { useSettlementRealtime } from '@/features/settlement/model/useSettlementRealtime';
 import './styles.css';
 
@@ -49,10 +55,85 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
   }, [routeParams.roomId]);
 
   const settlementItemsByRoom = useSettlementStore((state) => state.settlementItemsByRoom);
+  const settlementIdByRoom = useSettlementStore((state) => state.settlementIdByRoom);
   const items = roomId ? settlementItemsByRoom[roomId] ?? EMPTY_ITEMS : EMPTY_ITEMS;
   const appendSettlementItems = useSettlementStore((state) => state.appendSettlementItems);
+  const setSettlementItems = useSettlementStore((state) => state.setSettlementItems);
+  const setSettlementId = useSettlementStore((state) => state.setSettlementId);
   const updateSettlementItemPayers = useSettlementStore((state) => state.updateSettlementItemPayers);
-  useSettlementRealtime({ roomId });
+
+  const settlementSyncLockRef = useRef(false);
+  const refreshSettlementFromServer = useCallback(
+    async (overrideSettlementId?: number) => {
+      if (!roomId || settlementSyncLockRef.current) return;
+      const targetSettlementId = overrideSettlementId ?? settlementIdByRoom[roomId];
+      if (!targetSettlementId) return;
+
+      settlementSyncLockRef.current = true;
+      try {
+        const response = await getSettlement(targetSettlementId);
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response, items));
+      } catch (error) {
+        console.error('Failed to sync settlement from realtime event:', error);
+      } finally {
+        settlementSyncLockRef.current = false;
+      }
+    },
+    [items, roomId, settlementIdByRoom, setSettlementItems],
+  );
+
+  useSettlementRealtime({
+    roomId,
+    onEvent: (event) => {
+      if (!roomId) return;
+
+      const payload = (event.payload as Record<string, unknown> | undefined) ?? {};
+      const payloadSettlementId = Number(
+        payload.settlementId ?? payload.purchaseId ?? event.settlementId ?? event.purchaseId,
+      );
+
+      if (Number.isFinite(payloadSettlementId) && payloadSettlementId > 0) {
+        setSettlementId(roomId, payloadSettlementId);
+        void refreshSettlementFromServer(payloadSettlementId);
+        return;
+      }
+
+      void refreshSettlementFromServer();
+    },
+  });
+
+  const toCapturedFile = () => {
+    const video = receiptVideoRef.current;
+    const canvas = receiptCanvasRef.current;
+    if (!video || !canvas || video.readyState < 2) {
+      return null;
+    }
+
+    const width = video.videoWidth || 1280;
+    const height = video.videoHeight || 720;
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d');
+    if (!context) {
+      return null;
+    }
+
+    context.drawImage(video, 0, 0, width, height);
+    const dataUrl = canvas.toDataURL('image/jpeg');
+    const base64 = dataUrl.split(',')[1];
+    if (!base64) {
+      return null;
+    }
+
+    const bytes = atob(base64);
+    const array = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i += 1) {
+      array[i] = bytes.charCodeAt(i);
+    }
+
+    return new File([array], `receipt-${Date.now()}.jpg`, { type: 'image/jpeg' });
+  };
 
   useEffect(() => {
     if (!roomId) return;
@@ -66,6 +147,23 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
     };
     void loadMembers();
   }, [roomId]);
+
+  useEffect(() => {
+    if (!roomId || items.length > 0) return;
+    const settlementId = settlementIdByRoom[roomId];
+    if (!settlementId) return;
+
+    const loadSettlement = async () => {
+      try {
+        const response = await getSettlement(settlementId);
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response));
+      } catch (error) {
+        console.error('Failed to load settlement:', error);
+      }
+    };
+
+    void loadSettlement();
+  }, [items.length, roomId, settlementIdByRoom, setSettlementItems]);
 
   useEffect(() => {
     if (!showReceiptModal) {
@@ -233,45 +331,27 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
       return;
     }
 
-    const video = receiptVideoRef.current;
-    const canvas = receiptCanvasRef.current;
-    if (!video || !canvas || video.readyState < 2) {
+    const capturedFile = toCapturedFile();
+    if (!capturedFile) {
       setReceiptError('카메라 준비가 완료되지 않았습니다.');
       return;
     }
 
-    const width = video.videoWidth || 1280;
-    const height = video.videoHeight || 720;
-    canvas.width = width;
-    canvas.height = height;
-
-    const context = canvas.getContext('2d');
-    if (!context) {
-      setReceiptError('카메라 캡처를 처리할 수 없습니다.');
-      return;
-    }
-
-    context.drawImage(video, 0, 0, width, height);
-    const imageBase64 = canvas.toDataURL('image/jpeg').split(',')[1] ?? '';
-
     try {
-      const ocr = await recognizeReceiptItems(roomId, {
-        title,
-        payerMemberId,
-        bankName,
-        accountNumber,
-        imageBase64,
-      });
+      const uploaded = await uploadReceiptImage(roomId, capturedFile);
+      if (uploaded.settlement_id) {
+        setSettlementId(roomId, uploaded.settlement_id);
+      }
 
-      const parsedItems = ocr.items ?? [];
+      const parsedItems = uploaded.items ?? [];
       if (parsedItems.length > 0) {
         appendSettlementItems(
           roomId,
           parsedItems.map((parsed, index) => ({
             id: `receipt-${Date.now()}-${index}`,
-            name: parsed.name,
+            name: parsed.item_name,
             quantity: parsed.quantity,
-            price: parsed.price,
+            price: Number(parsed.unit_price),
             payerIds: members.map((member) => member.memberId),
             payerMemberId,
             payerBankName: bankName,
@@ -299,7 +379,7 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
         ]);
       }
     } catch (error) {
-      // API 연결 전/실패시 fallback
+      // API 실패 시 임시 fallback
       appendSettlementItems(roomId, [
         {
           id: `receipt-${Date.now()}`,
@@ -315,7 +395,7 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
           sourceLabel: title,
         },
       ]);
-      console.warn('OCR API not ready or failed. Fallback item created.', error);
+      console.warn('Receipt upload failed. Fallback item created.', error);
     }
 
     setReceiptTitle('');
@@ -604,12 +684,51 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
               <button
                 type="button"
                 className="mobile-settlement-manual-submit"
-                onClick={() => {
+                onClick={async () => {
                   setShowFinalizeConfirm(false);
                   if (!roomId) {
                     navigate('/m');
                     return;
                   }
+
+                  const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
+                  if (currentMemberId > 0 && items.length > 0) {
+                    try {
+                      const payload = {
+                        payerMemberId: currentMemberId,
+                        totalAmount,
+                        items: items.map((item) => ({
+                          itemName: item.name,
+                          unitPrice: Number(item.price ?? 0),
+                          quantity: Number(item.quantity ?? 1),
+                          payerMemberId: Number(item.payerMemberId ?? currentMemberId),
+                          payerBankName: item.payerBankName ?? '',
+                          payerAccountNumber: item.payerAccountNumber ?? '',
+                        })),
+                      };
+
+                      const created = await createSettlement(roomId, payload);
+                      setSettlementId(roomId, created.purchaseId);
+                      setSettlementItems(roomId, mapSettlementResponseToStoreItems(created, items));
+
+                      await Promise.all(
+                        created.items.map((serverItem, index) =>
+                          updateSettlementItemSplits(
+                            serverItem.purchaseItemId,
+                            items[index]?.payerIds?.length
+                              ? (items[index].payerIds as number[])
+                              : serverItem.allocations.map((allocation) => allocation.memberId),
+                          ),
+                        ),
+                      );
+
+                      const refreshed = await getSettlement(created.purchaseId);
+                      setSettlementItems(roomId, mapSettlementResponseToStoreItems(refreshed, items));
+                    } catch (error) {
+                      console.error('Failed to create settlement:', error);
+                    }
+                  }
+
                   navigate(`/m/room/${encodeURIComponent(roomId)}/settlement/result`);
                 }}
               >

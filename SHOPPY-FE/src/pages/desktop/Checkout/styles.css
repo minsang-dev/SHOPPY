@@ -5,11 +5,33 @@
   position: relative;
 }
 
-.checkout-go-settlement-btn {
+.checkout-top-actions {
   position: absolute;
   top: 16px;
   right: 16px;
   z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkout-back-btn {
+  border: 1px solid #d0d7e3;
+  background: #ffffff;
+  color: #1f2a37;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.checkout-back-btn:hover {
+  background: #f8fafc;
+}
+
+.checkout-go-settlement-btn {
   border: 1px solid #d0d7e3;
   background: #ffffff;
   color: #1f2a37;

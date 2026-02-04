@@ -1,4 +1,5 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
 import Button from '../../../shared/ui/DesktopButton/Button';
 import RoomModal from '../RoomModal/RoomModal';
 import './HeroSection.css';
@@ -9,6 +10,9 @@ interface HeroSectionProps {
 
 const HeroSection: React.FC<HeroSectionProps> = ({ className = '' }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const location = useLocation();
+  const { roomId } = useParams<{ roomId: string }>();
+  const isInRoom = location.pathname.startsWith('/rooms/') && roomId;
 
   const handleStartClick = () => {
     setIsModalOpen(true);
@@ -26,14 +30,16 @@ const HeroSection: React.FC<HeroSectionProps> = ({ className = '' }) => {
             <h1 className="hero-title">
               실시간 협업 쇼핑을 <br/>시작해 보세요
             </h1>
-            <Button
-              variant="primary"
-              size="large"
-              onClick={handleStartClick}
-              className="hero-button"
-            >
-              시작하기
-            </Button>
+            {!isInRoom && (
+              <Button
+                variant="primary"
+                size="large"
+                onClick={handleStartClick}
+                className="hero-button"
+              >
+                시작하기
+              </Button>
+            )}
           </div>
           <div className="hero-image">
             <img

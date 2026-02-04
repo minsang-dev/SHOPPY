@@ -52,3 +52,7 @@ app:
 
 gms:
   api-key: ${GMS_API_KEY}
+
+presence:
+  ttl-seconds: 60
+  sweep-interval-ms: 5000
