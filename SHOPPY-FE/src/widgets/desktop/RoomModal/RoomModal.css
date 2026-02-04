@@ -474,6 +474,13 @@
   gap: 1.25rem;
 }
 
+/* 제목·설명 한 묶음 */
+.step-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 .step-title {
   font-size: 1.75rem;
   font-weight: 700;
@@ -489,19 +496,16 @@
   color: #555555;
   line-height: 1.5;
   margin: 0;
-  margin-top: -0.5rem;
-  margin-bottom: 1.25rem;
   padding-left: 1rem;
 }
 
-/* step-content 내 본문 요소: 제목/설명과 왼쪽 정렬, 상하 간격은 gap으로만 */
-.step-content > .form-field,
-.step-content > .option-grid,
-.step-content > .category-step-content,
-.step-content > .trait-groups,
-.step-content > .selected-tags,
-.step-content > .form-tip {
-  margin-left: 1rem;
+/* 버튼·폼 한 묶음: 좌우 패딩 통일 */
+.step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 0 1rem;
+  box-sizing: border-box;
 }
 
 .category-step-content {
@@ -521,7 +525,7 @@
   gap: var(--category-gap);
 }
 
-.step-content > .selected-tags {
+.step-body .selected-tags {
   margin-top: 0;
 }
 
@@ -537,7 +541,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.125rem 0.625rem;
+  padding: 0.625rem 0.5rem;
   background-color: #f9f9f9;
   border: 2px solid #e5e5e5;
   border-radius: 12px;
@@ -557,8 +561,8 @@
 }
 
 .option-emoji {
-  font-size: 1.625rem;
-  margin-bottom: 0.25rem;
+  font-size: 1.5rem;
+  margin-bottom: 0.125rem;
 }
 
 .option-label {
@@ -588,6 +592,54 @@
   border-radius: 20px;
   font-size: 0.875rem;
   font-weight: 500;
+}
+
+/* 선호 특성 서브스텝 인디케이터 (정보 표시 전용, 클릭 불가) */
+.trait-substep-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.25rem;
+  background-color: #f5f7f9;
+  border-left: 4px solid #1e5a7a;
+  border-radius: 0 8px 8px 0;
+  box-sizing: border-box;
+  cursor: default;
+  user-select: none;
+}
+
+.trait-substep-labels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.5rem;
+}
+
+.trait-substep-dot {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #888888;
+}
+
+.trait-substep-dot:not(:last-child)::after {
+  content: ' · ';
+  margin-left: 0.5rem;
+  color: #bbbbbb;
+  font-weight: 400;
+}
+
+.trait-substep-dot.is-current {
+  font-weight: 700;
+  color: #1e5a7a;
+}
+
+.trait-substep-progress {
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #666666;
 }
 
 /* Trait Groups */

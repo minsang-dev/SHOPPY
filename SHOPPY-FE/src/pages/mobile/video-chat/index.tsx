@@ -92,14 +92,14 @@ const MobileVideoChatPage: React.FC = () => {
     leaveByButton();
   };
 
-  const wasSettlementRouteRef = useRef(false);
+  const [prevIsSettlementRoute, setPrevIsSettlementRoute] = useState(false);
 
-  useEffect(() => {
-    if (wasSettlementRouteRef.current && !isSettlementRoute) {
+  if (prevIsSettlementRoute !== isSettlementRoute) {
+    setPrevIsSettlementRoute(isSettlementRoute);
+    if (prevIsSettlementRoute && !isSettlementRoute) {
       setCamOn(true);
     }
-    wasSettlementRouteRef.current = isSettlementRoute;
-  }, [isSettlementRoute]);
+  }
 
   const { isConnected, setPublishAudio, setPublishVideo, switchCamera } = useOpenViduSession({
     enabled: realtimeReady,
@@ -178,7 +178,7 @@ const MobileVideoChatPage: React.FC = () => {
             onToggleCam={handleToggleCam}
             onSwitchCamera={handleSwitchCamera}
             cameraFacingMode={cameraFacingMode}
-            cameraSwitchLabel="카메???�환"
+            cameraSwitchLabel="카메???�환"
             showControls={false}
           />
           <div className={`mobile-camera-section ${isSettlementRoute ? 'is-hidden' : ''}`}>
