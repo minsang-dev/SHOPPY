@@ -15,6 +15,8 @@ interface CreateRoomFormProps {
   formData: CreateRoomFormData;
   onChange: (data: CreateRoomFormData) => void;
   onSubmit: () => void;
+  /** 쇼핑룸 입장 요청 중일 때 true, 로딩 UI를 버튼 위에 표시 */
+  isLoading?: boolean;
 }
 
 // 쇼핑 목적 옵션
@@ -67,10 +69,9 @@ const TRAIT_GROUPS: { groupLabel: string; traits: { value: ShoppingTrait; label:
   {
     groupLabel: '조리',
     traits: [
-      { value: 'COOKING_OK', label: '조리 가능' },
-      { value: 'COOKING_AVAILABLE', label: '조리 시설 있음' },
-      { value: 'NO_COOKING', label: '조리 불가' },
       { value: 'EASY_COOK', label: '간편조리' },
+      { value: 'COOKING_OK', label: '조리 가능' },
+      { value: 'NO_COOKING', label: '조리 불가' },
     ],
   },
   {
@@ -98,15 +99,29 @@ const TRAIT_GROUPS: { groupLabel: string; traits: { value: ShoppingTrait; label:
   },
 ];
 
-const TOTAL_STEPS = 5;
+/** 선호 특성 서브스텝: 1=기본 성향, 2=상황/맥락, 3=세부 취향 */
+const TRAIT_SUB_STEPS: { label: string; groupLabels: string[] }[] = [
+  { label: '기본 성향', groupLabels: ['가격대', '수량'] },
+  { label: '상황/맥락', groupLabels: ['장소', '조리'] },
+  { label: '세부 취향', groupLabels: ['식사 스타일', '취향', '품목 종류'] },
+];
 
-const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onSubmit }) => {
+const TOTAL_STEPS = 5;
+const TRAIT_SUB_STEP_COUNT = TRAIT_SUB_STEPS.length;
+
+const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onSubmit, isLoading = false }) => {
   const [currentStep, setCurrentStep] = useState(1);
+  /** 선호 특성(4단계) 내 서브스텝 1~3 */
+  const [traitSubStep, setTraitSubStep] = useState(1);
+  /** 목표 예산 1000만원 초과 시 입력창 밑 경고 표시 */
+  const [showOverMaxBudgetWarning, setShowOverMaxBudgetWarning] = useState(false);
 
   // 숫자 포맷팅 함수 (천 단위 구분)
   const formatNumber = (num: number): string => {
     return num.toLocaleString('ko-KR');
   };
+
+  const MAX_BUDGET = 10_000_000; // 최대 1000만원
 
   const parseBudget = (budgetStr: string): number => {
     const cleaned = budgetStr.replace(/,/g, '').trim();
@@ -150,16 +165,27 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
     }
   };
 
-  // 목표 예산 입력 처리
+  // 목표 예산 입력 처리 (1000만원 초과 시 1000만원으로 자동 입력 + 경고 표시)
   const handleTargetBudgetInput = (value: string) => {
+    const parsed = parseBudget(value);
+    if (parsed > MAX_BUDGET) {
+      handleChange('targetBudget', formatNumber(MAX_BUDGET));
+      setShowOverMaxBudgetWarning(true);
+      return;
+    }
+    setShowOverMaxBudgetWarning(false);
     handleChange('targetBudget', value);
   };
 
-  // 목표 예산 포커스 아웃 시 1000원 단위로 반올림
+  // 목표 예산 포커스 아웃 시 1000원 단위로 반올림 (최대 1000만원), 경고 해제
   const handleTargetBudgetBlur = () => {
+    setShowOverMaxBudgetWarning(false);
     const currentValue = parseBudget(formData.targetBudget);
     if (currentValue >= 1000) {
-      const roundedValue = Math.round(currentValue / 1000) * 1000;
+      const roundedValue = Math.min(
+        Math.round(currentValue / 1000) * 1000,
+        MAX_BUDGET,
+      );
       handleChange('targetBudget', formatNumber(roundedValue));
     }
   };
@@ -227,16 +253,25 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
     handleChange('traits', newTraits);
   };
 
-  // 다음 단계로 이동
+  // 다음 단계로 이동 (선호 특성 단계에서는 서브스텝 1→2→3 후 5단계로)
   const goNext = () => {
+    if (currentStep === 4 && traitSubStep < TRAIT_SUB_STEP_COUNT) {
+      setTraitSubStep(traitSubStep + 1);
+      return;
+    }
     if (currentStep < TOTAL_STEPS) {
       setCurrentStep(currentStep + 1);
     }
   };
 
-  // 이전 단계로 이동
+  // 이전 단계로 이동 (4단계에서는 서브스텝 3→2→1 후 3단계로)
   const goPrev = () => {
+    if (currentStep === 4 && traitSubStep > 1) {
+      setTraitSubStep(traitSubStep - 1);
+      return;
+    }
     if (currentStep > 1) {
+      if (currentStep === 4) setTraitSubStep(1);
       setCurrentStep(currentStep - 1);
     }
   };
@@ -265,9 +300,11 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
       case 1:
         return (
           <div className="step-content">
-            <h3 className="step-title">기본 정보</h3>
-            <p className="step-description">쇼핑룸의 기본 정보를 입력해주세요.</p>
-
+            <div className="step-header">
+              <h3 className="step-title">기본 정보</h3>
+              <p className="step-description">쇼핑룸의 기본 정보를 입력해주세요.</p>
+            </div>
+            <div className="step-body">
             <div className="form-field">
               <label className="form-label">방 제목</label>
               <input
@@ -307,15 +344,18 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
                 </button>
               </div>
             </div>
+            </div>
           </div>
         );
 
       case 2:
         return (
           <div className="step-content">
-            <h3 className="step-title">쇼핑 목적</h3>
-            <p className="step-description">어떤 목적으로 쇼핑하시나요?</p>
-
+            <div className="step-header">
+              <h3 className="step-title">쇼핑 목적</h3>
+              <p className="step-description">어떤 목적으로 쇼핑하시나요?</p>
+            </div>
+            <div className="step-body">
             <div className="option-grid">
               {PURPOSE_OPTIONS.map((option) => (
                 <button
@@ -329,6 +369,7 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
                 </button>
               ))}
             </div>
+            </div>
           </div>
         );
 
@@ -336,9 +377,11 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
         const allCategoriesSelected = formData.categories.length === ALL_INTEREST_CATEGORIES.length;
         return (
           <div className="step-content">
-            <h3 className="step-title">관심 카테고리</h3>
-            <p className="step-description">관심있는 카테고리를 선택해주세요. (복수 선택 가능)</p>
-
+            <div className="step-header">
+              <h3 className="step-title">관심 카테고리</h3>
+              <p className="step-description">관심있는 카테고리를 선택해주세요. (복수 선택 가능)</p>
+            </div>
+            <div className="step-body">
             <div className="category-step-content">
               <div className="category-select-all-row">
                 <button
@@ -364,50 +407,75 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
                 ))}
               </div>
             </div>
+            </div>
           </div>
         );
       }
 
-      case 4:
+      case 4: {
+        const subStepConfig = TRAIT_SUB_STEPS[traitSubStep - 1];
+        const groupsInSubStep = TRAIT_GROUPS.filter((g) =>
+          subStepConfig.groupLabels.includes(g.groupLabel)
+        );
         return (
           <div className="step-content">
-            <h3 className="step-title">선호 특성</h3>
-            <p className="step-description">AI가 더 정확한 추천을 할 수 있도록 선호사항을 알려주세요. (선택)</p>
-
-            <div className="trait-groups">
-              {TRAIT_GROUPS.map((group) => (
-                <div key={group.groupLabel} className="trait-group">
-                  <span className="trait-group-label">{group.groupLabel}</span>
-                  <div className="trait-buttons">
-                    {group.traits.map((trait) => (
-                      <button
-                        key={trait.value}
-                        type="button"
-                        className={`trait-button ${formData.traits.includes(trait.value) ? 'selected' : ''}`}
-                        onClick={() => toggleTrait(trait.value)}
-                      >
-                        {trait.label}
-                      </button>
-                    ))}
-                  </div>
+            <div className="step-header">
+              <h3 className="step-title">선호 특성</h3>
+              <p className="step-description">AI가 더 정확한 추천을 할 수 있도록 선호사항을 알려주세요. (선택)</p>
+            </div>
+            <div className="step-body">
+              <div className="trait-substep-indicator" role="status" aria-label={`선호 특성 ${traitSubStep}단계: ${subStepConfig.label}`}>
+                <div className="trait-substep-labels">
+                  {TRAIT_SUB_STEPS.map((step, idx) => (
+                    <span
+                      key={step.label}
+                      className={`trait-substep-dot ${idx + 1 === traitSubStep ? 'is-current' : ''}`}
+                      aria-current={idx + 1 === traitSubStep ? 'step' : undefined}
+                    >
+                      {step.label}
+                    </span>
+                  ))}
                 </div>
-              ))}
+                <span className="trait-substep-progress">{traitSubStep}/{TRAIT_SUB_STEP_COUNT}</span>
+              </div>
+              <div className="trait-groups">
+                {groupsInSubStep.map((group) => (
+                  <div key={group.groupLabel} className="trait-group">
+                    <span className="trait-group-label">{group.groupLabel}</span>
+                    <div className="trait-buttons">
+                      {group.traits.map((trait) => (
+                        <button
+                          key={trait.value}
+                          type="button"
+                          className={`trait-button ${formData.traits.includes(trait.value) ? 'selected' : ''}`}
+                          onClick={() => toggleTrait(trait.value)}
+                        >
+                          {trait.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         );
+      }
 
       case 5:
         return (
           <div className="step-content">
-            <h3 className="step-title">예산 설정</h3>
-            <p className="step-description">목표 예산과 최소 예산을 입력해주세요.</p>
-
+            <div className="step-header">
+              <h3 className="step-title">예산 설정</h3>
+              <p className="step-description">목표 예산과 최소 예산을 입력해주세요.</p>
+            </div>
+            <div className="step-body">
             <div className="form-field">
               <label className="form-label">목표 예산</label>
               <div className="budget-input-wrapper">
                 <input
                   type="text"
-                  className={`form-input ${isTargetBudgetInvalid ? 'form-input-error' : ''}`}
+                  className={`form-input ${isTargetBudgetInvalid || showOverMaxBudgetWarning ? 'form-input-error' : ''}`}
                   placeholder="ex. 200,000"
                   value={formData.targetBudget}
                   onChange={(e) => handleTargetBudgetInput(e.target.value)}
@@ -417,6 +485,9 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
               </div>
               {isTargetBudgetInvalid && (
                 <p className="budget-error-message">예산은 1000원 이상이어야 합니다</p>
+              )}
+              {showOverMaxBudgetWarning && (
+                <p className="budget-error-message">목표 예산은 최대 1,000만원까지 입력 가능합니다.</p>
               )}
             </div>
 
@@ -449,6 +520,7 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
               <span className="tip-icon-summary">✨</span>
               <span className="tip-text">입력된 정보를 바탕으로 상품리스트가 자동 생성됩니다.</span>
             </div>
+            </div>
           </div>
         );
 
@@ -479,6 +551,15 @@ const CreateRoomForm: React.FC<CreateRoomFormProps> = ({ formData, onChange, onS
       </div>
 
       {renderStep()}
+
+      {/* 로딩: 이전/쇼핑룸 입장하기 버튼 바로 위에 표시 */}
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p className="loading-text">입력된 정보를 바탕으로 상품리스트가 자동 생성됩니다.</p>
+          <p className="loading-subtext">답변 생성에 최대 30초 정도 소요될 수 있습니다.</p>
+        </div>
+      )}
 
       {/* 네비게이션 버튼 */}
       <div className="step-navigation">
