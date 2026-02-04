@@ -13,20 +13,49 @@ const MAX_VISIBLE_PAGES = 5;
 
 const DesktopProductList = () => {
   const { roomId } = useParams<{ roomId?: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { products, loading, error, search, pagination } = useProductList({ pageSize: PAGE_SIZE });
   const addToCart = useAddToCart(roomId || null);
 
   const keywordFromUrl = searchParams.get('keyword');
+  const pageFromUrl = Number(searchParams.get('page') ?? '0');
 
+  // URL keyword → 훅 동기화
   useEffect(() => {
     if (keywordFromUrl != null && keywordFromUrl.trim() !== '') {
       void search(keywordFromUrl.trim());
     }
   }, [keywordFromUrl, search]);
 
+  // URL page → 훅 동기화
+  useEffect(() => {
+    if (pagination && pageFromUrl >= 0) {
+      pagination.goToPage(pageFromUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageFromUrl]);
+
+  const handleGoToPage = (page: number) => {
+    pagination?.goToPage(page);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('page', String(page));
+      return next;
+    });
+  };
+
   const handleSearch = (keyword: string) => {
     void search(keyword);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (keyword.trim()) {
+        next.set('keyword', keyword.trim());
+      } else {
+        next.delete('keyword');
+      }
+      next.delete('page');
+      return next;
+    });
   };
 
   if (loading) {
@@ -92,7 +121,7 @@ const DesktopProductList = () => {
 
         {/* 페이징: << < 1 2 3 ... > >> */}
         {pagination && pagination.totalPages > 1 && (() => {
-          const { currentPage, totalPages, goToPage } = pagination;
+          const { currentPage, totalPages } = pagination;
           const total = totalPages;
           const current = currentPage;
           const half = Math.floor(MAX_VISIBLE_PAGES / 2);
@@ -109,7 +138,7 @@ const DesktopProductList = () => {
                 type="button"
                 className="pagination-btn pagination-btn-icon"
                 disabled={current <= 0}
-                onClick={() => goToPage(0)}
+                onClick={() => handleGoToPage(0)}
                 aria-label="첫 페이지"
               >
                 &laquo;
@@ -118,7 +147,7 @@ const DesktopProductList = () => {
                 type="button"
                 className="pagination-btn pagination-btn-icon"
                 disabled={current <= 0}
-                onClick={() => goToPage(current - 1)}
+                onClick={() => handleGoToPage(current - 1)}
                 aria-label="이전 페이지"
               >
                 &lsaquo;
@@ -129,7 +158,7 @@ const DesktopProductList = () => {
                     key={pageIndex}
                     type="button"
                     className={`pagination-btn pagination-btn-num ${current === pageIndex ? 'active' : ''}`}
-                    onClick={() => goToPage(pageIndex)}
+                    onClick={() => handleGoToPage(pageIndex)}
                     aria-label={`${pageIndex + 1}페이지`}
                     aria-current={current === pageIndex ? 'page' : undefined}
                   >
@@ -141,7 +170,7 @@ const DesktopProductList = () => {
                 type="button"
                 className="pagination-btn pagination-btn-icon"
                 disabled={current >= total - 1}
-                onClick={() => goToPage(current + 1)}
+                onClick={() => handleGoToPage(current + 1)}
                 aria-label="다음 페이지"
               >
                 &rsaquo;
@@ -150,7 +179,7 @@ const DesktopProductList = () => {
                 type="button"
                 className="pagination-btn pagination-btn-icon"
                 disabled={current >= total - 1}
-                onClick={() => goToPage(total - 1)}
+                onClick={() => handleGoToPage(total - 1)}
                 aria-label="마지막 페이지"
               >
                 &raquo;
