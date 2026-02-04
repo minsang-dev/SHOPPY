@@ -111,7 +111,7 @@ http.interceptors.response.use(
 );
 
 export type ApiRequestOptions = {
-  method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   url: string;
   data?: unknown;
   params?: Record<string, unknown>;
