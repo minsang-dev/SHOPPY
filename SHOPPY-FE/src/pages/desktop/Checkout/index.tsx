@@ -83,15 +83,27 @@ const DesktopCheckoutPage: React.FC = () => {
     }, 1000);
   };
 
+  const handleBack = () => {
+    const message = `작성 중인 결제 정보가 초기화됩니다. \n정말 이전 페이지로 돌아가시겠습니까?`;
+    if (window.confirm(message) && roomId) {
+      navigate(`/rooms/${roomId}`);
+    }
+  };
+
   return (
     <div className="checkout-page" data-room-id={roomId}>
-      <button
-        type="button"
-        className="checkout-go-settlement-btn"
-        onClick={() => navigate(`/rooms/${roomId}/settlement`)}
-      >
-        정산 페이지
-      </button>
+      <div className="checkout-top-actions">
+        <button type="button" className="checkout-back-btn" onClick={handleBack}>
+          뒤로가기
+        </button>
+        <button
+          type="button"
+          className="checkout-go-settlement-btn"
+          onClick={() => navigate(`/rooms/${roomId}/settlement`)}
+        >
+          정산 페이지
+        </button>
+      </div>
 
       <div className="checkout-container">
         <h1 className="checkout-page-title">주문/결제</h1>
