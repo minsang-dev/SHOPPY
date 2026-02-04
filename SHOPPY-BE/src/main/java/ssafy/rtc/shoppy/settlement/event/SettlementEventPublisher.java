@@ -26,6 +26,10 @@ public class SettlementEventPublisher {
         applicationEventPublisher.publishEvent(new SettlementItemUpdatedEvent(roomId, response));
     }
 
+    public void publishItemDeleted(Long roomId, SettlementItemDeletedResponseEvent response) {
+        applicationEventPublisher.publishEvent(new SettlementItemDeletedEvent(roomId, response));
+    }
+
     public void publishSettlementCompleted(Long roomId, SettlementCompletedResponseEvent response) {
         applicationEventPublisher.publishEvent(new SettlementCompletedEvent(roomId, response));
     }

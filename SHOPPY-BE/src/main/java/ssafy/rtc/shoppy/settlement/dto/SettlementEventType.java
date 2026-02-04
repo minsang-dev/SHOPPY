@@ -5,5 +5,6 @@ public enum SettlementEventType {
     SETTLEMENT_CREATED,
     ITEM_ADDED,
     ITEM_UPDATED,
+    ITEM_DELETED,
     SETTLEMENT_COMPLETED
 }

@@ -29,6 +29,7 @@ import EntranceNotificationToasts from '../../../features/participant/ui/Entranc
 import { useCartNotificationStore } from '../../../features/cart/model/useCartNotificationStore';
 import CartNotificationToasts from '../../../features/cart/ui/CartNotificationToasts';
 import { CursorOverlay } from '@/features/cursor';
+import { useScrollRealtime } from '@/features/scroll';
 import './styles.css';
 
 /** URL 경로가 결제(checkout) 페이지인지 확인 - 민감정보 보호용 */
@@ -66,6 +67,15 @@ const DesktopVideoChatPage: React.FC = () => {
   }, [user?.id]);
 
   const { leaveByButton } = useLeaveRoom({ roomId, navigateTo: '/' });
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  useScrollRealtime({
+    roomId,
+    userId: cursorUserId,
+    isHost,
+    hostMode: mode === 'host',
+    containerRef: scrollContainerRef,
+  });
 
   const handleModeChange = async (newMode: VideoChatMode) => {
     // 각 사용자가 자신의 syncMode를 변경 (FOLLOW: 호스트 따라가기, FREE: 자유 탐색)
@@ -358,7 +368,7 @@ const DesktopVideoChatPage: React.FC = () => {
                 enabled={isHost || mode === 'host'}
               />
               {/* 중첩 라우터 -> Outlet으로 router에서 정의한 화면 랜더링 */}
-              <div className="video-chat-body">
+              <div className="video-chat-body" ref={scrollContainerRef}>
                 <Outlet />
               </div>
               {/* 호스트 모드일 때 참여자에게 안내 오버레이 */}

@@ -109,16 +109,6 @@ const LocalVideoTile = ({
 
 const VideoStage: React.FC<VideoStageProps> = ({ roomId }) => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const currentMemberId = useMemo(() => {
-    const raw = sessionStorage.getItem('memberId');
-    if (!raw) return null;
-    const parsed = Number(raw);
-    return Number.isFinite(parsed) ? parsed : null;
-  }, []);
-  const currentNickname = useMemo(
-    () => (sessionStorage.getItem('memberNickname') ?? '').trim(),
-    [],
-  );
 
   const {
     subscribers,
@@ -148,18 +138,7 @@ const VideoStage: React.FC<VideoStageProps> = ({ roomId }) => {
     () => {
       const remoteOnly = subscribers
         .filter((sub) => sub?.stream?.typeOfVideo !== 'SCREEN')
-        .filter((sub) => {
-          if (!currentMemberId) return true;
-          const memberId = parseMemberId(sub);
-          // Prevent duplicated self tile after refresh/reconnect races.
-          return memberId == null || memberId !== currentMemberId;
-        })
-        .filter((sub) => {
-          if (!currentNickname) return true;
-          const nickname = parseNickname(sub).trim();
-          // Fallback self-filter when memberId is missing from connection data.
-          return nickname !== '' && nickname !== currentNickname;
-        });
+        .filter((sub) => Boolean(sub?.stream?.connection?.connectionId));
 
       const deduped = new Map<string, StreamManager>();
 
@@ -183,8 +162,13 @@ const VideoStage: React.FC<VideoStageProps> = ({ roomId }) => {
         const existingHasVideo = isStreamVideoActive(existing);
         const nextHasVideo = isStreamVideoActive(sub);
 
-        // Prefer the stream that still has an active video track.
+        // Reconnect 시 같은 사용자의 오래된 스트림(검은 타일)보다
+        // 더 최근에 들어온 스트림을 우선 사용한다.
         if (!existingHasVideo && nextHasVideo) {
+          deduped.set(key, sub);
+          return;
+        }
+        if (nextHasVideo || !existingHasVideo) {
           deduped.set(key, sub);
         }
       });
@@ -192,9 +176,6 @@ const VideoStage: React.FC<VideoStageProps> = ({ roomId }) => {
       return [...deduped.values()].filter((sub) => {
         const nickname = parseNickname(sub);
         const hasVideo = isStreamVideoActive(sub);
-        if (nickname === 'Guest') {
-          return false;
-        }
         // Hide stale "Guest + black tile" that appears during reconnect races.
         if (nickname === 'Guest' && !hasVideo) {
           return false;
@@ -202,7 +183,7 @@ const VideoStage: React.FC<VideoStageProps> = ({ roomId }) => {
         return true;
       });
     },
-    [currentMemberId, currentNickname, subscribers],
+    [subscribers],
   );
 
   useEffect(() => {

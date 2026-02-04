@@ -25,20 +25,6 @@ const parseNicknameFromConnectionData = (raw?: string): string => {
   }
 };
 
-const parseMemberIdFromConnectionData = (raw?: string): number | null => {
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw);
-    const client = parsed?.clientData
-      ? (typeof parsed.clientData === 'string' ? JSON.parse(parsed.clientData) : parsed.clientData)
-      : parsed;
-    const memberId = Number(client?.memberId);
-    return Number.isFinite(memberId) ? memberId : null;
-  } catch {
-    return null;
-  }
-};
-
 const hasActiveVideo = (streamManager?: StreamManager) => {
   const stream = streamManager?.stream as { hasVideo?: () => boolean; videoActive?: boolean } | undefined;
   if (!stream) return false;
@@ -216,30 +202,62 @@ export const useOpenViduSession = ({
     }
 
       const session = ov.initSession();
+      const pruneStaleSubscribers = (reason: string) => {
+        const activeConnectionIds = new Set<string>();
+        const remoteConnections = session.remoteConnections as
+          | Map<string, { connectionId?: string }>
+          | Array<{ connectionId?: string }>
+          | undefined;
+        if (remoteConnections) {
+          if (remoteConnections instanceof Map) {
+            remoteConnections.forEach((connection) => {
+              if (connection?.connectionId) {
+                activeConnectionIds.add(connection.connectionId);
+              }
+            });
+          } else if (Array.isArray(remoteConnections)) {
+            remoteConnections.forEach((connection) => {
+              if (connection?.connectionId) {
+                activeConnectionIds.add(connection.connectionId);
+              }
+            });
+          }
+        }
+        setSubscribers((prev) =>
+          prev.filter((sub) => {
+            const connectionId = sub?.stream?.connection?.connectionId;
+            if (!connectionId) return false;
+            if (!activeConnectionIds.has(connectionId)) {
+              ovDebug('pruned subscriber (stale connection)', { reason, connectionId });
+              return false;
+            }
+            const nickname = parseNicknameFromConnectionData(sub?.stream?.connection?.data);
+            const hasVideo = hasActiveVideo(sub);
+            if (nickname === 'Guest' && !hasVideo) {
+              ovDebug('pruned subscriber (ghost guest)', { reason, connectionId });
+              return false;
+            }
+            return true;
+          }),
+        );
+      };
+
       session.on('streamCreated', (event) => {
         const connectionData = event.stream?.connection?.data;
         const incomingNickname = parseNicknameFromConnectionData(connectionData).trim();
-        const incomingMemberId = parseMemberIdFromConnectionData(connectionData);
         const hasNicknameInData = typeof connectionData === 'string' && connectionData.includes('"nickname"');
-        const selfNickname = (sessionStorage.getItem('memberNickname') ?? profile?.nickname ?? '').trim();
         const selfConnectionId = session.connection?.connectionId;
         const incomingConnectionId = event.stream?.connection?.connectionId;
-        const isSelfByMemberId =
-          Number.isFinite(parsedMemberId) && incomingMemberId != null && incomingMemberId === parsedMemberId;
-        const isSelfByNickname =
-          !isSelfByMemberId && incomingMemberId == null && selfNickname !== '' && incomingNickname === selfNickname;
-        const isSelfByConnection =
-          Boolean(selfConnectionId && incomingConnectionId && selfConnectionId === incomingConnectionId);
+        const isSelfByConnection = Boolean(
+          selfConnectionId && incomingConnectionId && selfConnectionId === incomingConnectionId,
+        );
 
-        if (isSelfByMemberId || isSelfByNickname || isSelfByConnection) {
+        if (isSelfByConnection) {
           ovDebug('streamCreated skipped self-like stream', {
             streamId: event.stream?.streamId,
             incomingConnectionId,
             selfConnectionId,
             incomingNickname,
-            selfNickname,
-            incomingMemberId,
-            selfMemberId: Number.isFinite(parsedMemberId) ? parsedMemberId : null,
           });
           return;
         }
@@ -254,7 +272,17 @@ export const useOpenViduSession = ({
           return;
         }
 
-        const subscriber = session.subscribe(event.stream, undefined);
+        let subscriber: StreamManager;
+        try {
+          subscriber = session.subscribe(event.stream, undefined);
+        } catch (error) {
+          ovDebug('streamCreated subscribe failed', {
+            streamId: event.stream?.streamId,
+            connectionId: event.stream?.connection?.connectionId,
+            error,
+          });
+          return;
+        }
         ovDebug('streamCreated', {
           streamId: event.stream?.streamId,
           connectionId: event.stream?.connection?.connectionId,
@@ -292,6 +320,17 @@ export const useOpenViduSession = ({
             }),
           );
         }, 2500);
+      });
+      session.on('connectionDestroyed', (event) => {
+        const destroyedConnectionId = event.connection?.connectionId;
+        if (!destroyedConnectionId) return;
+        ovDebug('connectionDestroyed', {
+          connectionId: destroyedConnectionId,
+          reason: event.reason,
+        });
+        setSubscribers((prev) =>
+          prev.filter((sub) => sub?.stream?.connection?.connectionId !== destroyedConnectionId),
+        );
       });
       session.on('streamDestroyed', (event) => {
         ovDebug('streamDestroyed', {
@@ -336,6 +375,13 @@ export const useOpenViduSession = ({
             return !(nickname === 'Guest' && !hasActiveVideo(sub));
           }),
         );
+      });
+      session.on('reconnecting', () => {
+        ovDebug('session reconnecting');
+      });
+      session.on('reconnected', () => {
+        ovDebug('session reconnected');
+        pruneStaleSubscribers('reconnected');
       });
 
       await session.connect(sessionInfo.token, {

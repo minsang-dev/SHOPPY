@@ -226,3 +226,19 @@
   padding: 10px 0;
   font-weight: 700;
 }
+
+.desktop-settlement-result-bottom-actions {
+  margin-top: 8px;
+}
+
+.desktop-settlement-result-finish {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  background: #10b981;
+  color: #ffffff;
+  padding: 14px 0;
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+}

@@ -6,6 +6,7 @@ import type { RoomMember } from '@/entities/room/types/room.types';
 import { getSettlement } from '@/entities/settlement/api/settlementApi';
 import { mapSettlementResponseToStoreItems } from '@/entities/settlement/model/mapper';
 import { useSettlementStore } from '@/entities/settlement/model/useSettlementStore';
+import { useLeaveRoom } from '@/features/room/leave-room';
 import './styles.css';
 
 type TransferRow = {
@@ -27,10 +28,15 @@ const MobileSettlementResultPage: React.FC<MobileSettlementResultPageProps> = ({
   const routeParams = useParams<{ roomId?: string }>();
   const [members, setMembers] = useState<RoomMember[]>([]);
   const [selectedTransfer, setSelectedTransfer] = useState<TransferRow | null>(null);
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
 
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
   const roomId = routeParams.roomId ?? params.get('room_id') ?? sessionStorage.getItem('roomId') ?? '';
   const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
+  const { leaveByButton } = useLeaveRoom({
+    roomId: roomId || undefined,
+    navigateTo: '/m',
+  });
 
   const settlementItemsByRoom = useSettlementStore((state) => state.settlementItemsByRoom);
   const settlementIdByRoom = useSettlementStore((state) => state.settlementIdByRoom);
@@ -180,6 +186,16 @@ const MobileSettlementResultPage: React.FC<MobileSettlementResultPageProps> = ({
             )}
           </div>
         </section>
+
+        <div className="mobile-settlement-result-bottom-actions">
+          <button
+            type="button"
+            className="mobile-settlement-result-finish"
+            onClick={() => setShowFinishConfirm(true)}
+          >
+            정산 완료
+          </button>
+        </div>
       </div>
 
       {selectedTransfer && (
@@ -203,6 +219,35 @@ const MobileSettlementResultPage: React.FC<MobileSettlementResultPageProps> = ({
                 }}
               >
                 완료
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFinishConfirm && (
+        <div className="mobile-settlement-transfer-modal">
+          <div className="mobile-settlement-transfer-backdrop" onClick={() => setShowFinishConfirm(false)} />
+          <div className="mobile-settlement-transfer-sheet">
+            <h3>정산 완료</h3>
+            <p>
+              완료 시 공유 쇼핑이 종료됩니다.
+              <br />
+              종료하시겠습니까?
+            </p>
+            <div className="mobile-settlement-transfer-actions">
+              <button type="button" className="ghost" onClick={() => setShowFinishConfirm(false)}>
+                아니오
+              </button>
+              <button
+                type="button"
+                className="primary"
+                onClick={() => {
+                  setShowFinishConfirm(false);
+                  leaveByButton();
+                }}
+              >
+                예
               </button>
             </div>
           </div>

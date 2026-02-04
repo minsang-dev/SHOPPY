@@ -42,11 +42,7 @@ export const useCursorRealtime = ({
   // 커서 발행 (x, y는 0~1 비율)
   const publishCursor = useCallback(
     (x: number, y: number) => {
-      // [DEBUG] 발행 조건 체크
-      if (!roomId || !userId || !enabled) {
-        console.log('[CURSOR DEBUG] publishCursor 스킵:', { roomId, userId, enabled });
-        return;
-      }
+      if (!roomId || !userId || !enabled) return;
 
       const now = Date.now();
       if (now - lastSentRef.current < THROTTLE_MS) return;
@@ -60,13 +56,8 @@ export const useCursorRealtime = ({
         y,
       };
 
-      // 본인 커서는 Map에 추가하지 않음 (OS 기본 커서 사용)
-      // 웹소켓으로 발행
       if (clientRef.current?.active) {
-        console.log('[CURSOR DEBUG] 커서 발행:', payload);
         publishMessage(clientRef.current, appRoomsCursor(roomId), payload);
-      } else {
-        console.log('[CURSOR DEBUG] WebSocket 비활성 상태');
       }
     },
     [roomId, userId, nickname, colorKey, enabled]
@@ -87,28 +78,17 @@ export const useCursorRealtime = ({
     let cursorSub: { unsubscribe: () => void } | null = null;
     let cancelled = false;
 
-    console.log('[CURSOR DEBUG] WebSocket 연결 시도...', { roomId, userId });
-
     connectRealtimeClient(client)
       .then(() => {
         if (cancelled) return;
-        console.log('[CURSOR DEBUG] WebSocket 연결 성공, 구독 시작:', topicRoomsCursor(roomId));
-
         cursorSub = subscribeTopic(client, topicRoomsCursor(roomId), (body) => {
           try {
             const data = JSON.parse(body) as CursorData;
-            console.log('[CURSOR DEBUG] 커서 수신:', data, '본인 userId:', userId);
-
-            // 본인 커서는 무시
-            if (data.userId === userId) {
-              console.log('[CURSOR DEBUG] 본인 커서 무시');
-              return;
-            }
+            if (data.userId === userId) return;
 
             setCursors((prev) => {
               const next = new Map(prev);
               next.set(data.userId, data);
-              console.log('[CURSOR DEBUG] cursors Map 업데이트:', Array.from(next.entries()));
               return next;
             });
           } catch (err) {
@@ -117,7 +97,7 @@ export const useCursorRealtime = ({
         });
       })
       .catch((err) => {
-        console.error('[CURSOR DEBUG] 커서 웹소켓 연결 실패:', err);
+        console.error('커서 웹소켓 연결 실패:', err);
       });
 
     return () => {

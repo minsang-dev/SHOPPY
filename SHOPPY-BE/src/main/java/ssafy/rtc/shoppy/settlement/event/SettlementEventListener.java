@@ -50,6 +50,15 @@ public class SettlementEventListener {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleItemDeleted(SettlementItemDeletedEvent event) {
+        log.debug("Publishing item deleted event for roomId: {}", event.roomId());
+        messagingTemplate.convertAndSend(
+            "/topic/rooms/" + event.roomId() + "/settlements",
+            event.response()
+        );
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleSettlementCompleted(SettlementCompletedEvent event) {
         log.debug("Publishing settlement completed event for roomId: {}", event.roomId());
         messagingTemplate.convertAndSend(

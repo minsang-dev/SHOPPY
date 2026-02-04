@@ -318,19 +318,36 @@ public class SettlementService {
         PurchaseItem item = purchaseItemRepository.findById(itemId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ITEM_NOT_FOUND));
 
+        Purchase purchase = item.getPurchase();
+
         // 값 업데이트
         boolean needRecalculate = (request.getUnitPrice().compareTo(item.getUnitPrice()) != 0) || (request.getQuantity() != item.getQuantity());
-        
+
         item.updateDetails(request.getItemName(), request.getUnitPrice(), request.getQuantity());
-        
+
         if (needRecalculate) {
             // 현재 할당되어 있는 멤버들 목록 가져오기
             List<Long> currentMemberIds = item.getItemAllocations().stream()
                     .map(ItemAllocation::getMemberId)
                     .toList();
-            
+
             // 기존 할당 내역 삭제 후 재생성 (updateAllocations 재활용)
+            // updateAllocations()가 이미 WebSocket 이벤트를 발행하므로 여기서는 발행하지 않음
             updateAllocations(itemId, currentMemberIds);
+        } else {
+            // 이름만 변경된 경우에도 WebSocket 이벤트 발행
+            PurchaseResponse purchaseResponse = PurchaseResponse.from(purchase);
+
+            SettlementItemUpdatedResponseEvent eventResponse = SettlementItemUpdatedResponseEvent.builder()
+                    .type(SettlementEventType.ITEM_UPDATED)
+                    .roomId(purchase.getRoomId())
+                    .updatedAt(java.time.LocalDateTime.now())
+                    .purchaseId(purchase.getPurchaseId())
+                    .totalAmount(purchase.getTotalAmount().intValue())
+                    .items(purchaseResponse.getItems())
+                    .build();
+
+            settlementEventPublisher.publishItemUpdated(purchase.getRoomId(), eventResponse);
         }
 
         return SettlementItemCreateResponse.builder()
@@ -349,8 +366,24 @@ public class SettlementService {
     public void deleteSettlementItem(Long itemId) {
         PurchaseItem item = purchaseItemRepository.findById(itemId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ITEM_NOT_FOUND));
-        
+
+        Purchase purchase = item.getPurchase();
+        Long roomId = purchase.getRoomId();
+        Long purchaseId = purchase.getPurchaseId();
+
+        // 품목 삭제
         purchaseItemRepository.delete(item);
+
+        // WebSocket 이벤트 발행
+        SettlementItemDeletedResponseEvent eventResponse = SettlementItemDeletedResponseEvent.builder()
+                .type(SettlementEventType.ITEM_DELETED)
+                .roomId(roomId)
+                .updatedAt(java.time.LocalDateTime.now())
+                .settlementItemId(itemId)
+                .purchaseId(purchaseId)
+                .build();
+
+        settlementEventPublisher.publishItemDeleted(roomId, eventResponse);
     }
 
     // 재정산 로직 (멤버 변경 시)
