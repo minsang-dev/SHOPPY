@@ -59,19 +59,6 @@ const CursorOverlay: React.FC<CursorOverlayProps> = ({
       const x = (e.clientX - rect.left) / rect.width;
       const y = (e.clientY - rect.top) / rect.height;
 
-      // [DEBUG] rect 값 확인
-      console.log('[CURSOR DEBUG] rect:', {
-        element: currentContainer.className,
-        left: rect.left,
-        top: rect.top,
-        width: rect.width,
-        height: rect.height,
-        clientX: e.clientX,
-        clientY: e.clientY,
-        x,
-        y,
-      });
-
       // 영역 내에서만 커서 발행, 영역 밖이면 숨김 신호 (-1)
       if (x >= 0 && x <= 1 && y >= 0 && y <= 1) {
         publishCursor(x, y);
@@ -83,14 +70,6 @@ const CursorOverlay: React.FC<CursorOverlayProps> = ({
     document.addEventListener('mousemove', handleMouseMove);
     return () => document.removeEventListener('mousemove', handleMouseMove);
   }, [enabled, publishCursor]);
-
-  // [DEBUG] 렌더링 상태 확인
-  console.log('[CURSOR DEBUG] CursorOverlay 렌더링:', {
-    enabled,
-    userId,
-    cursorsCount: cursors.size,
-    cursors: Array.from(cursors.entries()),
-  });
 
   if (!enabled) return null;
 
