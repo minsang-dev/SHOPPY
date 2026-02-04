@@ -33,8 +33,6 @@ export const useScrollRealtime = ({
   hostMode,
   containerRef,
 }: UseScrollRealtimeProps) => {
-  console.log('[SCROLL DEBUG] 훅 호출됨:', { roomId, userId, isHost, hostMode });
-
   const clientRef = useRef<Client | null>(null);
   const lastSentRef = useRef<number>(0);
   const hostModeRef = useRef(hostMode);
@@ -59,7 +57,6 @@ export const useScrollRealtime = ({
     };
 
     if (clientRef.current?.active) {
-      console.log('[SCROLL DEBUG] 발행:', payload);
       publishMessage(clientRef.current, appRoomsScroll(roomId), payload);
     }
   }, [roomId, userId, isHost, containerRef]);
@@ -83,21 +80,15 @@ export const useScrollRealtime = ({
     let sub: { unsubscribe: () => void } | null = null;
     let cancelled = false;
 
-    console.log('[SCROLL DEBUG] WebSocket 연결 시도...', { roomId, userId, isHost });
-
     connectRealtimeClient(client)
       .then(() => {
         if (cancelled) return;
-        console.log('[SCROLL DEBUG] WebSocket 연결 성공, 구독:', topicRoomsScroll(roomId));
-
         sub = subscribeTopic(client, topicRoomsScroll(roomId), (body) => {
           try {
             const data = JSON.parse(body) as ScrollPositionData;
-            console.log('[SCROLL DEBUG] 수신:', data, '본인:', userId, 'hostMode:', hostModeRef.current);
             if (data.userId === userId) return;
             if (!hostModeRef.current) return;
 
-            console.log('[SCROLL DEBUG] scrollTo 적용:', data.scrollX, data.scrollY);
             containerRef.current?.scrollTo({
               left: data.scrollX,
               top: data.scrollY,
@@ -107,7 +98,7 @@ export const useScrollRealtime = ({
           }
         });
       })
-      .catch((err) => console.error('[SCROLL DEBUG] WebSocket 연결 실패:', err));
+      .catch((err) => console.error('스크롤 웹소켓 연결 실패:', err));
 
     return () => {
       cancelled = true;
