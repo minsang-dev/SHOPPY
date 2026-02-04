@@ -5,6 +5,7 @@
 services:
 
     openvidu-server:
+        container_name: openvidu-server
         image: openvidu/openvidu-server:2.32.1
         restart: on-failure
         entrypoint: ['/usr/local/bin/entrypoint.sh']
@@ -30,6 +31,7 @@ services:
             - shoppy-net
 
     kms:
+        container_name: kms
         image: ${KMS_IMAGE:-kurento/kurento-media-server:7.3.0}
         restart: always
         ulimits:
@@ -54,6 +56,7 @@ services:
             - shoppy-net
 
     coturn:
+        container_name: coturn
         image: openvidu/openvidu-coturn:2.32.1
         restart: on-failure
         ports:
@@ -92,7 +95,7 @@ services:
         environment:
             - SERVER_PORT=8080
             - SERVER_SSL_ENABLED=false
-            - OPENVIDU_URL=https://openvidu-server:4443
+            - OPENVIDU_URL=https://openvidu-server:5443
             - OPENVIDU_SECRET=${OPENVIDU_SECRET}
             - SPRING_APPLICATION_NAME=shoppy-be
             # === MySQL Connection ===
