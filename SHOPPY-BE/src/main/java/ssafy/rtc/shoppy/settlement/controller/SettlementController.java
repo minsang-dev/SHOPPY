@@ -3,6 +3,7 @@ package ssafy.rtc.shoppy.settlement.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -94,6 +95,16 @@ public class SettlementController {
             @RequestBody SplitUpdateRequest request) {
         settlementService.updateAllocations(itemId, request.getMemberIds());
         return ResponseEntity.ok(SuccessResponse.ok());
+    }
+
+    @Operation(summary = "정산 draft 전체 업데이트")
+    @PatchMapping("/settlements/{settlementId}/draft")
+    public ResponseEntity<SuccessResponse<SettlementDraftResponse>> updateSettlementDraft(
+            @PathVariable Long settlementId,
+            @Valid @RequestBody SettlementDraftUpdateRequest request,
+            @AuthenticationPrincipal Long userId) {
+        SettlementDraftResponse response = settlementService.updateSettlementDraft(settlementId, request, userId);
+        return ResponseEntity.ok(SuccessResponse.of(response));
     }
 
     @Operation(summary = "전체 정산 상세 조회")

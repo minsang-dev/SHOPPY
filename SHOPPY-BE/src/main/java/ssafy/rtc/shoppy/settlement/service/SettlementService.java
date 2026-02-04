@@ -29,11 +29,16 @@ import ssafy.rtc.shoppy.settlement.utils.ReceiptParser;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -255,6 +260,129 @@ public class SettlementService {
         return response;
     }
 
+    /**
+     * 정산 draft 전체 upsert
+     */
+    public SettlementDraftResponse updateSettlementDraft(Long settlementId, SettlementDraftUpdateRequest request, Long userId) {
+        Purchase purchase = purchaseRepository.findById(settlementId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
+
+        Long roomId = purchase.getRoomId();
+        roomMemberRepository.findByRoom_RoomIdAndUserIdAndStatus(roomId, userId, MemberStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED_MEMBER));
+
+        List<RoomMemberEntity> activeMembers = roomMemberRepository.findByRoom_RoomIdAndStatus(roomId, MemberStatus.ACTIVE);
+        if (activeMembers.isEmpty()) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+
+        List<Long> activeMemberIdList = activeMembers.stream()
+                .map(RoomMemberEntity::getMemberId)
+                .sorted()
+                .toList();
+
+        Set<Long> activeMemberIdSet = new HashSet<>(activeMemberIdList);
+
+        if (request.getPayerMemberId() != null) {
+            if (!activeMemberIdSet.contains(request.getPayerMemberId())) {
+                throw new BusinessException(ErrorCode.INVALID_ROOM_MEMBER);
+            }
+            purchase.updatePayerMemberId(request.getPayerMemberId());
+        }
+
+        List<SettlementDraftItemRequest> itemRequests = request.getItems();
+        if (itemRequests == null) {
+            throw new BusinessException(ErrorCode.MISSING_FIELD);
+        }
+
+        Map<Long, PurchaseItem> existingItems = purchase.getPurchaseItems().stream()
+                .collect(Collectors.toMap(PurchaseItem::getPurchaseItemId, item -> item));
+
+        Set<Long> seenItemIds = new HashSet<>();
+        List<PurchaseItem> orderedItems = new ArrayList<>();
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        for (SettlementDraftItemRequest itemRequest : itemRequests) {
+            PurchaseItem item;
+            boolean isNewItem = itemRequest.getPurchaseItemId() == null;
+
+            if (isNewItem) {
+                item = PurchaseItem.builder()
+                        .purchase(purchase)
+                        .itemName(itemRequest.getItemName())
+                        .unitPrice(itemRequest.getUnitPrice())
+                        .quantity(itemRequest.getQuantity())
+                        .build();
+                purchase.addPurchaseItem(item);
+                purchaseItemRepository.save(item);
+            } else {
+                item = existingItems.get(itemRequest.getPurchaseItemId());
+                if (item == null) {
+                    throw new BusinessException(ErrorCode.ITEM_NOT_FOUND);
+                }
+                item.updateDetails(itemRequest.getItemName(), itemRequest.getUnitPrice(), itemRequest.getQuantity());
+            }
+
+            Long payerMemberId = resolvePayerMemberId(itemRequest, request);
+            String payerBankName = resolvePayerBankName(itemRequest, request);
+            String payerAccountNumber = resolvePayerAccountNumber(itemRequest, request);
+
+            if (payerMemberId != null && !activeMemberIdSet.contains(payerMemberId)) {
+                throw new BusinessException(ErrorCode.INVALID_ROOM_MEMBER);
+            }
+            if (payerMemberId != null || payerBankName != null || payerAccountNumber != null) {
+                item.updatePayer(payerMemberId, payerBankName, payerAccountNumber);
+            }
+
+            List<Long> participantIds = resolveParticipantIds(itemRequest, request, activeMemberIdList, activeMemberIdSet);
+            rebuildAllocations(item, participantIds);
+
+            if (item.getPurchaseItemId() != null) {
+                seenItemIds.add(item.getPurchaseItemId());
+            }
+            orderedItems.add(item);
+
+            if (item.getUnitPrice() != null) {
+                totalAmount = totalAmount.add(item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+            }
+        }
+
+        List<PurchaseItem> toDelete = purchase.getPurchaseItems().stream()
+                .filter(existing -> existing.getPurchaseItemId() != null && !seenItemIds.contains(existing.getPurchaseItemId()))
+                .toList();
+
+        if (!toDelete.isEmpty()) {
+            toDelete.forEach(purchase.getPurchaseItems()::remove);
+            purchaseItemRepository.deleteAll(toDelete);
+        }
+
+        purchase.updateTotalAmount(totalAmount);
+
+        LocalDateTime updatedAt = LocalDateTime.now();
+        List<PurchaseItemResponse> responseItems = orderedItems.stream()
+                .map(PurchaseItemResponse::from)
+                .toList();
+
+        SettlementDraftResponse response = SettlementDraftResponse.builder()
+                .settlementId(purchase.getPurchaseId())
+                .roomId(roomId)
+                .updatedAt(updatedAt)
+                .items(responseItems)
+                .build();
+
+        SettlementDraftUpdatedResponseEvent eventResponse = SettlementDraftUpdatedResponseEvent.builder()
+                .type(SettlementEventType.SETTLEMENT_DRAFT_UPDATED)
+                .roomId(roomId)
+                .updatedAt(updatedAt)
+                .settlementId(purchase.getPurchaseId())
+                .items(responseItems)
+                .build();
+
+        settlementEventPublisher.publishSettlementDraftUpdated(roomId, eventResponse);
+
+        return response;
+    }
+
     private void createPurchaseItemWithAllocations(Purchase purchase, PurchaseItemDto itemDto, List<RoomMemberEntity> members) {
         // 3-1. PurchaseItem 생성
         PurchaseItem purchaseItem = PurchaseItem.builder()
@@ -387,27 +515,59 @@ public class SettlementService {
     }
 
     // 재정산 로직 (멤버 변경 시)
-    public void updateAllocations(Long purchaseItemId, List<Long> newMemberIds) {
-        PurchaseItem purchaseItem = purchaseItemRepository.findById(purchaseItemId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ITEM_NOT_FOUND));
+    private Long resolvePayerMemberId(SettlementDraftItemRequest itemRequest, SettlementDraftUpdateRequest request) {
+        return itemRequest.getPayerMemberId() != null ? itemRequest.getPayerMemberId() : request.getPayerMemberId();
+    }
 
-        // 기존 Allocation 삭제
-        List<ItemAllocation> oldAllocations = itemAllocationRepository.findByPurchaseItem_PurchaseItemId(purchaseItemId);
-        itemAllocationRepository.deleteAll(oldAllocations);
+    private String resolvePayerBankName(SettlementDraftItemRequest itemRequest, SettlementDraftUpdateRequest request) {
+        return itemRequest.getPayerBankName() != null ? itemRequest.getPayerBankName() : request.getPayerBankName();
+    }
+
+    private String resolvePayerAccountNumber(SettlementDraftItemRequest itemRequest, SettlementDraftUpdateRequest request) {
+        return itemRequest.getPayerAccountNumber() != null ? itemRequest.getPayerAccountNumber() : request.getPayerAccountNumber();
+    }
+
+    private List<Long> resolveParticipantIds(SettlementDraftItemRequest itemRequest,
+                                             SettlementDraftUpdateRequest request,
+                                             List<Long> activeMemberIdList,
+                                             Set<Long> activeMemberIdSet) {
+        List<Long> participantIds = itemRequest.getParticipantIds();
+        if ((participantIds == null || participantIds.isEmpty())
+                && request.getParticipantIds() != null
+                && !request.getParticipantIds().isEmpty()) {
+            participantIds = request.getParticipantIds();
+        }
+
+        if (participantIds == null || participantIds.isEmpty()) {
+            participantIds = new ArrayList<>(activeMemberIdList);
+        }
+
+        LinkedHashSet<Long> uniqueIds = new LinkedHashSet<>(participantIds);
+        if (!activeMemberIdSet.containsAll(uniqueIds)) {
+            throw new BusinessException(ErrorCode.INVALID_ROOM_MEMBER);
+        }
+        return new ArrayList<>(uniqueIds);
+    }
+
+    private void rebuildAllocations(PurchaseItem purchaseItem, List<Long> memberIds) {
+        if (purchaseItem.getPurchaseItemId() != null) {
+            List<ItemAllocation> oldAllocations = itemAllocationRepository.findByPurchaseItem_PurchaseItemId(purchaseItem.getPurchaseItemId());
+            itemAllocationRepository.deleteAll(oldAllocations);
+        }
         purchaseItem.getItemAllocations().clear();
 
-        BigDecimal totalItemPrice = purchaseItem.getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity()));
-        int participantCount = newMemberIds.size();
+        if (memberIds == null || memberIds.isEmpty()) return;
 
-        if (participantCount == 0) return;
+        BigDecimal totalItemPrice = purchaseItem.getUnitPrice().multiply(BigDecimal.valueOf(purchaseItem.getQuantity()));
+        int participantCount = memberIds.size();
 
         BigDecimal amountToPayPerPerson = totalItemPrice.divide(BigDecimal.valueOf(participantCount), 0, RoundingMode.FLOOR);
         BigDecimal totalUserPay = amountToPayPerPerson.multiply(BigDecimal.valueOf(participantCount));
         BigDecimal totalDiffAmount = totalItemPrice.subtract(totalUserPay);
 
         boolean diffAssigned = false;
-        for (Long memberId : newMemberIds) {
-             BigDecimal diff = BigDecimal.ZERO;
+        for (Long memberId : memberIds) {
+            BigDecimal diff = BigDecimal.ZERO;
             if (!diffAssigned) {
                 diff = totalDiffAmount;
                 diffAssigned = true;
@@ -423,6 +583,13 @@ public class SettlementService {
             purchaseItem.addItemAllocation(allocation);
             itemAllocationRepository.save(allocation);
         }
+    }
+
+    public void updateAllocations(Long purchaseItemId, List<Long> newMemberIds) {
+        PurchaseItem purchaseItem = purchaseItemRepository.findById(purchaseItemId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ITEM_NOT_FOUND));
+
+        rebuildAllocations(purchaseItem, newMemberIds);
 
         // WebSocket 이벤트 발행
         Purchase purchase = purchaseItem.getPurchase();

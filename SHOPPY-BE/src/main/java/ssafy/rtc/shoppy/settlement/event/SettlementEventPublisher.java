@@ -18,6 +18,10 @@ public class SettlementEventPublisher {
         applicationEventPublisher.publishEvent(new SettlementCreatedEvent(roomId, response));
     }
 
+    public void publishSettlementDraftUpdated(Long roomId, SettlementDraftUpdatedResponseEvent response) {
+        applicationEventPublisher.publishEvent(new SettlementDraftUpdatedEvent(roomId, response));
+    }
+
     public void publishItemAdded(Long roomId, SettlementItemAddedResponseEvent response) {
         applicationEventPublisher.publishEvent(new SettlementItemAddedEvent(roomId, response));
     }
