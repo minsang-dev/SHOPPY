@@ -1,9 +1,15 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import UserAvatar from '@/shared/ui/UserAvatar';
 import { getRoomMembers } from '@/entities/room/api/room';
 import type { RoomMember } from '@/entities/room/types/room.types';
 import { useSettlementStore } from '@/entities/settlement/model/useSettlementStore';
+import {
+  createSettlement,
+  getSettlement,
+  updateSettlementItemSplits,
+} from '@/entities/settlement/api/settlementApi';
+import { mapSettlementResponseToStoreItems } from '@/entities/settlement/model/mapper';
 import { useSettlementRealtime } from '@/features/settlement/model/useSettlementRealtime';
 import './styles.css';
 
@@ -25,10 +31,52 @@ const DesktopSettlementPage: React.FC = () => {
   const [manualError, setManualError] = useState('');
 
   const settlementItemsByRoom = useSettlementStore((state) => state.settlementItemsByRoom);
+  const settlementIdByRoom = useSettlementStore((state) => state.settlementIdByRoom);
   const items = roomId ? settlementItemsByRoom[roomId] ?? EMPTY_ITEMS : EMPTY_ITEMS;
+  const setSettlementItems = useSettlementStore((state) => state.setSettlementItems);
+  const setSettlementId = useSettlementStore((state) => state.setSettlementId);
   const updateSettlementItemPayers = useSettlementStore((state) => state.updateSettlementItemPayers);
   const appendSettlementItems = useSettlementStore((state) => state.appendSettlementItems);
-  useSettlementRealtime({ roomId });
+
+  const settlementSyncLockRef = useRef(false);
+  const refreshSettlementFromServer = useCallback(
+    async (overrideSettlementId?: number) => {
+      if (!roomId || settlementSyncLockRef.current) return;
+      const targetSettlementId = overrideSettlementId ?? settlementIdByRoom[roomId];
+      if (!targetSettlementId) return;
+
+      settlementSyncLockRef.current = true;
+      try {
+        const response = await getSettlement(targetSettlementId);
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response, items));
+      } catch (error) {
+        console.error('Failed to sync settlement from realtime event:', error);
+      } finally {
+        settlementSyncLockRef.current = false;
+      }
+    },
+    [items, roomId, settlementIdByRoom, setSettlementItems],
+  );
+
+  useSettlementRealtime({
+    roomId,
+    onEvent: (event) => {
+      if (!roomId) return;
+
+      const payload = (event.payload as Record<string, unknown> | undefined) ?? {};
+      const payloadSettlementId = Number(
+        payload.settlementId ?? payload.purchaseId ?? event.settlementId ?? event.purchaseId,
+      );
+
+      if (Number.isFinite(payloadSettlementId) && payloadSettlementId > 0) {
+        setSettlementId(roomId, payloadSettlementId);
+        void refreshSettlementFromServer(payloadSettlementId);
+        return;
+      }
+
+      void refreshSettlementFromServer();
+    },
+  });
 
   useEffect(() => {
     if (!roomId) return;
@@ -42,6 +90,69 @@ const DesktopSettlementPage: React.FC = () => {
     };
     void loadMembers();
   }, [roomId]);
+
+  useEffect(() => {
+    if (!roomId || items.length > 0) return;
+    const settlementId = settlementIdByRoom[roomId];
+    if (!settlementId) return;
+
+    const loadSettlement = async () => {
+      try {
+        const response = await getSettlement(settlementId);
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response));
+      } catch (error) {
+        console.error('Failed to load settlement:', error);
+      }
+    };
+
+    void loadSettlement();
+  }, [items.length, roomId, settlementIdByRoom, setSettlementItems]);
+
+  const handleFinalize = async () => {
+    if (!roomId) return;
+    const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
+    if (currentMemberId <= 0 || items.length === 0) {
+      navigate(`/rooms/${roomId}/settlement/result`);
+      return;
+    }
+
+    try {
+      const payload = {
+        payerMemberId: currentMemberId,
+        totalAmount: items.reduce((sum, item) => sum + (item.price ?? 0) * (item.quantity ?? 1), 0),
+        items: items.map((item) => ({
+          itemName: item.name,
+          unitPrice: Number(item.price ?? 0),
+          quantity: Number(item.quantity ?? 1),
+          payerMemberId: Number(item.payerMemberId ?? currentMemberId),
+          payerBankName: item.payerBankName ?? '',
+          payerAccountNumber: item.payerAccountNumber ?? '',
+        })),
+      };
+
+      const created = await createSettlement(roomId, payload);
+      setSettlementId(roomId, created.purchaseId);
+      setSettlementItems(roomId, mapSettlementResponseToStoreItems(created, items));
+
+      await Promise.all(
+        created.items.map((serverItem, index) =>
+          updateSettlementItemSplits(
+            serverItem.purchaseItemId,
+            items[index]?.payerIds?.length
+              ? (items[index].payerIds as number[])
+              : serverItem.allocations.map((allocation) => allocation.memberId),
+          ),
+        ),
+      );
+
+      const refreshed = await getSettlement(created.purchaseId);
+      setSettlementItems(roomId, mapSettlementResponseToStoreItems(refreshed, items));
+    } catch (error) {
+      console.error('Failed to create settlement:', error);
+    }
+
+    navigate(`/rooms/${roomId}/settlement/result`);
+  };
 
   const receiptTitles = useMemo(
     () =>
@@ -224,7 +335,7 @@ const DesktopSettlementPage: React.FC = () => {
           <button
             type="button"
             className="desktop-settlement-complete-btn"
-            onClick={() => navigate(`/rooms/${roomId}/settlement/result`)}
+            onClick={handleFinalize}
           >
             등록 완료
           </button>

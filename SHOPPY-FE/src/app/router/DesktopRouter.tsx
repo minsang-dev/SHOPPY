@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useParams } from 'react-router-dom';
 
 // 메인 페이지
 import DesktopMainPage from '@/pages/desktop/main';
@@ -17,6 +17,13 @@ import { KakaoCallbackPage } from '@/pages/desktop/LoginCallBack/KakaoCallbackPa
 
 // 마이페이지
 import MyPage from '@/pages/desktop/MyPage';
+import { useRoomPresenceHeartbeat } from '@/features/room/presence/model/useRoomPresenceHeartbeat';
+
+const DesktopRoomRouteShell = () => {
+  const { roomId } = useParams<{ roomId?: string }>();
+  useRoomPresenceHeartbeat(roomId);
+  return <DesktopVideoChatPage />;
+};
 
 const AppRouter = () => {
   return (
@@ -31,7 +38,7 @@ const AppRouter = () => {
       <Route path="auth/kakao/callback" element={<KakaoCallbackPage />} />
       
       {/* 중첩 라우팅으로 쇼핑룸 안 쇼핑몰 페이지 렌더링  */}
-      <Route path="/rooms/:roomId" element={<DesktopVideoChatPage />}>
+      <Route path="/rooms/:roomId" element={<DesktopRoomRouteShell />}>
         {/* index를 쓰면 '/room'으로 들어왔을 때 이 컴포넌트를 Outlet에 보여줌 */}
         <Route index element={<DesktopMainPage />} />
         <Route path="products" element={<DesktopProductList />} />

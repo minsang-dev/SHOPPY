@@ -114,10 +114,6 @@ const CartItem: React.FC<CartItemProps> = ({
               </>
             )}
           </div>
-          {/* AI 추천: reason은 행 아래 전체 너비로 (가독성) */}
-          {isAI && item.reason && (
-            <p className="cart-item-reason cart-item-reason--block">{item.reason}</p>
-          )}
 
           {isOnline && (
             <div className="cart-item-controls">
