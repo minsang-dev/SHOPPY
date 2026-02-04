@@ -21,6 +21,7 @@ services:
         environment:
             - SERVER_SSL_ENABLED=true
             - SERVER_PORT=5443
+            - HTTPS_PORT=443
             - KMS_URIS=["ws://kms:8888/kurento"]
             - COTURN_IP=${COTURN_IP:-auto-ipv4}
             - COTURN_PORT=${COTURN_PORT:-3478}
