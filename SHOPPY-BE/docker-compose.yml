@@ -9,6 +9,8 @@ services:
         image: openvidu/openvidu-server:2.32.1
         restart: on-failure
         entrypoint: ['/usr/local/bin/entrypoint.sh']
+        ports:
+            - "127.0.0.1:5443:5443"
         volumes:
             - ./openvidu/coturn:/run/secrets/coturn
             - /var/run/docker.sock:/var/run/docker.sock

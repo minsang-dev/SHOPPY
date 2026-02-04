@@ -122,7 +122,13 @@ stage('Deploy') {
                         echo "DB_PORT=${DB_PORT}" >> .env
                         echo "CORS_ALLOWED_ORIGINS=https://i14c209.p.ssafy.io" >> .env
                     """
-                    sh 'docker compose up -d --build'
+                    sh """
+                        echo "Updating Nginx configuration from nginx.conf..."
+                        sudo cp ./nginx.conf /etc/nginx/sites-available/default
+                        sudo service nginx reload
+
+                        docker compose up -d --build
+                    """
                 }
             } else {
                 echo "Skip deploy: BRANCH_NAME=${env.BRANCH_NAME}"
