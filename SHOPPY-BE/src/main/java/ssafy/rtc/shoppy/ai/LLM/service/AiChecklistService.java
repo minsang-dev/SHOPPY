@@ -9,6 +9,7 @@ import ssafy.rtc.shoppy.ai.llm.dto.ChecklistCategoryResponseDto;
 import ssafy.rtc.shoppy.ai.llm.dto.ChecklistItemResponseDto;
 import ssafy.rtc.shoppy.ai.llm.entity.AiChecklistEntity;
 import ssafy.rtc.shoppy.ai.llm.entity.AiChecklistItemEntity;
+import ssafy.rtc.shoppy.ai.llm.event.AiChecklistEventPublisher;
 import ssafy.rtc.shoppy.ai.llm.repository.AiChecklistItemRepository;
 import ssafy.rtc.shoppy.ai.llm.repository.AiChecklistRepository;
 import ssafy.rtc.shoppy.global.exception.BusinessException;
@@ -26,6 +27,7 @@ public class AiChecklistService {
 
         private final AiChecklistRepository checklistRepository;
         private final AiChecklistItemRepository checklistItemRepository;
+        private final AiChecklistEventPublisher eventPublisher;
 
         @Transactional(readOnly = true)
         public AiChecklistResponseDto getChecklist(long roomId) {
@@ -49,6 +51,7 @@ public class AiChecklistService {
                                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "체크리스트 항목을 찾을 수 없습니다."));
 
                 item.updateChecked(checked);
+                eventPublisher.publishItemToggled(roomId, checklistItemId, checked);
         }
 
         @Transactional
@@ -62,6 +65,7 @@ public class AiChecklistService {
                                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "체크리스트 항목을 찾을 수 없습니다."));
 
                 checklistItemRepository.delete(item);
+                eventPublisher.publishItemDeleted(roomId, checklistItemId);
         }
 
         private AiChecklistResponseDto buildChecklistResponse(AiChecklistEntity checklist,
