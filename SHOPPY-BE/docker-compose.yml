@@ -25,6 +25,7 @@ services:
             - SERVER_PORT=5443
             - HTTPS_PORT=443
             - KMS_URIS=["ws://kms:8888/kurento"]
+            - DOMAIN_OR_PUBLIC_IP=i14c209.p.ssafy.io/openvidu
             - COTURN_IP=${COTURN_IP:-auto-ipv4}
             - COTURN_PORT=8901
         logging:
