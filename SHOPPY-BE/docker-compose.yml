@@ -25,7 +25,6 @@ services:
             - SERVER_PORT=5443
             - HTTPS_PORT=443
             - KMS_URIS=["ws://kms:8888/kurento"]
-            - DOMAIN_OR_PUBLIC_IP=i14c209.p.ssafy.io/openvidu
             - COTURN_IP=${COTURN_IP:-auto-ipv4}
             - COTURN_PORT=8901
         logging:
@@ -102,11 +101,9 @@ services:
         env_file:
             - .env
         environment:
-            - SERVER_PORT=8080
-            - SERVER_SSL_ENABLED=false
-            - OPENVIDU_URL=https://openvidu-server:5443
-            - OPENVIDU_PUBLIC_URL=https://i14c209.p.ssafy.io/openvidu
-            - OPENVIDU_SECRET=${OPENVIDU_SECRET}
+            - KMS_URIS=["ws://kms:8888/kurento"]
+            - DOMAIN_OR_PUBLIC_IP=i14c209.p.ssafy.io/openvidu
+            - COTURN_IP=${COTURN_IP:-auto-ipv4}
             - SPRING_APPLICATION_NAME=shoppy-be
             # === MySQL Connection ===
             - SPRING_DATASOURCE_URL=jdbc:mysql://${DB_HOST}:${DB_PORT}/Shoppy_DB?useSSL=false&allowPublicKeyRetrieval=true
