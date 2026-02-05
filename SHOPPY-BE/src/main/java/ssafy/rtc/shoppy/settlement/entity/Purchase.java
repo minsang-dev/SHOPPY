@@ -43,6 +43,14 @@ public class Purchase {
         this.status = status;
     }
 
+    public void updateTotalAmount(BigDecimal totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
+    public void updatePayerMemberId(Long payerMemberId) {
+        this.payerMemberId = payerMemberId;
+    }
+
     public void addPurchaseItem(PurchaseItem item) {
         this.purchaseItems.add(item);
         item.setPurchase(this);

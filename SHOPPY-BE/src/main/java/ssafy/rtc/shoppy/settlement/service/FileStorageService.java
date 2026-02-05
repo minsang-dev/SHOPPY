@@ -10,6 +10,10 @@ import ssafy.rtc.shoppy.global.exception.BusinessException;
 import ssafy.rtc.shoppy.global.exception.ErrorCode;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 @Slf4j
@@ -27,34 +31,37 @@ public class FileStorageService {
             throw new BusinessException(ErrorCode.INVALID_ARGUMENT);
         }
 
-        try {
-            // 유니크한 파일명 생성
-            String originalFilename = file.getOriginalFilename();
-            String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
-            String savedFilename = "receipts/" + UUID.randomUUID().toString() + extension;
+        // ??? ??? ??
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        }
+        String savedFilename = "receipts/" + UUID.randomUUID().toString() + extension;
 
-            // S3 업로드
-            // S3Template은 내부적으로 Content-Type 등을 자동 처리
+        try {
+            // S3 ???
             s3Template.upload(bucketName, savedFilename, file.getInputStream());
 
-            // 업로드된 URL 반환
-            // public access가 허용된 버킷이라 가정하거나, presigned url을 생성해야 함
-            // 여기서는 표준 S3 URL 형식을 반환
+            // ???? URL ??
             String fileUrl = s3Template.download(bucketName, savedFilename).getURL().toString();
-            
-            // 만약 S3Template.download().getURL()이 presigned가 아니라면 직접 구성
-            // https://{bucket}.s3.{region}.amazonaws.com/{key}
-            // 혹은 cloudfront 등을 사용한다면 그에 맞게 변경 필요
-            
             log.info("S3 Upload Success: {}", fileUrl);
             return fileUrl;
 
-        } catch (IOException e) {
-            log.error("S3 Upload Failed", e);
-            throw new RuntimeException("파일 업로드 중 오류가 발생했습니다.", e);
+        } catch (Exception e) {
+            // S3 ?? ? ?? ???? ?? (??/???)
+            try {
+                Path uploadDir = Paths.get(System.getProperty("user.home"), "shoppy-uploads", "receipts");
+                Files.createDirectories(uploadDir);
+                Path target = uploadDir.resolve(savedFilename.substring("receipts/".length()));
+                Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+                String localPath = target.toAbsolutePath().toString();
+                log.warn("S3 upload failed, saved locally: {}", localPath, e);
+                return localPath;
+            } catch (IOException ioe) {
+                log.error("Local save failed", ioe);
+                throw new RuntimeException("?? ??? ? ??? ??????.", ioe);
+            }
         }
     }
 }
