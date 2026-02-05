@@ -201,3 +201,19 @@
   padding: 10px 0;
   font-weight: 700;
 }
+
+.mobile-settlement-result-bottom-actions {
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.mobile-settlement-result-finish {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  background: #10b981;
+  color: #ffffff;
+  padding: 12px 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+}

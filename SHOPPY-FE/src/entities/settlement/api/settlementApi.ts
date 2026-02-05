@@ -56,6 +56,32 @@ export interface SettlementResponse {
   items: SettlementItemResponse[];
 }
 
+export interface SettlementDraftItemRequest {
+  purchaseItemId?: number;
+  itemName: string;
+  unitPrice: number;
+  quantity: number;
+  payerMemberId?: number;
+  payerBankName?: string;
+  payerAccountNumber?: string;
+  participantIds?: number[];
+}
+
+export interface SettlementDraftUpdateRequest {
+  payerMemberId?: number;
+  payerBankName?: string;
+  payerAccountNumber?: string;
+  participantIds?: number[];
+  items: SettlementDraftItemRequest[];
+}
+
+export interface SettlementDraftResponse {
+  settlementId: number;
+  roomId: number;
+  updatedAt: string;
+  items: SettlementItemResponse[];
+}
+
 export const uploadReceiptImage = async (
   roomId: string,
   file: File,
@@ -90,6 +116,17 @@ export const getSettlement = async (settlementId: number): Promise<SettlementRes
   return apiRequest<SettlementResponse>({
     method: 'GET',
     url: `/settlements/${settlementId}`,
+  });
+};
+
+export const updateSettlementDraft = async (
+  settlementId: number,
+  payload: SettlementDraftUpdateRequest,
+): Promise<SettlementDraftResponse> => {
+  return apiRequest<SettlementDraftResponse>({
+    method: 'PATCH',
+    url: `/settlements/${settlementId}/draft`,
+    data: payload,
   });
 };
 

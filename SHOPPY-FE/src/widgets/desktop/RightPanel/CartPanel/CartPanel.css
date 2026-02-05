@@ -30,3 +30,14 @@
   color: #9ca3af;
   text-align: center;
 }
+
+.cart-panel-voice-toast {
+  margin: -0.25rem 0 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.8rem;
+  font-weight: 600;
+}

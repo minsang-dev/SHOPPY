@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import UserAvatar from '@/shared/ui/UserAvatar';
 import { getRoomMembers } from '@/entities/room/api/room';
@@ -6,6 +6,8 @@ import type { RoomMember } from '@/entities/room/types/room.types';
 import { getSettlement } from '@/entities/settlement/api/settlementApi';
 import { mapSettlementResponseToStoreItems } from '@/entities/settlement/model/mapper';
 import { useSettlementStore } from '@/entities/settlement/model/useSettlementStore';
+import { useSettlementRealtime } from '@/features/settlement/model/useSettlementRealtime';
+import { useLeaveRoom } from '@/features/room/leave-room';
 import './styles.css';
 
 type TransferRow = {
@@ -27,16 +29,75 @@ const MobileSettlementResultPage: React.FC<MobileSettlementResultPageProps> = ({
   const routeParams = useParams<{ roomId?: string }>();
   const [members, setMembers] = useState<RoomMember[]>([]);
   const [selectedTransfer, setSelectedTransfer] = useState<TransferRow | null>(null);
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
 
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
   const roomId = routeParams.roomId ?? params.get('room_id') ?? sessionStorage.getItem('roomId') ?? '';
   const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
+  const { leaveByButton } = useLeaveRoom({
+    roomId: roomId || undefined,
+    navigateTo: '/m',
+  });
 
   const settlementItemsByRoom = useSettlementStore((state) => state.settlementItemsByRoom);
   const settlementIdByRoom = useSettlementStore((state) => state.settlementIdByRoom);
+  const setSettlementId = useSettlementStore((state) => state.setSettlementId);
   const setSettlementItems = useSettlementStore((state) => state.setSettlementItems);
   const transferStatusByRoom = useSettlementStore((state) => state.transferStatusByRoom);
   const markTransferDone = useSettlementStore((state) => state.markTransferDone);
+  const syncLockRef = useRef(false);
+
+  const getPersistedSettlementId = useCallback(() => {
+    if (!roomId) return null;
+    const stored = Number(localStorage.getItem(`settlement:id:${roomId}`) ?? '0');
+    return Number.isFinite(stored) && stored > 0 ? stored : null;
+  }, [roomId]);
+
+  const refreshSettlementFromServer = useCallback(
+    async (overrideSettlementId?: number) => {
+      if (!roomId || syncLockRef.current) return;
+      const targetSettlementId =
+        overrideSettlementId ?? settlementIdByRoom[roomId] ?? getPersistedSettlementId();
+      if (!targetSettlementId) return;
+
+      syncLockRef.current = true;
+      try {
+        const response = await getSettlement(targetSettlementId);
+        setSettlementId(roomId, targetSettlementId);
+        localStorage.setItem(`settlement:id:${roomId}`, String(targetSettlementId));
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response));
+      } catch (error) {
+        console.error('Failed to sync settlement result from realtime event:', error);
+      } finally {
+        syncLockRef.current = false;
+      }
+    },
+    [getPersistedSettlementId, roomId, setSettlementId, setSettlementItems, settlementIdByRoom],
+  );
+
+  useSettlementRealtime({
+    roomId: roomId || undefined,
+    onEvent: (event) => {
+      if (!roomId) return;
+      const payload = (event.payload as Record<string, unknown> | undefined) ?? {};
+      const payloadSettlementId = Number(
+        payload.settlementId ??
+          payload.settlement_id ??
+          payload.purchaseId ??
+          payload.purchase_id ??
+          event.settlementId ??
+          event.settlement_id ??
+          event.purchaseId ??
+          event.purchase_id,
+      );
+
+      if (Number.isFinite(payloadSettlementId) && payloadSettlementId > 0) {
+        void refreshSettlementFromServer(payloadSettlementId);
+        return;
+      }
+      void refreshSettlementFromServer();
+    },
+  });
 
   const items = roomId ? settlementItemsByRoom[roomId] ?? EMPTY_ITEMS : EMPTY_ITEMS;
   const transferStatus = roomId ? transferStatusByRoom[roomId] ?? {} : {};
@@ -56,12 +117,14 @@ const MobileSettlementResultPage: React.FC<MobileSettlementResultPageProps> = ({
 
   useEffect(() => {
     if (!roomId || items.length > 0) return;
-    const settlementId = settlementIdByRoom[roomId];
+    const settlementId = settlementIdByRoom[roomId] ?? getPersistedSettlementId();
     if (!settlementId) return;
 
     const loadSettlement = async () => {
       try {
         const response = await getSettlement(settlementId);
+        setSettlementId(roomId, settlementId);
+        localStorage.setItem(`settlement:id:${roomId}`, String(settlementId));
         setSettlementItems(roomId, mapSettlementResponseToStoreItems(response));
       } catch (error) {
         console.error('Failed to load settlement result:', error);
@@ -69,7 +132,7 @@ const MobileSettlementResultPage: React.FC<MobileSettlementResultPageProps> = ({
     };
 
     void loadSettlement();
-  }, [items.length, roomId, settlementIdByRoom, setSettlementItems]);
+  }, [getPersistedSettlementId, items.length, roomId, setSettlementId, settlementIdByRoom, setSettlementItems]);
 
   const transferRows = useMemo(() => {
     const map = new Map<string, TransferRow>();
@@ -180,6 +243,16 @@ const MobileSettlementResultPage: React.FC<MobileSettlementResultPageProps> = ({
             )}
           </div>
         </section>
+
+        <div className="mobile-settlement-result-bottom-actions">
+          <button
+            type="button"
+            className="mobile-settlement-result-finish"
+            onClick={() => setShowFinishConfirm(true)}
+          >
+            정산 완료
+          </button>
+        </div>
       </div>
 
       {selectedTransfer && (
@@ -203,6 +276,35 @@ const MobileSettlementResultPage: React.FC<MobileSettlementResultPageProps> = ({
                 }}
               >
                 완료
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFinishConfirm && (
+        <div className="mobile-settlement-transfer-modal">
+          <div className="mobile-settlement-transfer-backdrop" onClick={() => setShowFinishConfirm(false)} />
+          <div className="mobile-settlement-transfer-sheet">
+            <h3>정산 완료</h3>
+            <p>
+              완료 시 공유 쇼핑이 종료됩니다.
+              <br />
+              종료하시겠습니까?
+            </p>
+            <div className="mobile-settlement-transfer-actions">
+              <button type="button" className="ghost" onClick={() => setShowFinishConfirm(false)}>
+                아니오
+              </button>
+              <button
+                type="button"
+                className="primary"
+                onClick={() => {
+                  setShowFinishConfirm(false);
+                  leaveByButton();
+                }}
+              >
+                예
               </button>
             </div>
           </div>

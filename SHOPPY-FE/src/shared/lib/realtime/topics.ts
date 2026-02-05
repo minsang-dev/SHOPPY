@@ -32,6 +32,13 @@ export const topicShoppingUpdated = (roomId: string | number) =>
 export const topicShoppingDeleted = (roomId: string | number) =>
   `/topic/rooms/${roomId}/shopping/deleted`;
 
+// AI 체크리스트 웹소켓
+export const topicAiChecklistToggled = (roomId: string | number) =>
+  `/topic/rooms/${roomId}/ai-checklist/toggled`;
+
+export const topicAiChecklistDeleted = (roomId: string | number) =>
+  `/topic/rooms/${roomId}/ai-checklist/deleted`;
+
 // 발행용: 서버로 메시지를 보낼 주소
 export const appShoppingAdd = (roomId: string | number) =>
   `/app/rooms/${roomId}/shopping/add`;
@@ -76,3 +83,10 @@ export const topicRoomsCursor = (roomId: string | number) =>
 // 발행용: 내 커서 위치 전송
 export const appRoomsCursor = (roomId: string | number) =>
   `/app/rooms/${roomId}/cursor`;
+
+// 스크롤 동기화 웹소켓
+export const topicRoomsScroll = (roomId: string | number) =>
+  `/topic/rooms/${roomId}/scroll`;
+
+export const appRoomsScroll = (roomId: string | number) =>
+  `/app/rooms/${roomId}/scroll`;

@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import ssafy.rtc.shoppy.global.exception.BusinessException;
+import ssafy.rtc.shoppy.global.exception.ErrorCode;
 import ssafy.rtc.shoppy.global.response.SuccessResponse;
 import ssafy.rtc.shoppy.vote.dto.*;
 import ssafy.rtc.shoppy.vote.enums.VoteStatus;
@@ -27,6 +29,9 @@ public class VoteController {
             @PathVariable Long roomId,
             @Valid @RequestBody VoteCreateRequestDto request
     ) {
+        if (userId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
         VoteCreateResponseDto response = voteService.createVote(roomId, userId, request);
         return ResponseEntity.ok(SuccessResponse.of(response));
     }
@@ -60,6 +65,9 @@ public class VoteController {
             @PathVariable Long voteId,
             @Valid @RequestBody VoteParticipateRequestDto request
     ) {
+        if (userId == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED);
+        }
         VoteParticipateResponseDto response = voteService.participate(roomId, voteId, userId, request);
         return ResponseEntity.ok(SuccessResponse.of(response));
     }
