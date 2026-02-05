@@ -16,7 +16,7 @@ public class OpenViduService {
     public OpenViduSessionInfo createOrGetSession(Long roomId) {
         String sessionId = webRtcProperties.getSessionIdPrefix() + roomId;
         String resolvedId = openViduClient.createSession(sessionId);
-        return new OpenViduSessionInfo(resolvedId, openViduProperties.getUrl());
+        return new OpenViduSessionInfo(resolvedId, openViduProperties.getPublicUrl());
     }
 
     public String createToken(String sessionId, OpenViduRole role, String data) {

@@ -10,5 +10,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class OpenViduProperties {
 
     private String url;
+    private String publicUrl;
     private String secret;
 }

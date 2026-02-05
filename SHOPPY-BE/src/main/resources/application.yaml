@@ -28,6 +28,7 @@ server:
 
 openvidu:
   url: ${OPENVIDU_URL}
+  public-url: ${OPENVIDU_PUBLIC_URL}
   secret: ${OPENVIDU_SECRET}
 
 webrtc:
