@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import ssafy.rtc.shoppy.ai.config.CorsProperties;
 import ssafy.rtc.shoppy.auth.config.SecurityConfig;
 import ssafy.rtc.shoppy.auth.jwt.JwtTokenProvider;
+import ssafy.rtc.shoppy.auth.service.TokenBlacklistService;
 import ssafy.rtc.shoppy.global.exception.BusinessException;
 import ssafy.rtc.shoppy.global.exception.ErrorCode;
 import ssafy.rtc.shoppy.room.entity.RoomMemberEntity;
@@ -55,6 +56,9 @@ class SettlementControllerTest {
 
     @MockitoBean
     private CorsProperties corsProperties;
+
+    @MockitoBean
+    private TokenBlacklistService tokenBlacklistService;
 
     @Nested
     @DisplayName("영수증 업로드 - POST /rooms/{roomId}/settlements/receipt")

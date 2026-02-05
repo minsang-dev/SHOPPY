@@ -97,6 +97,11 @@ public class JwtTokenProvider {
         }
     }
 
+    public long getRemainingExpiration(String token) {
+        Claims claims = parseClaims(token);
+        return claims.getExpiration().getTime() - System.currentTimeMillis();
+    }
+
     public Long getMemberIdFromToken(String token) {
         Claims claims = parseClaims(token);
         return Long.parseLong(claims.getSubject());

@@ -16,6 +16,7 @@ import ssafy.rtc.shoppy.auth.entity.Member;
 import ssafy.rtc.shoppy.auth.jwt.JwtTokenProvider;
 import ssafy.rtc.shoppy.auth.repository.MemberRepository;
 import ssafy.rtc.shoppy.auth.service.AuthService;
+import ssafy.rtc.shoppy.auth.service.TokenBlacklistService;
 import ssafy.rtc.shoppy.global.exception.BusinessException;
 import ssafy.rtc.shoppy.global.exception.ErrorCode;
 
@@ -33,6 +34,7 @@ public class AuthServiceImpl implements AuthService {
     private final WebClient webClient;
     private final MemberRepository memberRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     public KakaoLoginUrlResponse getKakaoLoginUrl() {
@@ -159,10 +161,14 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void logout(Long memberId) {
+    public void logout(Long memberId, String accessToken) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
         member.updateRefreshToken(null);
+
+        long remainingMillis = jwtTokenProvider.getRemainingExpiration(accessToken);
+        tokenBlacklistService.blacklist(accessToken, remainingMillis);
+
         log.info("Member logged out: memberId={}", memberId);
     }
 

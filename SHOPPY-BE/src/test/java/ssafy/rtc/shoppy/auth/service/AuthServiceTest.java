@@ -37,6 +37,9 @@ class AuthServiceTest {
     @Mock
     private JwtTokenProvider jwtTokenProvider;
 
+    @Mock
+    private TokenBlacklistService tokenBlacklistService;
+
     @InjectMocks
     private AuthServiceImpl authService;
 
@@ -157,20 +160,23 @@ class AuthServiceTest {
     class LogoutTest {
 
         @Test
-        @DisplayName("로그아웃 성공 - Refresh Token이 null로 설정됨")
+        @DisplayName("로그아웃 성공 - Refresh Token이 null로 설정되고 Access Token이 블랙리스트에 등록됨")
         void logout_Success() {
             // given
             Long memberId = 1L;
+            String accessToken = "valid-access-token";
             testMember.updateRefreshToken("some-refresh-token");
 
             when(memberRepository.findById(memberId)).thenReturn(Optional.of(testMember));
+            when(jwtTokenProvider.getRemainingExpiration(accessToken)).thenReturn(300000L);
 
             // when
-            authService.logout(memberId);
+            authService.logout(memberId, accessToken);
 
             // then
             assertNull(testMember.getRefreshToken());
             verify(memberRepository).findById(memberId);
+            verify(tokenBlacklistService).blacklist(accessToken, 300000L);
         }
 
         @Test
@@ -178,12 +184,13 @@ class AuthServiceTest {
         void logout_MemberNotFound_ThrowsException() {
             // given
             Long nonExistentMemberId = 999L;
+            String accessToken = "valid-access-token";
 
             when(memberRepository.findById(nonExistentMemberId)).thenReturn(Optional.empty());
 
             // when & then
             BusinessException exception = assertThrows(BusinessException.class,
-                    () -> authService.logout(nonExistentMemberId));
+                    () -> authService.logout(nonExistentMemberId, accessToken));
 
             assertEquals(ErrorCode.MEMBER_NOT_FOUND, exception.getErrorCode());
         }
@@ -193,15 +200,18 @@ class AuthServiceTest {
         void logout_AlreadyLoggedOut_Success() {
             // given
             Long memberId = 1L;
+            String accessToken = "valid-access-token";
             testMember.updateRefreshToken(null); // 이미 로그아웃 상태
 
             when(memberRepository.findById(memberId)).thenReturn(Optional.of(testMember));
+            when(jwtTokenProvider.getRemainingExpiration(accessToken)).thenReturn(300000L);
 
             // when
-            authService.logout(memberId);
+            authService.logout(memberId, accessToken);
 
             // then
             assertNull(testMember.getRefreshToken());
+            verify(tokenBlacklistService).blacklist(accessToken, 300000L);
         }
     }
 
