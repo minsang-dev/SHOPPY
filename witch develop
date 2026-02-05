@@ -1,0 +1,8 @@
+  design-187-settlement-ui[m b0e48c5 design:settlement-ui
+  design-chat-ui          [m 1f2bb67 Merge branch 'develop' into design-chat-ui
+  design-mobileResponsive [m ee3a1bc design : mobileResponsive
+* [32mdevelop                 [m c535c0d [[34morigin/develop[m: ahead 15, behind 2] Merge branch 'develop' of https://lab.ssafy.com/s14-webmobile1-sub1/S14P11C209 into develop
+  feat-168-webcamconnect  [m 268eb9c [[34morigin/feat-168-webcamconnect[m] feat : webcamconnect
+  feat-187-settlement-ui  [m acdaf42 feat:settlement-ui
+  feat-settlement-api     [m 4d46848 feat:settlement-api
+  fix-refresh             [m e7a8868 fix:refresh

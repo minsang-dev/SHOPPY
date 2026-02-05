@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   addShoppingItem,
   deleteShoppingItem,
@@ -6,20 +6,22 @@ import {
   updateShoppingItem,
 } from '@/entities/shopping/api/shopping';
 import {
+  deleteAiChecklistItem,
   getAiChecklist,
   toggleAiChecklistItem,
-  deleteAiChecklistItem,
 } from '@/entities/shopping/api/aiChecklist';
-import type { AiChecklistItem, AiChecklistCategory } from '@/entities/shopping/api/aiChecklist';
+import type { AiChecklistCategory, AiChecklistItem } from '@/entities/shopping/api/aiChecklist';
 import type { ShoppingItem, ShoppingItemAddRequest } from '@/entities/shopping/types/shopping.types';
 import {
-  createRealtimeClient,
   connectRealtimeClient,
+  createRealtimeClient,
   disconnectRealtimeClient,
   subscribeTopic,
+  topicAiChecklistDeleted,
+  topicAiChecklistToggled,
   topicShoppingAdded,
-  topicShoppingUpdated,
   topicShoppingDeleted,
+  topicShoppingUpdated,
 } from '@/shared/lib/realtime';
 import { realtimeConfig } from '@/shared/config/realtime';
 
@@ -29,7 +31,7 @@ export interface UiCartItem {
   quantity: number;
   checked: boolean;
   purchaseType: 'online' | 'offline' | 'ai' | null;
-  isAiItem?: boolean; // AI 체크리스트 아이템 여부 (API 구분용)
+  isAiItem?: boolean;
 }
 
 interface UseShoppingItemsState {
@@ -43,6 +45,29 @@ interface UseShoppingItemsState {
   reload: () => Promise<void>;
 }
 
+type ShoppingItemRealtimeRaw = {
+  shopping_item_id?: number;
+  shoppingItemId?: number;
+  display_name?: string;
+  displayName?: string;
+  quantity?: number;
+  is_checked?: boolean;
+  isChecked?: boolean;
+  purchase_type?: 'online' | 'offline' | 'ai' | null;
+  purchaseType?: 'online' | 'offline' | 'ai' | null;
+};
+
+type ShoppingItemDeleteRealtimeRaw = {
+  shopping_item_id?: number;
+  shoppingItemId?: number;
+};
+
+type AiChecklistRealtimeRaw = {
+  checklist_item_id?: number;
+  checklistItemId?: number;
+  checked?: boolean;
+};
+
 const toUiItems = (items: ShoppingItem[]): UiCartItem[] =>
   items.map((item) => ({
     id: item.shoppingItemId,
@@ -52,63 +77,64 @@ const toUiItems = (items: ShoppingItem[]): UiCartItem[] =>
     purchaseType: item.purchaseType,
   }));
 
-// 백엔드 웹소켓 응답 타입 (snake_case)
-interface ShoppingItemRaw {
-  shopping_item_id: number;
-  room_id: number;
-  added_by_user_id: number | null;
-  product_id: number | null;
-  display_name: string;
-  quantity: number;
-  is_checked: boolean;
-  purchase_type: 'online' | 'offline' | null;
-}
+const toAiUiItems = (categories?: AiChecklistCategory[]): UiCartItem[] => {
+  if (!categories) return [];
+  return categories.flatMap((category: AiChecklistCategory) =>
+    category.items.map((aiItem: AiChecklistItem) => ({
+      id: -aiItem.checklistItemId,
+      name: aiItem.name,
+      quantity: 1,
+      checked: aiItem.checked,
+      purchaseType: 'ai' as const,
+      isAiItem: true,
+    }))
+  );
+};
 
-// snake_case → UiCartItem 변환
-const rawToUiItem = (raw: ShoppingItemRaw): UiCartItem => ({
-  id: raw.shopping_item_id,
-  name: raw.display_name,
-  quantity: raw.quantity ?? 0,
-  checked: Boolean(raw.is_checked),
-  purchaseType: raw.purchase_type,
-});
+const parseShoppingItem = (raw: ShoppingItemRealtimeRaw): UiCartItem | null => {
+  const id = raw.shopping_item_id ?? raw.shoppingItemId;
+  if (typeof id !== 'number') return null;
+
+  return {
+    id,
+    name: raw.display_name ?? raw.displayName ?? '',
+    quantity: raw.quantity ?? 0,
+    checked: Boolean(raw.is_checked ?? raw.isChecked),
+    purchaseType: raw.purchase_type ?? raw.purchaseType ?? null,
+  };
+};
+
+const parseShoppingItemDeleteId = (raw: ShoppingItemDeleteRealtimeRaw): number | null => {
+  const id = raw.shopping_item_id ?? raw.shoppingItemId;
+  return typeof id === 'number' ? id : null;
+};
+
+const parseAiChecklistItemId = (raw: AiChecklistRealtimeRaw): number | null => {
+  const id = raw.checklist_item_id ?? raw.checklistItemId;
+  return typeof id === 'number' ? id : null;
+};
+
+const mergeItems = (shoppingItems: ShoppingItem[], aiCategories?: AiChecklistCategory[]) => {
+  return [...toAiUiItems(aiCategories), ...toUiItems(shoppingItems)];
+};
 
 export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
   const [items, setItems] = useState<UiCartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const realtimeClientRef = useRef<ReturnType<typeof createRealtimeClient> | null>(null);
 
   const reload = useCallback(async () => {
-    if (!roomId) {
-      return;
-    }
+    if (!roomId) return;
+
     try {
       setLoading(true);
-      // ShoppingItem + AI 체크리스트 동시 로드
       const [shoppingData, aiData] = await Promise.all([
         getShoppingList(roomId),
         getAiChecklist(roomId).catch(() => null),
       ]);
 
-      // ShoppingItem → UiCartItem 변환
-      const shoppingUiItems = toUiItems(shoppingData.items);
-
-      // AI 체크리스트 → UiCartItem 변환 (음수 ID로 구분)
-      const aiUiItems: UiCartItem[] = aiData?.categories
-        ? aiData.categories.flatMap((cat: AiChecklistCategory) =>
-            cat.items.map((ai: AiChecklistItem) => ({
-              id: -ai.checklistItemId, // 음수 ID로 구분
-              name: ai.name,
-              quantity: 1,
-              checked: ai.checked,
-              purchaseType: 'ai' as const,
-              isAiItem: true,
-            }))
-          )
-        : [];
-
-      // AI 아이템 먼저, 그 다음 일반 아이템
-      setItems([...aiUiItems, ...shoppingUiItems]);
+      setItems(mergeItems(shoppingData.items, aiData?.categories));
       setError(null);
     } catch (err) {
       console.error('Failed to load shopping list:', err);
@@ -122,22 +148,11 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
     void reload();
   }, [reload]);
 
-  // 웹소켓 연결 및 구독
-  const realtimeClientRef = useRef<ReturnType<typeof createRealtimeClient> | null>(null);
-
   useEffect(() => {
-    // 웹소켓 설정이 비활성화되어 있거나 roomId가 없으면 스킵
-    if (!roomId || !realtimeConfig.enabled || !realtimeConfig.websocketUrl) {
-      return;
-    }
+    if (!roomId || !realtimeConfig.enabled || !realtimeConfig.websocketUrl) return;
 
-    const token =
-      sessionStorage.getItem('accessToken') ??
-      sessionStorage.getItem('access_token') ??
-      undefined;
-    if (!token) {
-      return;
-    }
+    const token = sessionStorage.getItem('accessToken') ?? sessionStorage.getItem('access_token') ?? undefined;
+    if (!token) return;
 
     const client = createRealtimeClient({ token });
     realtimeClientRef.current = client;
@@ -148,57 +163,79 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
       .then(() => {
         if (cancelled) return;
 
-        // 1) 아이템 추가 이벤트 구독
         subscriptions.push(
           subscribeTopic(client, topicShoppingAdded(roomId), (body) => {
             try {
-              const raw = JSON.parse(body) as ShoppingItemRaw;
-              const newItem = rawToUiItem(raw);
+              const parsed = parseShoppingItem(JSON.parse(body) as ShoppingItemRealtimeRaw);
+              if (!parsed) return;
               setItems((prev) => {
-                // 중복 방지
-                if (prev.some((i) => i.id === newItem.id)) {
-                  return prev;
-                }
-                return [...prev, newItem];
+                if (prev.some((item) => item.id === parsed.id)) return prev;
+                return [...prev, parsed];
               });
             } catch (err) {
-              console.error('장바구니 추가 이벤트 파싱 실패:', err);
+              console.error('shopping added parse failed:', err);
             }
           })
         );
 
-        // 2) 아이템 수정 이벤트 구독
         subscriptions.push(
           subscribeTopic(client, topicShoppingUpdated(roomId), (body) => {
             try {
-              const raw = JSON.parse(body) as ShoppingItemRaw;
-              const updated = rawToUiItem(raw);
-              setItems((prev) =>
-                prev.map((item) => (item.id === updated.id ? updated : item))
-              );
+              const parsed = parseShoppingItem(JSON.parse(body) as ShoppingItemRealtimeRaw);
+              if (!parsed) return;
+              setItems((prev) => prev.map((item) => (item.id === parsed.id ? parsed : item)));
             } catch (err) {
-              console.error('장바구니 수정 이벤트 파싱 실패:', err);
+              console.error('shopping updated parse failed:', err);
             }
           })
         );
 
-        // 3) 아이템 삭제 이벤트 구독
         subscriptions.push(
           subscribeTopic(client, topicShoppingDeleted(roomId), (body) => {
             try {
-              const { shopping_item_id } = JSON.parse(body) as { shopping_item_id: number };
-              setItems((prev) => prev.filter((item) => item.id !== shopping_item_id));
+              const id = parseShoppingItemDeleteId(JSON.parse(body) as ShoppingItemDeleteRealtimeRaw);
+              if (id == null) return;
+              setItems((prev) => prev.filter((item) => item.id !== id));
             } catch (err) {
-              console.error('장바구니 삭제 이벤트 파싱 실패:', err);
+              console.error('shopping deleted parse failed:', err);
+            }
+          })
+        );
+
+        subscriptions.push(
+          subscribeTopic(client, topicAiChecklistToggled(roomId), (body) => {
+            try {
+              const parsed = JSON.parse(body) as AiChecklistRealtimeRaw;
+              const checklistItemId = parseAiChecklistItemId(parsed);
+              if (checklistItemId == null || typeof parsed.checked !== 'boolean') return;
+              const aiItemId = -checklistItemId;
+              setItems((prev) =>
+                prev.map((item) => (item.id === aiItemId ? { ...item, checked: parsed.checked as boolean } : item))
+              );
+            } catch (err) {
+              console.error('ai checklist toggled parse failed:', err);
+            }
+          })
+        );
+
+        subscriptions.push(
+          subscribeTopic(client, topicAiChecklistDeleted(roomId), (body) => {
+            try {
+              const parsed = JSON.parse(body) as AiChecklistRealtimeRaw;
+              const checklistItemId = parseAiChecklistItemId(parsed);
+              if (checklistItemId == null) return;
+              const aiItemId = -checklistItemId;
+              setItems((prev) => prev.filter((item) => item.id !== aiItemId));
+            } catch (err) {
+              console.error('ai checklist deleted parse failed:', err);
             }
           })
         );
       })
       .catch((err) => {
-        console.error('장바구니 WebSocket 연결 실패:', err);
+        console.error('shopping realtime connect failed:', err);
       });
 
-    // cleanup: 컴포넌트 언마운트 시 구독 해제 및 연결 종료
     return () => {
       cancelled = true;
       subscriptions.forEach((sub) => sub.unsubscribe());
@@ -211,9 +248,8 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
 
   const addItem = useCallback(
     async (name: string, quantity: number) => {
-      if (!roomId) {
-        return;
-      }
+      if (!roomId) return;
+
       try {
         setLoading(true);
         const payload: ShoppingItemAddRequest = {
@@ -233,71 +269,62 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
         setLoading(false);
       }
     },
-    [reload, roomId],
+    [reload, roomId]
   );
 
   const updateQuantity = useCallback(
     async (id: number, quantity: number) => {
-      if (!roomId) {
-        return;
-      }
+      if (!roomId) return;
+
       try {
         await updateShoppingItem(roomId, id, { quantity });
-        setItems((prev) =>
-          prev.map((item) => (item.id === id ? { ...item, quantity } : item)),
-        );
+        setItems((prev) => prev.map((item) => (item.id === id ? { ...item, quantity } : item)));
       } catch (err) {
         console.error('Failed to update quantity:', err);
         setError('Failed to update quantity.');
       }
     },
-    [roomId],
+    [roomId]
   );
 
   const toggleChecked = useCallback(
     async (id: number, checked: boolean) => {
-      if (!roomId) {
-        return;
-      }
+      if (!roomId) return;
+
       try {
-        // AI 아이템인 경우 (음수 ID)
         if (id < 0) {
-          const checklistItemId = -id;
-          await toggleAiChecklistItem(roomId, checklistItemId, checked);
+          await toggleAiChecklistItem(roomId, -id, checked);
         } else {
           await updateShoppingItem(roomId, id, { isChecked: checked });
         }
-        setItems((prev) =>
-          prev.map((item) => (item.id === id ? { ...item, checked } : item)),
-        );
+
+        setItems((prev) => prev.map((item) => (item.id === id ? { ...item, checked } : item)));
       } catch (err) {
         console.error('Failed to update checked state:', err);
         setError('Failed to update checked state.');
       }
     },
-    [roomId],
+    [roomId]
   );
 
   const removeItem = useCallback(
     async (id: number) => {
-      if (!roomId) {
-        return;
-      }
+      if (!roomId) return;
+
       try {
-        // AI 아이템인 경우 (음수 ID)
         if (id < 0) {
-          const checklistItemId = -id;
-          await deleteAiChecklistItem(roomId, checklistItemId);
+          await deleteAiChecklistItem(roomId, -id);
         } else {
           await deleteShoppingItem(roomId, id);
         }
+
         setItems((prev) => prev.filter((item) => item.id !== id));
       } catch (err) {
         console.error('Failed to delete item:', err);
         setError('Failed to delete item.');
       }
     },
-    [roomId],
+    [roomId]
   );
 
   return {

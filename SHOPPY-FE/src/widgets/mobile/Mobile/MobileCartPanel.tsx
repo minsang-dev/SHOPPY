@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useShoppingItems } from '../../../features/shopping/cart/model/useShoppingItems';
 import './MobilePanels.css';
 
@@ -15,6 +15,10 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
   const [manualName, setManualName] = useState('');
   const [manualError, setManualError] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
+  const [voiceToast, setVoiceToast] = useState<string | null>(null);
+  const speechRecognitionRef = useRef<any>(null);
+  const speechStopTimerRef = useRef<number | null>(null);
+  const voiceToastTimerRef = useRef<number | null>(null);
 
   const handleCloseManual = () => {
     setShowManualInput(false);
@@ -73,9 +77,105 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
     onEndShopping?.();
   };
 
-  const handleVoiceToggle = () => {
-    setIsRecording((prev) => !prev);
-  };
+  const showVoiceToast = useCallback((message: string) => {
+    setVoiceToast(message);
+    if (voiceToastTimerRef.current) {
+      window.clearTimeout(voiceToastTimerRef.current);
+    }
+    voiceToastTimerRef.current = window.setTimeout(() => {
+      setVoiceToast(null);
+      voiceToastTimerRef.current = null;
+    }, 2200);
+  }, []);
+
+  const parseVoiceItem = useCallback((rawText: string) => {
+    const text = rawText.trim().replace(/\s+/g, ' ');
+    const quantityMatch = text.match(/^(.+?)\s+(\d+)\s*\D*$/);
+    if (quantityMatch) {
+      const name = quantityMatch[1].trim();
+      const quantity = Math.max(1, Number(quantityMatch[2]));
+      return { name, quantity };
+    }
+    return { name: text, quantity: 1 };
+  }, []);
+
+  const handleVoiceToggle = useCallback(() => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      showVoiceToast('이 브라우저는 음성 인식을 지원하지 않습니다.');
+      return;
+    }
+
+    if (isRecording && speechRecognitionRef.current) {
+      speechRecognitionRef.current.stop();
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    speechRecognitionRef.current = recognition;
+    recognition.lang = 'ko-KR';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event: any) => {
+      const transcript = event?.results?.[0]?.[0]?.transcript?.trim() ?? '';
+      if (!transcript) {
+        showVoiceToast('음성을 인식하지 못했습니다.');
+        return;
+      }
+      const { name, quantity } = parseVoiceItem(transcript);
+      if (!name) {
+        showVoiceToast('상품명을 인식하지 못했습니다.');
+        return;
+      }
+      void addItem(name, quantity);
+    };
+
+    recognition.onerror = () => {
+      showVoiceToast('음성 인식에 실패했습니다.');
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+      if (speechStopTimerRef.current) {
+        window.clearTimeout(speechStopTimerRef.current);
+        speechStopTimerRef.current = null;
+      }
+      speechRecognitionRef.current = null;
+    };
+
+    try {
+      recognition.start();
+      setIsRecording(true);
+      speechStopTimerRef.current = window.setTimeout(() => {
+        recognition.stop();
+      }, 3000);
+    } catch {
+      setIsRecording(false);
+      showVoiceToast('마이크를 시작하지 못했습니다.');
+    }
+  }, [addItem, isRecording, parseVoiceItem, showVoiceToast]);
+
+  useEffect(() => {
+    return () => {
+      if (speechStopTimerRef.current) {
+        window.clearTimeout(speechStopTimerRef.current);
+      }
+      if (voiceToastTimerRef.current) {
+        window.clearTimeout(voiceToastTimerRef.current);
+      }
+      if (speechRecognitionRef.current) {
+        try {
+          speechRecognitionRef.current.stop();
+        } catch {
+          // noop
+        }
+      }
+    };
+  }, []);
 
   return (
     <section className="mobile-panel">
@@ -87,6 +187,7 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
               type="button"
               className="mobile-panel-header-button"
               onClick={() => setShowManualInput(true)}
+              disabled={isRecording}
             >
               <i className="ri-add-line" aria-hidden="true" />
               항목 추가
@@ -98,11 +199,12 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
               aria-pressed={isRecording}
             >
               <i className="ri-mic-line" aria-hidden="true" />
-              {isRecording ? '인식중' : '음성입력'}
+              {isRecording ? '듣는 중..' : '음성입력'}
             </button>
           </div>
         </div>
         <div className="mobile-cart-list">
+          {voiceToast && <div className="mobile-panel-voice-toast">{voiceToast}</div>}
           {loading ? (
             <div className="mobile-panel-empty">로딩 중...</div>
           ) : error ? (

@@ -527,6 +527,18 @@
   text-align: center;
 }
 
+.mobile-panel-voice-toast {
+  margin-bottom: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #fecaca;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
 .mobile-vote-empty-fill {
   min-height: clamp(120px, 24vh, 220px);
   display: flex;

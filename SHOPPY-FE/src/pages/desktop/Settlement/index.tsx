@@ -7,9 +7,14 @@ import { useSettlementStore } from '@/entities/settlement/model/useSettlementSto
 import {
   createSettlement,
   getSettlement,
+  updateSettlementDraft,
   updateSettlementItemSplits,
 } from '@/entities/settlement/api/settlementApi';
-import { mapSettlementResponseToStoreItems } from '@/entities/settlement/model/mapper';
+import {
+  mapSettlementDraftResponseToStoreItems,
+  mapSettlementResponseToStoreItems,
+} from '@/entities/settlement/model/mapper';
+import type { SettlementItem } from '@/entities/settlement/model/useSettlementStore';
 import { useSettlementRealtime } from '@/features/settlement/model/useSettlementRealtime';
 import './styles.css';
 
@@ -37,12 +42,117 @@ const DesktopSettlementPage: React.FC = () => {
   const setSettlementId = useSettlementStore((state) => state.setSettlementId);
   const updateSettlementItemPayers = useSettlementStore((state) => state.updateSettlementItemPayers);
   const appendSettlementItems = useSettlementStore((state) => state.appendSettlementItems);
+  const settlementStorageKey = useMemo(
+    () => (roomId ? `settlement:id:${roomId}` : ''),
+    [roomId],
+  );
+  const getPersistedSettlementId = useCallback(() => {
+    if (!settlementStorageKey) return null;
+    const stored = Number(localStorage.getItem(settlementStorageKey) ?? '0');
+    return Number.isFinite(stored) && stored > 0 ? stored : null;
+  }, [settlementStorageKey]);
+  const persistSettlementId = useCallback(
+    (id: number) => {
+      if (!settlementStorageKey || !Number.isFinite(id) || id <= 0) return;
+      localStorage.setItem(settlementStorageKey, String(id));
+    },
+    [settlementStorageKey],
+  );
+
+  const ensureSettlementId = useCallback(
+    async (nextItems: SettlementItem[]) => {
+      if (!roomId) return null;
+
+      const existingSettlementId = settlementIdByRoom[roomId] ?? getPersistedSettlementId();
+      if (existingSettlementId) return existingSettlementId;
+      if (nextItems.length === 0) return null;
+
+      const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
+      if (!Number.isFinite(currentMemberId) || currentMemberId <= 0) return null;
+
+      try {
+        const created = await createSettlement(roomId, {
+          payerMemberId: currentMemberId,
+          totalAmount: nextItems.reduce(
+            (sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity ?? 1),
+            0,
+          ),
+          items: nextItems.map((item) => ({
+            itemName: item.name,
+            unitPrice: Number(item.price ?? 0),
+            quantity: Number(item.quantity ?? 1),
+            payerMemberId: Number(item.payerMemberId ?? currentMemberId),
+            payerBankName: item.payerBankName ?? '',
+            payerAccountNumber: item.payerAccountNumber ?? '',
+          })),
+        });
+
+        setSettlementId(roomId, created.purchaseId);
+        persistSettlementId(created.purchaseId);
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(created, nextItems));
+        return created.purchaseId;
+      } catch (error) {
+        console.error('Failed to ensure settlement id:', error);
+        return null;
+      }
+    },
+    [getPersistedSettlementId, persistSettlementId, roomId, settlementIdByRoom, setSettlementId, setSettlementItems],
+  );
+
+  const syncSettlementDraft = useCallback(
+    async (nextItems: SettlementItem[]) => {
+      if (!roomId) return;
+      const settlementId =
+        (await ensureSettlementId(nextItems)) ?? settlementIdByRoom[roomId] ?? getPersistedSettlementId();
+      if (!settlementId) return;
+
+      const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
+      const memberIds = members.map((member) => member.memberId);
+
+      try {
+        const response = await updateSettlementDraft(settlementId, {
+          payerMemberId: currentMemberId > 0 ? currentMemberId : undefined,
+          participantIds: memberIds,
+          items: nextItems.map((item) => {
+            const purchaseItemId = Number(item.id);
+            return {
+              purchaseItemId: Number.isFinite(purchaseItemId) && purchaseItemId > 0 ? purchaseItemId : undefined,
+              itemName: item.name,
+              unitPrice: Number(item.price ?? 0),
+              quantity: Number(item.quantity ?? 1),
+              payerMemberId: item.payerMemberId,
+              payerBankName: item.payerBankName ?? '',
+              payerAccountNumber: item.payerAccountNumber ?? '',
+              participantIds: item.payerIds ?? memberIds,
+            };
+          }),
+        });
+
+        setSettlementId(roomId, response.settlementId);
+        persistSettlementId(response.settlementId);
+        setSettlementItems(roomId, mapSettlementDraftResponseToStoreItems(response, nextItems));
+      } catch (error) {
+        console.error('Failed to update settlement draft:', error);
+      }
+    },
+    [
+      ensureSettlementId,
+      getPersistedSettlementId,
+      members,
+      persistSettlementId,
+      roomId,
+      settlementIdByRoom,
+      setSettlementId,
+      setSettlementItems,
+    ],
+  );
 
   const settlementSyncLockRef = useRef(false);
   const refreshSettlementFromServer = useCallback(
     async (overrideSettlementId?: number) => {
       if (!roomId || settlementSyncLockRef.current) return;
-      const targetSettlementId = overrideSettlementId ?? settlementIdByRoom[roomId];
+      const targetSettlementId =
+        overrideSettlementId ?? settlementIdByRoom[roomId] ?? getPersistedSettlementId();
       if (!targetSettlementId) return;
 
       settlementSyncLockRef.current = true;
@@ -55,7 +165,7 @@ const DesktopSettlementPage: React.FC = () => {
         settlementSyncLockRef.current = false;
       }
     },
-    [items, roomId, settlementIdByRoom, setSettlementItems],
+    [getPersistedSettlementId, items, roomId, settlementIdByRoom, setSettlementItems],
   );
 
   useSettlementRealtime({
@@ -65,11 +175,19 @@ const DesktopSettlementPage: React.FC = () => {
 
       const payload = (event.payload as Record<string, unknown> | undefined) ?? {};
       const payloadSettlementId = Number(
-        payload.settlementId ?? payload.purchaseId ?? event.settlementId ?? event.purchaseId,
+        payload.settlementId ??
+          payload.settlement_id ??
+          payload.purchaseId ??
+          payload.purchase_id ??
+          event.settlementId ??
+          event.settlement_id ??
+          event.purchaseId ??
+          event.purchase_id,
       );
 
       if (Number.isFinite(payloadSettlementId) && payloadSettlementId > 0) {
         setSettlementId(roomId, payloadSettlementId);
+        persistSettlementId(payloadSettlementId);
         void refreshSettlementFromServer(payloadSettlementId);
         return;
       }
@@ -92,8 +210,16 @@ const DesktopSettlementPage: React.FC = () => {
   }, [roomId]);
 
   useEffect(() => {
+    if (!roomId) return;
+    const persisted = getPersistedSettlementId();
+    if (persisted && settlementIdByRoom[roomId] !== persisted) {
+      setSettlementId(roomId, persisted);
+    }
+  }, [getPersistedSettlementId, roomId, settlementIdByRoom, setSettlementId]);
+
+  useEffect(() => {
     if (!roomId || items.length > 0) return;
-    const settlementId = settlementIdByRoom[roomId];
+    const settlementId = settlementIdByRoom[roomId] ?? getPersistedSettlementId();
     if (!settlementId) return;
 
     const loadSettlement = async () => {
@@ -106,7 +232,7 @@ const DesktopSettlementPage: React.FC = () => {
     };
 
     void loadSettlement();
-  }, [items.length, roomId, settlementIdByRoom, setSettlementItems]);
+  }, [getPersistedSettlementId, items.length, roomId, settlementIdByRoom, setSettlementItems]);
 
   const handleFinalize = async () => {
     if (!roomId) return;
@@ -132,6 +258,7 @@ const DesktopSettlementPage: React.FC = () => {
 
       const created = await createSettlement(roomId, payload);
       setSettlementId(roomId, created.purchaseId);
+      persistSettlementId(created.purchaseId);
       setSettlementItems(roomId, mapSettlementResponseToStoreItems(created, items));
 
       await Promise.all(
@@ -196,6 +323,8 @@ const DesktopSettlementPage: React.FC = () => {
     const current = target.payerIds ?? [];
     const next = current.includes(memberId) ? current.filter((id) => id !== memberId) : [...current, memberId];
     updateSettlementItemPayers(roomId, itemId, next);
+    const nextItems = items.map((item) => (item.id === itemId ? { ...item, payerIds: next } : item));
+    void syncSettlementDraft(nextItems);
   };
 
   const handleManualSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -225,20 +354,21 @@ const DesktopSettlementPage: React.FC = () => {
       return;
     }
 
-    appendSettlementItems(roomId, [
-      {
-        id: `desktop-manual-${Date.now()}`,
-        name,
-        quantity,
-        price,
-        payerIds: members.map((member) => member.memberId),
-        payerMemberId,
-        payerBankName: bankName,
-        payerAccountNumber: accountNumber,
-        sourceType: 'manual',
-        sourceLabel: '수동입력',
-      },
-    ]);
+    const newItem: SettlementItem = {
+      id: `desktop-manual-${Date.now()}`,
+      name,
+      quantity,
+      price,
+      payerIds: members.map((member) => member.memberId),
+      payerMemberId,
+      payerBankName: bankName,
+      payerAccountNumber: accountNumber,
+      sourceType: 'manual',
+      sourceLabel: '수동입력',
+    };
+    const nextItems = [...items, newItem];
+    appendSettlementItems(roomId, [newItem]);
+    void syncSettlementDraft(nextItems);
 
     setManualName('');
     setManualQty('1');
