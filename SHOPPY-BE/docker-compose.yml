@@ -106,8 +106,6 @@ services:
             - OPENVIDU_URL=https://openvidu-server:5443
             - OPENVIDU_PUBLIC_URL=https://i14c209.p.ssafy.io/openvidu
             - OPENVIDU_SECRET=${OPENVIDU_SECRET}
-            - KMS_URIS=["ws://kms:8888/kurento"]
-            - COTURN_IP=${COTURN_IP:-auto-ipv4}
             - SPRING_APPLICATION_NAME=shoppy-be
             # === MySQL Connection ===
             - SPRING_DATASOURCE_URL=jdbc:mysql://${DB_HOST}:${DB_PORT}/Shoppy_DB?useSSL=false&allowPublicKeyRetrieval=true
