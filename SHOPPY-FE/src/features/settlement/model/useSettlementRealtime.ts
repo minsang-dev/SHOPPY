@@ -44,10 +44,6 @@ export const useSettlementRealtime = ({
     }
 
     const token = resolveToken();
-    if (!token) {
-      return;
-    }
-
     const client = createRealtimeClient({ token });
     let subscriptions: Array<{ unsubscribe: () => void }> = [];
     let cancelled = false;
