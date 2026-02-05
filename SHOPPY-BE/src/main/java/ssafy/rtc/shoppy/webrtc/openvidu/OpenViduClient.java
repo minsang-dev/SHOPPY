@@ -50,7 +50,9 @@ public class OpenViduClient {
             if (ex.getStatusCode() == HttpStatus.CONFLICT) {
                 return customSessionId;
             }
-            throw new BusinessException(ErrorCode.MEDIA_SERVER_UNAVAILABLE, "OpenVidu session creation failed.");
+            throw new BusinessException(ErrorCode.MEDIA_SERVER_UNAVAILABLE,
+                    "OpenVidu session creation failed. Status: " + ex.getStatusCode() + ", Body: "
+                            + ex.getResponseBodyAsString());
         }
     }
 
