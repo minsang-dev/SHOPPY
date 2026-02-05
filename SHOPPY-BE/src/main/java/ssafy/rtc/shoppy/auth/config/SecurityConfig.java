@@ -37,19 +37,18 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 나머지는 permitAll
                         .requestMatchers(
-                                "/api/auth/kakao/**",
-                                "/api/auth/refresh",
-                                "/api/auth/test/**",
+                                "/auth/kakao/**",
+                                "/auth/refresh",
+                                "/auth/test/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
                                 "/ws/**",
-                                "/api/ws/**",
-                                "/api/rooms/**",
-                                "/api/webrtc/**",
-                                "/api/shopping/**",
-                                "/api/products/**",
-                                "/api/ai/**")
+                                "/rooms/**",
+                                "/webrtc/**",
+                                "/shopping/**",
+                                "/products/**",
+                                "/ai/**")
                         .permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -60,7 +59,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedOriginPatterns(
+                Arrays.asList("https://i14c209.p.ssafy.io", "http://localhost:3000", "http://localhost:8080"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
