@@ -26,6 +26,7 @@ services:
             - HTTPS_PORT=443
             - KMS_URIS=["ws://kms:8888/kurento"]
             - DOMAIN_OR_PUBLIC_IP=i14c209.p.ssafy.io
+            - WITH_NGINX=true
             - COTURN_IP=i14c209.p.ssafy.io
             - COTURN_PORT=8901
         logging:
