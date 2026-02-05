@@ -119,6 +119,8 @@ services:
         logging:
             options:
                 max-size: "100M"
+        extra_hosts:
+            - "i14c209.p.ssafy.io:host-gateway"
         networks:
             - shoppy-net
 
