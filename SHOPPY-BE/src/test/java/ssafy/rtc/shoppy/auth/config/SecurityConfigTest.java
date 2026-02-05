@@ -14,6 +14,7 @@ import ssafy.rtc.shoppy.ai.config.CorsProperties;
 import ssafy.rtc.shoppy.auth.controller.AuthController;
 import ssafy.rtc.shoppy.auth.jwt.JwtTokenProvider;
 import ssafy.rtc.shoppy.auth.service.AuthService;
+import ssafy.rtc.shoppy.auth.service.TokenBlacklistService;
 import ssafy.rtc.shoppy.room.controller.RoomController;
 import ssafy.rtc.shoppy.room.service.RoomMemberService;
 import ssafy.rtc.shoppy.room.service.RoomService;
@@ -43,6 +44,9 @@ class SecurityConfigTest {
 
     @MockitoBean
     private CorsProperties corsProperties;
+
+    @MockitoBean
+    private TokenBlacklistService tokenBlacklistService;
 
     /**
      * 인증 거부 확인: 401 또는 403 반환.
