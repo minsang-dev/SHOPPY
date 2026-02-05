@@ -20,6 +20,7 @@ pipeline {
         GMS_API_KEY = credentials('GMS_API_KEY')
         KAKAO_CLIENT_ID = credentials('KAKAO_CLIENT_ID')
         KAKAO_REDIRECT_URI = credentials('KAKAO_REDIRECT_URI')
+        COTURN_SECRET = credentials('COTURN_SHARED_SECRET_KEY')
     }
 
     stages {
@@ -121,6 +122,7 @@ stage('Deploy') {
                         echo "DB_HOST=${DB_HOST}" >> .env
                         echo "DB_PORT=${DB_PORT}" >> .env
                         echo "CORS_ALLOWED_ORIGINS=https://i14c209.p.ssafy.io" >> .env
+                        echo "COTURN_SHARED_SECRET_KEY=${COTURN_SECRET}" >> .env
                     """
                     sh """
                         docker compose up -d --build
