@@ -79,7 +79,7 @@ stage('Deploy') {
                     sh """
                         echo "DOMAIN_OR_PUBLIC_IP=i14c209.p.ssafy.io" > .env
                         echo "SERVER_SSL_ENABLED=true" >> .env
-                        echo "HTTPS_PORT=5443" >> .env
+                        echo "HTTPS_PORT=443" >> .env
                         echo "CERTIFICATE_TYPE=owncert" >> .env
                         echo "OPENVIDU_SECRET=${OV_SECRET}" >> .env
                         echo "LETSENCRYPT_EMAIL=user@example.com" >> .env
