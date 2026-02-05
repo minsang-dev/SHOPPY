@@ -123,10 +123,6 @@ stage('Deploy') {
                         echo "CORS_ALLOWED_ORIGINS=https://i14c209.p.ssafy.io" >> .env
                     """
                     sh """
-                        echo "Updating Nginx configuration from nginx.conf..."
-                        sudo cp ./nginx.conf /etc/nginx/sites-available/default
-                        sudo service nginx reload
-
                         docker compose up -d --build
                     """
                 }
