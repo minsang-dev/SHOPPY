@@ -43,7 +43,9 @@ export const useJoinRoom = () => {
         roomId = joinRes.roomId;
         sessionStorage.setItem('memberId', String(joinRes.memberId));
         // 로그인 사용자 닉네임 저장 (공유 커서용)
-        if (user?.nickname) {
+        if (joinRes.nickname) {
+          sessionStorage.setItem('memberNickname', joinRes.nickname);
+        } else if (user?.nickname) {
           sessionStorage.setItem('memberNickname', user.nickname);
         }
       } else {

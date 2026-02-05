@@ -188,10 +188,6 @@ const CartPanel: React.FC = () => {
       sessionStorage.getItem('accessToken') ??
       sessionStorage.getItem('access_token') ??
       undefined;
-    if (!token) {
-      return;
-    }
-
     const client = createRealtimeClient({ token });
     realtimeClientRef.current = client;
     let cancelled = false;

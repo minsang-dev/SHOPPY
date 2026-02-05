@@ -152,8 +152,6 @@ export const useShoppingItems = (roomId?: string): UseShoppingItemsState => {
     if (!roomId || !realtimeConfig.enabled || !realtimeConfig.websocketUrl) return;
 
     const token = sessionStorage.getItem('accessToken') ?? sessionStorage.getItem('access_token') ?? undefined;
-    if (!token) return;
-
     const client = createRealtimeClient({ token });
     realtimeClientRef.current = client;
     let cancelled = false;
