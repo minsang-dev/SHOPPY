@@ -10,13 +10,13 @@ services:
         restart: on-failure
         entrypoint: ['/usr/local/bin/entrypoint.sh']
         ports:
-            - "127.0.0.1:5443:5443"
+            - "5443:5443"
         volumes:
             - ./openvidu/coturn:/run/secrets/coturn
             - /var/run/docker.sock:/var/run/docker.sock
-            - ${OPENVIDU_RECORDING_PATH}:${OPENVIDU_RECORDING_PATH}
-            - ${OPENVIDU_RECORDING_CUSTOM_LAYOUT}:${OPENVIDU_RECORDING_CUSTOM_LAYOUT}
-            - ${OPENVIDU_CDR_PATH}:${OPENVIDU_CDR_PATH}
+            - ${OPENVIDU_RECORDING_PATH:-/opt/openvidu/recordings}:${OPENVIDU_RECORDING_PATH:-/opt/openvidu/recordings}
+            - ${OPENVIDU_RECORDING_CUSTOM_LAYOUT:-/opt/openvidu/custom-layout}:${OPENVIDU_RECORDING_CUSTOM_LAYOUT:-/opt/openvidu/custom-layout}
+            - ${OPENVIDU_CDR_PATH:-/opt/openvidu/cdr}:${OPENVIDU_CDR_PATH:-/opt/openvidu/cdr}
             - /opt/openvidu/owncert:/opt/openvidu/owncert:ro
         env_file:
             - .env
@@ -25,7 +25,7 @@ services:
             - SERVER_PORT=5443
             - HTTPS_PORT=443
             - KMS_URIS=["ws://kms:8888/kurento"]
-            - DOMAIN_OR_PUBLIC_IP=i14c209.p.ssafy.io/openvidu
+            - DOMAIN_OR_PUBLIC_IP=i14c209.p.ssafy.io
             - COTURN_IP=i14c209.p.ssafy.io
             - COTURN_PORT=8901
         logging:
@@ -45,7 +45,7 @@ services:
                 hard: 65536
         volumes:
             - /opt/openvidu/kms-crashes:/opt/openvidu/kms-crashes
-            - ${OPENVIDU_RECORDING_PATH}:${OPENVIDU_RECORDING_PATH}
+            - ${OPENVIDU_RECORDING_PATH:-/opt/openvidu/recordings}:${OPENVIDU_RECORDING_PATH:-/opt/openvidu/recordings}
             - /opt/openvidu/kurento-logs:/opt/openvidu/kurento-logs
         environment:
             - KMS_MIN_PORT=8500
