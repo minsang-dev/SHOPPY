@@ -25,10 +25,11 @@ services:
             - SERVER_PORT=5443
             - HTTPS_PORT=443
             - KMS_URIS=["ws://kms:8888/kurento"]
-            - DOMAIN_OR_PUBLIC_IP=i14c209.p.ssafy.io
+            - DOMAIN_OR_PUBLIC_IP=i14c209.p.ssafy.io/openvidu
             - WITH_NGINX=true
             - COTURN_IP=i14c209.p.ssafy.io
             - COTURN_PORT=8901
+            - COTURN_SHARED_SECRET=${COTURN_SHARED_SECRET_KEY}
         logging:
             options:
                 max-size: "${DOCKER_LOGS_MAX_SIZE:-100M}"
