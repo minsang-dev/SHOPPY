@@ -6,6 +6,9 @@ import { calcOnlineCartTotal } from '@/features/cart/calculate-online-total/mode
 import type { ShoppingItem } from '@/entities/shopping/types/shopping.types';
 import type { ProductMetaMap } from '@/features/cart/calculate-online-total/model/calcOnlineCartTotal';
 import { useSettlementStore } from '@/entities/settlement/model/useSettlementStore';
+import { getRoomMembers } from '@/entities/room/api/room';
+import { createSettlement, updateSettlementDraft } from '@/entities/settlement/api/settlementApi';
+import { mapSettlementResponseToStoreItems } from '@/entities/settlement/model/mapper';
 import './styles.css';
 
 const isOnlineItem = (item: ShoppingItem) => item.purchaseType === 'online';
@@ -14,12 +17,16 @@ const DesktopCheckoutPage: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const appendSettlementItems = useSettlementStore((state) => state.appendSettlementItems);
+  const setSettlementId = useSettlementStore((state) => state.setSettlementId);
+  const setSettlementItems = useSettlementStore((state) => state.setSettlementItems);
 
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'transfer' | 'kakao' | 'naver'>('card');
   const [onlineItems, setOnlineItems] = useState<ShoppingItem[]>([]);
   const [productMetaMap, setProductMetaMap] = useState<ProductMetaMap>({});
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [bankName, setBankName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
 
   const loadCartData = useCallback(async () => {
     if (!roomId) return;
@@ -63,12 +70,67 @@ const DesktopCheckoutPage: React.FC = () => {
         quantity: item.quantity ?? 1,
         price,
         payerIds: [],
+        payerBankName: '',
+        payerAccountNumber: '',
         sourceType: 'online' as const,
         sourceLabel: '온라인 품목',
       };
     });
 
+    setSettlementId(roomId, 0);
+    localStorage.removeItem(`settlement:id:${roomId}`);
     appendSettlementItems(roomId, paidItems);
+
+    const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
+    if (Number.isFinite(currentMemberId) && currentMemberId > 0) {
+      try {
+        const created = await createSettlement(roomId, {
+          payerMemberId: currentMemberId,
+          totalAmount,
+          items: paidItems.map((item) => ({
+            itemName: item.name,
+            unitPrice: Number(item.price ?? 0),
+            quantity: Number(item.quantity ?? 1),
+            payerMemberId: currentMemberId,
+            payerBankName: bankName.trim(),
+            payerAccountNumber: accountNumber.trim(),
+          })),
+        });
+
+        setSettlementId(roomId, created.purchaseId);
+        localStorage.setItem(`settlement:id:${roomId}`, String(created.purchaseId));
+        const bankPayload = {
+          payerBankName: bankName.trim(),
+          payerAccountNumber: accountNumber.trim(),
+        };
+        const paidItemsWithBank = paidItems.map((item) => ({
+          ...item,
+          ...bankPayload,
+        }));
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(created, paidItemsWithBank));
+
+        const members = await getRoomMembers(roomId);
+        const memberIds = members.map((member) => member.memberId);
+        const participantIds = Array.from(new Set([...memberIds, currentMemberId]));
+
+        await updateSettlementDraft(created.purchaseId, {
+          payerMemberId: currentMemberId,
+          participantIds,
+          items: created.items.map((serverItem) => ({
+            purchaseItemId: serverItem.purchaseItemId,
+            itemName: serverItem.itemName,
+            unitPrice: serverItem.unitPrice,
+            quantity: serverItem.quantity,
+            payerMemberId: currentMemberId,
+            payerBankName: bankName.trim(),
+            payerAccountNumber: accountNumber.trim(),
+            participantIds,
+          })),
+        });
+      } catch (error) {
+        console.error('온라인 정산 draft 생성 실패:', error);
+      }
+    }
 
     try {
       await Promise.all(onlineItems.map((item) => deleteShoppingItem(roomId, item.shoppingItemId)));
@@ -164,6 +226,26 @@ const DesktopCheckoutPage: React.FC = () => {
               </div>
               <input type="text" className="checkout-input" placeholder="기본 주소" readOnly />
               <input type="text" className="checkout-input" placeholder="상세 주소" />
+            </div>
+            <div className="checkout-form-row">
+              <label className="checkout-label">은행명</label>
+              <input
+                type="text"
+                className="checkout-input"
+                placeholder="은행명을 입력하세요"
+                value={bankName}
+                onChange={(event) => setBankName(event.target.value)}
+              />
+            </div>
+            <div className="checkout-form-row">
+              <label className="checkout-label">계좌번호</label>
+              <input
+                type="text"
+                className="checkout-input"
+                placeholder="계좌번호를 입력하세요"
+                value={accountNumber}
+                onChange={(event) => setAccountNumber(event.target.value)}
+              />
             </div>
           </div>
         </section>
