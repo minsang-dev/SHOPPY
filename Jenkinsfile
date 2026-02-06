@@ -54,7 +54,7 @@ pipeline {
                         docker build --no-cache \
                         --build-arg VITE_API_BASE_URL=https://i14c209.p.ssafy.io \
                         --build-arg VITE_WEBSOCKET_URL=https://i14c209.p.ssafy.io/api/ws \
-                        --build-arg VITE_WEBRTC_SIGNALING_URL=http://localhost:8080 \
+                        --build-arg VITE_WEBRTC_SIGNALING_URL=https://i14c209.p.ssafy.io/api/ws \
                         --build-arg VITE_REALTIME_ENABLED=true \
                         --build-arg VITE_KAKAO_JS_KEY=${KAKAO_JS} \
                         --build-arg VITE_KAKAO_REST_KEY=${KAKAO_REST} \
