@@ -21,7 +21,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
-@EnableConfigurationProperties({KakaoProperties.class, JwtProperties.class})
+@EnableConfigurationProperties({ KakaoProperties.class, JwtProperties.class })
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -49,10 +49,10 @@ public class SecurityConfig {
                                 "/webrtc/**",
                                 "/shopping/**",
                                 "/products/**",
-                                "/ai/**"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
+                                "/ai/**",
+                                "/api/actuator/**")
+                        .permitAll()
+                        .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

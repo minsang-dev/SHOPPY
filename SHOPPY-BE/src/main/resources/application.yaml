@@ -61,3 +61,9 @@ ocr:
 presence:
   ttl-seconds: 60
   sweep-interval-ms: 5000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus
