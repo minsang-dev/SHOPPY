@@ -462,6 +462,10 @@
   position: relative;
   z-index: 1;
   width: min(100%, 420px);
+  height: min(
+    calc(var(--app-height, 100dvh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)),
+    760px
+  );
   max-height: min(
     calc(var(--app-height, 100dvh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)),
     760px
@@ -517,6 +521,7 @@
   padding: 0 18px 18px;
   min-height: 0;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .receipt-camera-frame {
@@ -670,6 +675,9 @@
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   padding: 16px 18px calc(22px + env(safe-area-inset-bottom));
+  position: sticky;
+  bottom: 0;
+  background: #0f172a;
 }
 
 .receipt-action {

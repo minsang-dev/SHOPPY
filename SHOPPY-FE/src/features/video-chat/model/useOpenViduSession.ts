@@ -251,6 +251,20 @@ export const useOpenViduSession = ({
         const isSelfByConnection = Boolean(
           selfConnectionId && incomingConnectionId && selfConnectionId === incomingConnectionId,
         );
+        const remoteConnections = session.remoteConnections as
+          | Map<string, { connectionId?: string }>
+          | Array<{ connectionId?: string }>
+          | undefined;
+        const isActiveRemote = (() => {
+          if (!incomingConnectionId || !remoteConnections) return true;
+          if (remoteConnections instanceof Map) {
+            return remoteConnections.has(incomingConnectionId);
+          }
+          if (Array.isArray(remoteConnections)) {
+            return remoteConnections.some((item) => item?.connectionId === incomingConnectionId);
+          }
+          return true;
+        })();
 
         if (isSelfByConnection) {
           ovDebug('streamCreated skipped self-like stream', {
@@ -258,6 +272,15 @@ export const useOpenViduSession = ({
             incomingConnectionId,
             selfConnectionId,
             incomingNickname,
+          });
+          return;
+        }
+
+        if (!isActiveRemote) {
+          ovDebug('streamCreated skipped stale connection', {
+            streamId: event.stream?.streamId,
+            incomingConnectionId,
+            connectionData,
           });
           return;
         }

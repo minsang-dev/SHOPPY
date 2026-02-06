@@ -1,7 +1,8 @@
-package ssafy.rtc.shoppy.ai.llm.service;
+package ssafy.rtc.shoppy.ai.LLM.service;
 
 import org.junit.jupiter.api.Test;
 import ssafy.rtc.shoppy.ai.llm.entity.RecommendationTemplateEntity;
+import ssafy.rtc.shoppy.ai.llm.service.TemplateFilter;
 
 import java.util.List;
 

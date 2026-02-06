@@ -220,6 +220,21 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
     },
   });
 
+  const ensureReceiptVideoReady = async () => {
+    const video = receiptVideoRef.current;
+    if (!video) return false;
+    if (video.readyState >= 2 && video.videoWidth > 0) return true;
+
+    try {
+      await video.play();
+    } catch (error) {
+      console.warn('Receipt camera play blocked:', error);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    return video.readyState >= 2 && video.videoWidth > 0;
+  };
+
   const toCapturedFile = () => {
     const video = receiptVideoRef.current;
     const canvas = receiptCanvasRef.current;
@@ -455,6 +470,12 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
     }
     if (!bankName || !accountNumber) {
       setReceiptError('은행명과 계좌번호를 입력해주세요.');
+      return;
+    }
+
+    const isCameraReady = await ensureReceiptVideoReady();
+    if (!isCameraReady) {
+      setReceiptError('카메라 준비가 완료되지 않았습니다.');
       return;
     }
 
