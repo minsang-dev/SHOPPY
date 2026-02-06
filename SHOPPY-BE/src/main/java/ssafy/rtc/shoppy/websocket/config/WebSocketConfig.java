@@ -54,8 +54,16 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registration.interceptors(new ChannelInterceptor() {
             @Override
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
-                meterRegistry.counter("websocket.messages.received").increment();
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+                if (accessor != null && StompCommand.SEND.equals(accessor.getCommand())) {
+                    String destination = accessor.getDestination();
+                    if (destination != null) {
+                        // /app/rooms/123/chat -> /app/rooms/{id}/chat 형태로 정규화
+                        String normalizedDest = destination.replaceAll("/rooms/\\d+/", "/rooms/{id}/");
+                        accessor.setHeader("metrics.startTime", System.currentTimeMillis());
+                        accessor.setHeader("metrics.destination", normalizedDest);
+                    }
+                }
 
                 if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
                     // WebSocket 연결 시 JWT 검증
@@ -75,6 +83,21 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     }
                 }
                 return message;
+            }
+
+            @Override
+            public void postSend(Message<?> message, MessageChannel channel, boolean sent) {
+                StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+                if (accessor != null && StompCommand.SEND.equals(accessor.getCommand())) {
+                    Long startTime = (Long) accessor.getHeader("metrics.startTime");
+                    String destination = (String) accessor.getHeader("metrics.destination");
+
+                    if (startTime != null && destination != null) {
+                        long duration = System.currentTimeMillis() - startTime;
+                        meterRegistry.timer("websocket.request", "destination", destination)
+                                .record(java.time.Duration.ofMillis(duration));
+                    }
+                }
             }
         });
     }

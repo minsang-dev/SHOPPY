@@ -8,4 +8,4 @@ scrape_configs:
     static_configs:
       - targets: ['shoppy-be:8080']
         labels:
-          application: 'shoppy-server'
+          application: 'shoppy-be' 
