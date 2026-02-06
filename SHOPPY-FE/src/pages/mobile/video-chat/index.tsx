@@ -116,34 +116,36 @@ const MobileVideoChatPage: React.FC = () => {
   useEffect(() => {
     const root = document.documentElement;
     const visualViewport = window.visualViewport;
-    let baselineHeight = window.innerHeight;
-    root.style.setProperty('--app-height', `${baselineHeight}px`);
+    const updateViewportVars = () => {
+      const height = visualViewport?.height ?? window.innerHeight;
+      root.style.setProperty('--app-height', `${height}px`);
+      if (!visualViewport) {
+        root.style.setProperty('--keyboard-offset', `0px`);
+        return;
+      }
+      const offset = Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop);
+      root.style.setProperty('--keyboard-offset', `${offset}px`);
+    };
 
     if (!visualViewport) {
+      updateViewportVars();
       return () => {
         root.style.removeProperty('--keyboard-offset');
         root.style.removeProperty('--app-height');
       };
     }
 
-    const updateKeyboardOffset = () => {
-      const offset = Math.max(0, baselineHeight - visualViewport.height - visualViewport.offsetTop);
-      root.style.setProperty('--keyboard-offset', `${offset}px`);
-    };
-
-    updateKeyboardOffset();
-    visualViewport.addEventListener('resize', updateKeyboardOffset);
-    visualViewport.addEventListener('scroll', updateKeyboardOffset);
+    updateViewportVars();
+    visualViewport.addEventListener('resize', updateViewportVars);
+    visualViewport.addEventListener('scroll', updateViewportVars);
     const handleOrientationChange = () => {
-      baselineHeight = window.innerHeight;
-      root.style.setProperty('--app-height', `${baselineHeight}px`);
-      updateKeyboardOffset();
+      updateViewportVars();
     };
     window.addEventListener('orientationchange', handleOrientationChange);
 
     return () => {
-      visualViewport.removeEventListener('resize', updateKeyboardOffset);
-      visualViewport.removeEventListener('scroll', updateKeyboardOffset);
+      visualViewport.removeEventListener('resize', updateViewportVars);
+      visualViewport.removeEventListener('scroll', updateViewportVars);
       window.removeEventListener('orientationchange', handleOrientationChange);
       root.style.removeProperty('--keyboard-offset');
       root.style.removeProperty('--app-height');
