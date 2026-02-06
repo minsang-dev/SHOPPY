@@ -6,7 +6,7 @@ import RightPanel from '../../../widgets/desktop/RightPanel/RightPanel';
 import { ChatRealtimeProvider } from '../../../features/chat/model/useChatRealtime';
 import { RoomMembersProvider } from '../../../features/room/fetch-members/model/RoomMembersProvider';
 import VideoStage from '../../../widgets/desktop/VideoStage/VideoStage';
-import { patchSyncMode, patchHostUrl, getRoom } from '../../../entities/room/api/room';
+import { patchSyncMode, patchHostUrl, getRoom, getRoomMembers } from '../../../entities/room/api/room';
 import { useLeaveRoom, resolveAccessToken } from '@/features/room/leave-room';
 import { useRoomInfo } from '../../../features/room/fetch-room/model/useRoomInfo';
 import { useAuthStore } from '../../../entities/user/model/useAuthStore';
@@ -51,6 +51,39 @@ const DesktopVideoChatPage: React.FC = () => {
   const { room } = useRoomInfo(roomId);
   const user = useAuthStore((state) => state.user);
   const isHost = room && user ? room.hostId === user.id : false;
+
+  useEffect(() => {
+    if (!roomId) return;
+    const hydrateMemberId = async () => {
+      try {
+        const members = await getRoomMembers(roomId);
+        const storedMemberId = sessionStorage.getItem('memberId');
+        const storedMember =
+          storedMemberId != null
+            ? members.find((member) => member.memberId === Number(storedMemberId))
+            : null;
+        if (storedMember) {
+          if (storedMember.nickname) {
+            sessionStorage.setItem('memberNickname', storedMember.nickname);
+          }
+          return;
+        }
+        const nicknameHint = sessionStorage.getItem('memberNickname')?.trim();
+        const self =
+          (user ? members.find((member) => member.userId === user.id) : null) ??
+          (nicknameHint ? members.find((member) => member.nickname === nicknameHint) : null);
+        if (!self) return;
+        sessionStorage.setItem('memberId', String(self.memberId));
+        if (self.nickname) {
+          sessionStorage.setItem('memberNickname', self.nickname);
+        }
+      } catch (error) {
+        console.error('Failed to hydrate memberId for desktop session:', error);
+      }
+    };
+
+    void hydrateMemberId();
+  }, [roomId, user]);
 
   // JWT에서 실제 user_id (sub) 추출 - 백엔드 인증과 일치해야 함
   const cursorUserId = useMemo(() => {

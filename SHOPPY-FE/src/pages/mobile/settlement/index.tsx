@@ -132,22 +132,30 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
 
       const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
       const memberIds = members.map((member) => member.memberId);
+      const participantIds = Number.isFinite(currentMemberId) && currentMemberId > 0
+        ? Array.from(new Set([...memberIds, currentMemberId]))
+        : memberIds;
 
       try {
         const response = await updateSettlementDraft(settlementId, {
           payerMemberId: currentMemberId > 0 ? currentMemberId : undefined,
-          participantIds: memberIds,
+          participantIds,
           items: nextItems.map((item) => {
             const purchaseItemId = Number(item.id);
+            const itemPayerId = Number(item.payerMemberId ?? currentMemberId);
+            const itemParticipantIdsSource = item.payerIds ?? participantIds;
+            const itemParticipantIds = Number.isFinite(itemPayerId) && itemPayerId > 0
+              ? Array.from(new Set([...itemParticipantIdsSource, itemPayerId]))
+              : itemParticipantIdsSource;
             return {
               purchaseItemId: Number.isFinite(purchaseItemId) && purchaseItemId > 0 ? purchaseItemId : undefined,
               itemName: item.name,
               unitPrice: Number(item.price ?? 0),
               quantity: Number(item.quantity ?? 1),
-              payerMemberId: item.payerMemberId,
+              payerMemberId: Number.isFinite(itemPayerId) && itemPayerId > 0 ? itemPayerId : undefined,
               payerBankName: item.payerBankName ?? '',
               payerAccountNumber: item.payerAccountNumber ?? '',
-              participantIds: item.payerIds ?? memberIds,
+              participantIds: itemParticipantIds,
             };
           }),
         });
@@ -648,9 +656,9 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
                     </div>
                     {!!item.payerMemberId && (
                       <div className="mobile-settlement-receiver-info">
-                        결제자: {members.find((m) => m.memberId === item.payerMemberId)?.nickname ?? item.payerMemberId} / {item.payerBankName} {item.payerAccountNumber}
-                      </div>
-                    )}
+                    결제자: {members.find((m) => m.memberId === item.payerMemberId)?.nickname ?? item.payerMemberId} / {item.payerBankName} {item.payerAccountNumber}
+                  </div>
+                )}
                     <div className="mobile-settlement-divider" />
                     <div className="mobile-settlement-members">
                       <div className="mobile-settlement-payer-header">

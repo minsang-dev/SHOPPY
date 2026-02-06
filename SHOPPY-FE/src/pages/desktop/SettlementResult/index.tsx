@@ -186,31 +186,6 @@ const DesktopSettlementResultPage: React.FC = () => {
           <section className="desktop-settlement-result-section">
             <h2>내가 보낼 금액</h2>
             <div className="desktop-settlement-result-list">
-              {myTransfers.length === 0 ? (
-                <div className="desktop-settlement-result-empty">보낼 송금 내역이 없습니다.</div>
-              ) : (
-                myTransfers.map((row) => {
-                  const done = getTransferDone(row);
-                  return (
-                    <div key={`my-${row.fromMemberId}-${row.toMemberId}`} className={`desktop-settlement-transfer-card ${done ? 'is-done' : ''}`}>
-                      <div className="desktop-settlement-transfer-left">
-                        <UserAvatar name={getMemberName(row.toMemberId)} colorKey={row.toMemberId} size="md" />
-                        <strong>{getMemberName(row.toMemberId)}</strong>
-                      </div>
-                      <div className="desktop-settlement-transfer-right">
-                        <span>{Math.round(row.amount).toLocaleString()}원</span>
-                        <button type="button" onClick={() => setSelectedTransfer(row)}>송금</button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </section>
-
-          <section className="desktop-settlement-result-section">
-            <h2>전체 송금 내역</h2>
-            <div className="desktop-settlement-result-list">
               {transferRows.length === 0 ? (
                 <div className="desktop-settlement-result-empty">송금 내역이 없습니다.</div>
               ) : (

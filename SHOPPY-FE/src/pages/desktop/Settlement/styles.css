@@ -132,20 +132,68 @@
   color: #b45309;
 }
 
-.desktop-settlement-meta {
+.desktop-settlement-inputs {
   margin-top: 10px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  color: #525f75;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.desktop-settlement-field {
+  display: grid;
+  gap: 6px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.desktop-settlement-field input {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px;
   font-size: 14px;
+  background: #f9fafb;
+  color: #111827;
+}
+
+.desktop-settlement-receiver-info {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.desktop-settlement-members-header {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .desktop-settlement-members-title {
-  margin-top: 14px;
   font-size: 14px;
   font-weight: 700;
   color: #374151;
+}
+
+.desktop-settlement-members-toggle {
+  border: 1px solid #cbd5f5;
+  background: #ffffff;
+  color: #1f2937;
+  border-radius: 10px;
+  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.desktop-settlement-members-toggle i {
+  font-size: 14px;
+}
+
+.desktop-settlement-members-panel {
+  margin-top: 10px;
 }
 
 .desktop-settlement-members {
@@ -176,9 +224,8 @@
   border-radius: 16px;
   background: #fff;
   padding: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  gap: 12px;
 }
 
 .desktop-settlement-summary span {
@@ -193,9 +240,56 @@
   font-size: 13px;
 }
 
-.desktop-settlement-summary strong {
+.desktop-settlement-summary-top,
+.desktop-settlement-summary-bottom {
+  display: grid;
+  gap: 10px;
+}
+
+.desktop-settlement-split-title {
+  font-weight: 700;
+  color: #111827;
+}
+
+.desktop-settlement-total {
   font-size: 22px;
   color: #10b981;
+}
+
+.desktop-settlement-summary-divider {
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.desktop-settlement-split-list {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+
+.desktop-settlement-split-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  color: #374151;
+  font-size: 14px;
+}
+
+.desktop-settlement-split-row strong {
+  font-size: 15px;
+  color: #111827;
+  text-align: right;
+}
+
+.desktop-settlement-split-name {
+  color: #111827;
+  font-weight: 600;
+}
+
+.desktop-settlement-split-empty {
+  color: #9aa3b2;
+  font-size: 13px;
 }
 
 .desktop-settlement-bottom-actions {
