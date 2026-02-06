@@ -38,8 +38,7 @@ const MobileVideoChatPage: React.FC = () => {
 
   const realtimeReady =
     realtimeConfig.enabled &&
-    Boolean(realtimeConfig.websocketUrl) &&
-    Boolean(realtimeConfig.signalingUrl);
+    Boolean(realtimeConfig.websocketUrl);
 
   const params = useParams<{ roomId?: string }>();
   const searchParams = useMemo(() => new URLSearchParams(window.location.search), []);
