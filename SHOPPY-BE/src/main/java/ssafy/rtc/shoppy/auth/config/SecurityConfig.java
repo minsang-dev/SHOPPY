@@ -22,7 +22,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
-@EnableConfigurationProperties({KakaoProperties.class, JwtProperties.class})
+@EnableConfigurationProperties({ KakaoProperties.class, JwtProperties.class })
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/kakao/**", "/auth/refresh", "/auth/test/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
                         .requestMatchers("/ws/**", "/api/ws/**").permitAll()
+                        .requestMatchers("/api/actuator/**").permitAll()
 
                         // Room: 공개 엔드포인트
                         .requestMatchers(HttpMethod.GET, "/rooms/code/**").permitAll()
@@ -66,8 +67,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/settlements/*/complete").permitAll()
 
                         // 나머지 전부 인증 필요
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
