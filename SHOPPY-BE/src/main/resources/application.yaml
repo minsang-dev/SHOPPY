@@ -53,7 +53,7 @@ app:
 gms:
   api-key: ${GMS_API_KEY}
   ocr:
-    model: gpt-5.2-pro
+    model: gpt-4.1-mini
 
 ocr:
   enabled: true
