@@ -69,6 +69,7 @@ public class RecommendationTemplateEntity {
         this.categoryCode = categoryCode;
         this.itemName = itemName;
         this.traitExcludes = traitExcludes;
+        this.banTraits = traitExcludes;
         this.priority = priority;
         this.isActive = isActive;
     }
