@@ -34,6 +34,7 @@ const DesktopSettlementPage: React.FC = () => {
   const [manualBankName, setManualBankName] = useState('');
   const [manualAccountNumber, setManualAccountNumber] = useState('');
   const [manualError, setManualError] = useState('');
+  const [openPayerByItem, setOpenPayerByItem] = useState<Record<string, boolean>>({});
 
   const settlementItemsByRoom = useSettlementStore((state) => state.settlementItemsByRoom);
   const settlementIdByRoom = useSettlementStore((state) => state.settlementIdByRoom);
@@ -108,22 +109,30 @@ const DesktopSettlementPage: React.FC = () => {
 
       const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
       const memberIds = members.map((member) => member.memberId);
+      const participantIds = Number.isFinite(currentMemberId) && currentMemberId > 0
+        ? Array.from(new Set([...memberIds, currentMemberId]))
+        : memberIds;
 
       try {
         const response = await updateSettlementDraft(settlementId, {
           payerMemberId: currentMemberId > 0 ? currentMemberId : undefined,
-          participantIds: memberIds,
+          participantIds,
           items: nextItems.map((item) => {
             const purchaseItemId = Number(item.id);
+            const itemPayerId = Number(item.payerMemberId ?? currentMemberId);
+            const itemParticipantIdsSource = item.payerIds ?? participantIds;
+            const itemParticipantIds = Number.isFinite(itemPayerId) && itemPayerId > 0
+              ? Array.from(new Set([...itemParticipantIdsSource, itemPayerId]))
+              : itemParticipantIdsSource;
             return {
               purchaseItemId: Number.isFinite(purchaseItemId) && purchaseItemId > 0 ? purchaseItemId : undefined,
               itemName: item.name,
               unitPrice: Number(item.price ?? 0),
               quantity: Number(item.quantity ?? 1),
-              payerMemberId: item.payerMemberId,
+              payerMemberId: Number.isFinite(itemPayerId) && itemPayerId > 0 ? itemPayerId : undefined,
               payerBankName: item.payerBankName ?? '',
               payerAccountNumber: item.payerAccountNumber ?? '',
-              participantIds: item.payerIds ?? memberIds,
+              participantIds: itemParticipantIds,
             };
           }),
         });
@@ -315,6 +324,22 @@ const DesktopSettlementPage: React.FC = () => {
     [filteredItems],
   );
 
+  const splitByMember = useMemo(() => {
+    const acc = new Map<number, number>();
+    items.forEach((item) => {
+      const quantity = item.quantity ?? 1;
+      const price = item.price ?? 0;
+      const total = quantity * price;
+      const payers = item.payerIds ?? [];
+      if (payers.length === 0) return;
+      const share = total / payers.length;
+      payers.forEach((memberId) => {
+        acc.set(memberId, (acc.get(memberId) ?? 0) + share);
+      });
+    });
+    return acc;
+  }, [items]);
+
   const togglePayer = (itemId: string, memberId: number) => {
     if (!roomId) return;
     const target = items.find((item) => item.id === itemId);
@@ -325,6 +350,10 @@ const DesktopSettlementPage: React.FC = () => {
     updateSettlementItemPayers(roomId, itemId, next);
     const nextItems = items.map((item) => (item.id === itemId ? { ...item, payerIds: next } : item));
     void syncSettlementDraft(nextItems);
+  };
+
+  const togglePayerPanel = (itemId: string) => {
+    setOpenPayerByItem((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
   };
 
   const handleManualSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -426,39 +455,82 @@ const DesktopSettlementPage: React.FC = () => {
                   <strong>{item.name}</strong>
                   <span className={`desktop-settlement-source source-${item.sourceType}`}>{item.sourceLabel}</span>
                 </div>
-                <div className="desktop-settlement-meta">
-                  <span>가격 {Number(item.price ?? 0).toLocaleString()}원</span>
-                  <span>수량 {item.quantity ?? 1}개</span>
-                  <span>합계 {((item.price ?? 0) * (item.quantity ?? 1)).toLocaleString()}원</span>
+                <div className="desktop-settlement-inputs">
+                  <label className="desktop-settlement-field">
+                    <span>가격</span>
+                    <input type="number" value={Number(item.price ?? 0)} readOnly />
+                  </label>
+                  <label className="desktop-settlement-field">
+                    <span>수량</span>
+                    <input type="number" value={item.quantity ?? 1} readOnly />
+                  </label>
                 </div>
-                <div className="desktop-settlement-members-title">결제 인원 선택</div>
-                <div className="desktop-settlement-members">
-                  {members.map((member) => {
-                    const selected = (item.payerIds ?? []).includes(member.memberId);
-                    return (
-                      <button
-                        key={`${item.id}-${member.memberId}`}
-                        type="button"
-                        className={`desktop-settlement-member ${selected ? 'is-selected' : ''}`}
-                        onClick={() => togglePayer(item.id, member.memberId)}
-                      >
-                        <UserAvatar name={member.nickname} colorKey={member.memberId} size="md" />
-                        <span>{member.nickname}</span>
-                      </button>
-                    );
-                  })}
+                {!!item.payerMemberId && (
+                  <div className="desktop-settlement-receiver-info">
+                    결제자: {members.find((m) => m.memberId === item.payerMemberId)?.nickname ?? item.payerMemberId} / {item.payerBankName} {item.payerAccountNumber}
+                  </div>
+                )}
+                <div className="desktop-settlement-members-header">
+                  <div className="desktop-settlement-members-title">정산 참여자</div>
+                  <button
+                    type="button"
+                    className="desktop-settlement-members-toggle"
+                    onClick={() => togglePayerPanel(item.id)}
+                  >
+                    <i className="ri-user-line" />
+                    <span>{(item.payerIds ?? []).length}</span>
+                  </button>
                 </div>
+                {openPayerByItem[item.id] && (
+                  <div className="desktop-settlement-members-panel">
+                    <div className="desktop-settlement-members">
+                      {members.map((member) => {
+                        const selected = (item.payerIds ?? []).includes(member.memberId);
+                        return (
+                          <button
+                            key={`${item.id}-${member.memberId}`}
+                            type="button"
+                            className={`desktop-settlement-member ${selected ? 'is-selected' : ''}`}
+                            onClick={() => togglePayer(item.id, member.memberId)}
+                          >
+                            <UserAvatar name={member.nickname} colorKey={member.memberId} size="md" />
+                            <span>{member.nickname}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </article>
             ))}
           </div>
         )}
 
         <div className="desktop-settlement-summary">
-          <div>
-            <span>총 금액</span>
-            <p>선택된 필터 기준 합계</p>
+          <div className="desktop-settlement-summary-top">
+            <div>
+              <span>총 금액</span>
+            </div>
+            <strong className="desktop-settlement-total">{totalAmount.toLocaleString()}원</strong>
           </div>
-          <strong>{totalAmount.toLocaleString()}원</strong>
+          <div className="desktop-settlement-summary-divider" />
+          <div className="desktop-settlement-summary-bottom">
+            <div className="desktop-settlement-split-title">각자 결제 금액</div>
+            <div className="desktop-settlement-split-list">
+              {members.length === 0 || splitByMember.size === 0 ? (
+                <div className="desktop-settlement-split-empty">참여자 정산 내역이 없습니다.</div>
+              ) : (
+                members
+                  .filter((member) => (splitByMember.get(member.memberId) ?? 0) > 0)
+                  .map((member) => (
+                    <div key={member.memberId} className="desktop-settlement-split-row">
+                      <span className="desktop-settlement-split-name">{member.nickname}</span>
+                      <strong>{Math.round(splitByMember.get(member.memberId) ?? 0).toLocaleString()}원</strong>
+                    </div>
+                  ))
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="desktop-settlement-bottom-actions">

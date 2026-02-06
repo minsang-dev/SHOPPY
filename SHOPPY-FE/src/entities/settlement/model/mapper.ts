@@ -4,10 +4,18 @@ import type { SettlementDraftResponse, SettlementResponse } from '../api/settlem
 const mapItems = (
   items: SettlementResponse['items'] | SettlementDraftResponse['items'],
   fallback: SettlementItem[] = [],
+  fallbackPayerMemberId?: number,
 ): SettlementItem[] => {
   return items.map((item, index) => {
     const source = fallback[index];
     const payerIds = item.allocations.map((allocation) => allocation.memberId);
+    const resolvedPayerMemberId = item.payerMemberId ?? fallbackPayerMemberId ?? source?.payerMemberId;
+    const resolvedPayerBankName =
+      item.payerBankName != null && item.payerBankName !== '' ? item.payerBankName : source?.payerBankName;
+    const resolvedPayerAccountNumber =
+      item.payerAccountNumber != null && item.payerAccountNumber !== ''
+        ? item.payerAccountNumber
+        : source?.payerAccountNumber;
 
     return {
       id: String(item.purchaseItemId),
@@ -15,9 +23,9 @@ const mapItems = (
       price: Number(item.unitPrice),
       quantity: item.quantity,
       payerIds,
-      payerMemberId: item.payerMemberId,
-      payerBankName: item.payerBankName,
-      payerAccountNumber: item.payerAccountNumber,
+      payerMemberId: resolvedPayerMemberId,
+      payerBankName: resolvedPayerBankName,
+      payerAccountNumber: resolvedPayerAccountNumber,
       sourceType: source?.sourceType ?? 'manual',
       sourceLabel: source?.sourceLabel ?? '정산품목',
       receiptTitle: source?.receiptTitle,
@@ -28,7 +36,7 @@ const mapItems = (
 export const mapSettlementResponseToStoreItems = (
   response: SettlementResponse,
   fallback: SettlementItem[] = [],
-): SettlementItem[] => mapItems(response.items, fallback);
+): SettlementItem[] => mapItems(response.items, fallback, response.payerMemberId);
 
 export const mapSettlementDraftResponseToStoreItems = (
   response: SettlementDraftResponse,
