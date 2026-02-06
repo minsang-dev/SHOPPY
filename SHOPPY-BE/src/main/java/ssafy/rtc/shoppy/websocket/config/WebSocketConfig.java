@@ -1,5 +1,6 @@
 package ssafy.rtc.shoppy.websocket.config;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +28,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final CorsProperties corsProperties;
     private final JwtTokenProvider jwtTokenProvider;
+    private final MeterRegistry meterRegistry;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
@@ -52,6 +54,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registration.interceptors(new ChannelInterceptor() {
             @Override
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
+                meterRegistry.counter("websocket.messages.received").increment();
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
                 if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
@@ -62,8 +65,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         if (jwtTokenProvider.validateToken(token)) {
                             Authentication auth = jwtTokenProvider.getAuthentication(token);
                             accessor.setUser(new UsernamePasswordAuthenticationToken(
-                                    auth.getPrincipal(), null, auth.getAuthorities()
-                            ));
+                                    auth.getPrincipal(), null, auth.getAuthorities()));
                             log.info("WebSocket authenticated user: {}", auth.getPrincipal());
                         } else {
                             log.warn("Invalid JWT token in WebSocket connection");
@@ -72,6 +74,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         log.warn("No Authorization header in WebSocket connection");
                     }
                 }
+                return message;
+            }
+        });
+    }
+
+    @Override
+    public void configureClientOutboundChannel(ChannelRegistration registration) {
+        registration.interceptors(new ChannelInterceptor() {
+            @Override
+            public Message<?> preSend(Message<?> message, MessageChannel channel) {
+                meterRegistry.counter("websocket.messages.sent").increment();
                 return message;
             }
         });
