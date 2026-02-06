@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: shoppy-prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "127.0.0.1:9091:9090"
+    networks:
+      - shoppy-net
+
+  grafana:
+    image: grafana/grafana
+    container_name: shoppy-grafana
+    ports:
+      - "127.0.0.1:9092:3000"
+    environment:
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - shoppy-net
+    depends_on:
+      - prometheus
+
+networks:
+  shoppy-net:
+    external: true

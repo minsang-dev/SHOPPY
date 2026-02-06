@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s # Metrics collection interval
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'shoppy-server'
+    metrics_path: '/api/actuator/prometheus'
+    static_configs:
+      - targets: ['shoppy-be:8080']
+        labels:
+          application: 'shoppy-server'

@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
                         .requestMatchers("/ws/**", "/api/ws/**").permitAll()
                         .requestMatchers("/api/actuator/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
 
                         // Room: 공개 엔드포인트
                         .requestMatchers(HttpMethod.GET, "/rooms/code/**").permitAll()
