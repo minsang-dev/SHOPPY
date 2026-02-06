@@ -32,17 +32,9 @@ public class SettlementController {
             @RequestPart("file") MultipartFile file,
             @AuthenticationPrincipal Long userId) {
 
-        // ?? ?? ???? ?? (??? ??? ????? ? ?? ?? ??)
-        RoomMemberEntity roomMember;
-        if (userId == null) {
-            roomMember = roomMemberRepository.findByRoom_RoomIdAndStatus(roomId, MemberStatus.ACTIVE)
-                    .stream()
-                    .findFirst()
-                    .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
-        } else {
-            roomMember = roomMemberRepository.findByRoom_RoomIdAndUserIdAndStatus(roomId, userId, MemberStatus.ACTIVE)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_ROOM_MEMBER));
-        }
+        RoomMemberEntity roomMember = roomMemberRepository
+                .findByRoom_RoomIdAndUserIdAndStatus(roomId, userId, MemberStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_ROOM_MEMBER));
 
         ReceiptUploadResponse response = settlementService.uploadReceipt(roomId, roomMember.getMemberId(), file);
 

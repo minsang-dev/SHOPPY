@@ -23,9 +23,14 @@ export interface SettlementRealtimeEvent {
 interface UseSettlementRealtimeOptions {
   roomId?: string;
   onEvent?: (event: SettlementRealtimeEvent) => void;
+  pollIntervalMs?: number;
 }
 
-export const useSettlementRealtime = ({ roomId, onEvent }: UseSettlementRealtimeOptions) => {
+export const useSettlementRealtime = ({
+  roomId,
+  onEvent,
+  pollIntervalMs = 2500,
+}: UseSettlementRealtimeOptions) => {
   const [realtimeConnected, setRealtimeConnected] = useState(false);
   const onEventRef = useRef(onEvent);
 
@@ -39,40 +44,52 @@ export const useSettlementRealtime = ({ roomId, onEvent }: UseSettlementRealtime
     }
 
     const token = resolveToken();
-    if (!token) {
-      return;
-    }
-
     const client = createRealtimeClient({ token });
-    let subscription: { unsubscribe: () => void } | null = null;
+    let subscriptions: Array<{ unsubscribe: () => void }> = [];
     let cancelled = false;
+    const topicCandidates = [
+      topicRoomsSettlements(roomId),
+      `/topic/rooms/${roomId}/settlement`,
+      `/topic/rooms/${roomId}/settlements/updated`,
+      `/topic/rooms/${roomId}/settlement/updated`,
+    ];
 
     connectRealtimeClient(client)
       .then(() => {
         if (cancelled) return;
         setRealtimeConnected(true);
-
-        subscription = subscribeTopic(client, topicRoomsSettlements(roomId), (body) => {
-          try {
-            const parsed = JSON.parse(body) as SettlementRealtimeEvent;
-            onEventRef.current?.(parsed);
-          } catch {
-            onEventRef.current?.({ payload: body });
-          }
-        });
+        subscriptions = topicCandidates.map((topic) =>
+          subscribeTopic(client, topic, (body) => {
+            try {
+              const parsed = JSON.parse(body) as SettlementRealtimeEvent;
+              onEventRef.current?.(parsed);
+            } catch {
+              onEventRef.current?.({ payload: body });
+            }
+          }),
+        );
       })
       .catch((error) => {
         console.error('Settlement realtime connection failed:', error);
         setRealtimeConnected(false);
       });
 
+    const pollTimer = window.setInterval(() => {
+      onEventRef.current?.({
+        type: 'SETTLEMENT_POLL',
+        roomId,
+      });
+    }, pollIntervalMs);
+
     return () => {
       cancelled = true;
       setRealtimeConnected(false);
-      subscription?.unsubscribe();
+      window.clearInterval(pollTimer);
+      subscriptions.forEach((subscription) => subscription.unsubscribe());
+      subscriptions = [];
       void disconnectRealtimeClient(client);
     };
-  }, [roomId]);
+  }, [pollIntervalMs, roomId]);
 
   return { realtimeConnected };
 };

@@ -109,6 +109,10 @@ const LocalVideoTile = ({
 
 const VideoStage: React.FC<VideoStageProps> = ({ roomId }) => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const nickname =
+    sessionStorage.getItem('memberNickname') ??
+    sessionStorage.getItem('memberNickName') ??
+    '';
 
   const {
     subscribers,
@@ -117,7 +121,7 @@ const VideoStage: React.FC<VideoStageProps> = ({ roomId }) => {
   } = useOpenViduSession({
     enabled: Boolean(roomId),
     roomId,
-    profile: {},
+    profile: { nickname },
     localVideoRef,
   });
 

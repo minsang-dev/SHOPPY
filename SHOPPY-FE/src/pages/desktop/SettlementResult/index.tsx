@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import UserAvatar from '@/shared/ui/UserAvatar';
 import { getRoomMembers } from '@/entities/room/api/room';
@@ -27,7 +27,6 @@ const DesktopSettlementResultPage: React.FC = () => {
   const [selectedTransfer, setSelectedTransfer] = useState<TransferRow | null>(null);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
 
-  const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
   const { leaveByButton } = useLeaveRoom({
     roomId,
     navigateTo: '/',
@@ -35,10 +34,63 @@ const DesktopSettlementResultPage: React.FC = () => {
 
   const settlementItemsByRoom = useSettlementStore((state) => state.settlementItemsByRoom);
   const settlementIdByRoom = useSettlementStore((state) => state.settlementIdByRoom);
+  const setSettlementId = useSettlementStore((state) => state.setSettlementId);
   const setSettlementItems = useSettlementStore((state) => state.setSettlementItems);
   const transferStatusByRoom = useSettlementStore((state) => state.transferStatusByRoom);
   const markTransferDone = useSettlementStore((state) => state.markTransferDone);
-  useSettlementRealtime({ roomId });
+  const syncLockRef = useRef(false);
+
+  const getPersistedSettlementId = useCallback(() => {
+    if (!roomId) return null;
+    const stored = Number(localStorage.getItem(`settlement:id:${roomId}`) ?? '0');
+    return Number.isFinite(stored) && stored > 0 ? stored : null;
+  }, [roomId]);
+
+  const refreshSettlementFromServer = useCallback(
+    async (overrideSettlementId?: number) => {
+      if (!roomId || syncLockRef.current) return;
+      const targetSettlementId =
+        overrideSettlementId ?? settlementIdByRoom[roomId] ?? getPersistedSettlementId();
+      if (!targetSettlementId) return;
+
+      syncLockRef.current = true;
+      try {
+        const response = await getSettlement(targetSettlementId);
+        setSettlementId(roomId, targetSettlementId);
+        localStorage.setItem(`settlement:id:${roomId}`, String(targetSettlementId));
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response));
+      } catch (error) {
+        console.error('Failed to sync settlement result from realtime event:', error);
+      } finally {
+        syncLockRef.current = false;
+      }
+    },
+    [getPersistedSettlementId, roomId, setSettlementId, setSettlementItems, settlementIdByRoom],
+  );
+
+  useSettlementRealtime({
+    roomId,
+    onEvent: (event) => {
+      if (!roomId) return;
+      const payload = (event.payload as Record<string, unknown> | undefined) ?? {};
+      const payloadSettlementId = Number(
+        payload.settlementId ??
+          payload.settlement_id ??
+          payload.purchaseId ??
+          payload.purchase_id ??
+          event.settlementId ??
+          event.settlement_id ??
+          event.purchaseId ??
+          event.purchase_id,
+      );
+
+      if (Number.isFinite(payloadSettlementId) && payloadSettlementId > 0) {
+        void refreshSettlementFromServer(payloadSettlementId);
+        return;
+      }
+      void refreshSettlementFromServer();
+    },
+  });
 
   const items = roomId ? settlementItemsByRoom[roomId] ?? EMPTY_ITEMS : EMPTY_ITEMS;
   const transferStatus = roomId ? transferStatusByRoom[roomId] ?? {} : {};
@@ -58,12 +110,14 @@ const DesktopSettlementResultPage: React.FC = () => {
 
   useEffect(() => {
     if (!roomId || items.length > 0) return;
-    const settlementId = settlementIdByRoom[roomId];
+    const settlementId = settlementIdByRoom[roomId] ?? getPersistedSettlementId();
     if (!settlementId) return;
 
     const loadSettlement = async () => {
       try {
         const response = await getSettlement(settlementId);
+        setSettlementId(roomId, settlementId);
+        localStorage.setItem(`settlement:id:${roomId}`, String(settlementId));
         setSettlementItems(roomId, mapSettlementResponseToStoreItems(response));
       } catch (error) {
         console.error('Failed to load settlement result:', error);
@@ -71,7 +125,7 @@ const DesktopSettlementResultPage: React.FC = () => {
     };
 
     void loadSettlement();
-  }, [items.length, roomId, settlementIdByRoom, setSettlementItems]);
+  }, [getPersistedSettlementId, items.length, roomId, setSettlementId, settlementIdByRoom, setSettlementItems]);
 
   const transferRows = useMemo(() => {
     const map = new Map<string, TransferRow>();
@@ -107,10 +161,6 @@ const DesktopSettlementResultPage: React.FC = () => {
     return Array.from(map.values());
   }, [items]);
 
-  const myTransfers = transferRows.filter(
-    (row) => row.fromMemberId === currentMemberId && row.toMemberId !== currentMemberId,
-  );
-
   const getMemberName = (memberId: number) =>
     members.find((member) => member.memberId === memberId)?.nickname ?? `멤버 ${memberId}`;
 
@@ -130,31 +180,6 @@ const DesktopSettlementResultPage: React.FC = () => {
         <div className="desktop-settlement-result-grid">
           <section className="desktop-settlement-result-section">
             <h2>내가 보낼 금액</h2>
-            <div className="desktop-settlement-result-list">
-              {myTransfers.length === 0 ? (
-                <div className="desktop-settlement-result-empty">보낼 송금 내역이 없습니다.</div>
-              ) : (
-                myTransfers.map((row) => {
-                  const done = getTransferDone(row);
-                  return (
-                    <div key={`my-${row.fromMemberId}-${row.toMemberId}`} className={`desktop-settlement-transfer-card ${done ? 'is-done' : ''}`}>
-                      <div className="desktop-settlement-transfer-left">
-                        <UserAvatar name={getMemberName(row.toMemberId)} colorKey={row.toMemberId} size="md" />
-                        <strong>{getMemberName(row.toMemberId)}</strong>
-                      </div>
-                      <div className="desktop-settlement-transfer-right">
-                        <span>{Math.round(row.amount).toLocaleString()}원</span>
-                        <button type="button" onClick={() => setSelectedTransfer(row)}>송금</button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </section>
-
-          <section className="desktop-settlement-result-section">
-            <h2>전체 송금 내역</h2>
             <div className="desktop-settlement-result-list">
               {transferRows.length === 0 ? (
                 <div className="desktop-settlement-result-empty">송금 내역이 없습니다.</div>

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import ssafy.rtc.shoppy.ai.llm.entity.AiChecklistEntity;
 import ssafy.rtc.shoppy.ai.llm.entity.AiChecklistItemEntity;
+import ssafy.rtc.shoppy.ai.llm.event.AiChecklistEventPublisher;
 import ssafy.rtc.shoppy.ai.llm.repository.AiChecklistItemRepository;
 import ssafy.rtc.shoppy.ai.llm.repository.AiChecklistRepository;
 
@@ -19,7 +20,8 @@ class AiChecklistServiceTest {
     void toggleChecklistItemUpdatesState() {
         AiChecklistRepository checklistRepository = Mockito.mock(AiChecklistRepository.class);
         AiChecklistItemRepository itemRepository = Mockito.mock(AiChecklistItemRepository.class);
-        AiChecklistService service = new AiChecklistService(checklistRepository, itemRepository);
+        AiChecklistEventPublisher eventPublisher = Mockito.mock(AiChecklistEventPublisher.class);
+        AiChecklistService service = new AiChecklistService(checklistRepository, itemRepository, eventPublisher);
 
         AiChecklistEntity checklist = AiChecklistEntity.withId(1L, 10L);
         AiChecklistItemEntity item = AiChecklistItemEntity.create(checklist, "DRINK", "Water", "500ml", "Reason", 1);

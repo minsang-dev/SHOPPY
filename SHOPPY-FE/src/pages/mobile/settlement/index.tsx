@@ -7,10 +7,15 @@ import { useSettlementStore } from '@/entities/settlement/model/useSettlementSto
 import {
   createSettlement,
   getSettlement,
+  updateSettlementDraft,
   updateSettlementItemSplits,
   uploadReceiptImage,
 } from '@/entities/settlement/api/settlementApi';
-import { mapSettlementResponseToStoreItems } from '@/entities/settlement/model/mapper';
+import {
+  mapSettlementDraftResponseToStoreItems,
+  mapSettlementResponseToStoreItems,
+} from '@/entities/settlement/model/mapper';
+import type { SettlementItem } from '@/entities/settlement/model/useSettlementStore';
 import { useSettlementRealtime } from '@/features/settlement/model/useSettlementRealtime';
 import './styles.css';
 
@@ -61,12 +66,125 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
   const setSettlementItems = useSettlementStore((state) => state.setSettlementItems);
   const setSettlementId = useSettlementStore((state) => state.setSettlementId);
   const updateSettlementItemPayers = useSettlementStore((state) => state.updateSettlementItemPayers);
+  const settlementStorageKey = useMemo(
+    () => (roomId ? `settlement:id:${roomId}` : ''),
+    [roomId],
+  );
+  const getPersistedSettlementId = useCallback(() => {
+    if (!settlementStorageKey) return null;
+    const stored = Number(localStorage.getItem(settlementStorageKey) ?? '0');
+    return Number.isFinite(stored) && stored > 0 ? stored : null;
+  }, [settlementStorageKey]);
+  const persistSettlementId = useCallback(
+    (id: number) => {
+      if (!settlementStorageKey || !Number.isFinite(id) || id <= 0) return;
+      localStorage.setItem(settlementStorageKey, String(id));
+    },
+    [settlementStorageKey],
+  );
+
+  const ensureSettlementId = useCallback(
+    async (nextItems: SettlementItem[]) => {
+      if (!roomId) return null;
+
+      const existingSettlementId = settlementIdByRoom[roomId] ?? getPersistedSettlementId();
+      if (existingSettlementId) return existingSettlementId;
+      if (nextItems.length === 0) return null;
+
+      const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
+      if (!Number.isFinite(currentMemberId) || currentMemberId <= 0) return null;
+
+      try {
+        const created = await createSettlement(roomId, {
+          payerMemberId: currentMemberId,
+          totalAmount: nextItems.reduce(
+            (sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity ?? 1),
+            0,
+          ),
+          items: nextItems.map((item) => ({
+            itemName: item.name,
+            unitPrice: Number(item.price ?? 0),
+            quantity: Number(item.quantity ?? 1),
+            payerMemberId: Number(item.payerMemberId ?? currentMemberId),
+            payerBankName: item.payerBankName ?? '',
+            payerAccountNumber: item.payerAccountNumber ?? '',
+          })),
+        });
+
+        setSettlementId(roomId, created.purchaseId);
+        persistSettlementId(created.purchaseId);
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(created, nextItems));
+        return created.purchaseId;
+      } catch (error) {
+        console.error('Failed to ensure settlement id:', error);
+        return null;
+      }
+    },
+    [getPersistedSettlementId, persistSettlementId, roomId, settlementIdByRoom, setSettlementId, setSettlementItems],
+  );
+
+  const syncSettlementDraft = useCallback(
+    async (nextItems: SettlementItem[]) => {
+      if (!roomId) return;
+      const settlementId =
+        (await ensureSettlementId(nextItems)) ?? settlementIdByRoom[roomId] ?? getPersistedSettlementId();
+      if (!settlementId) return;
+
+      const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
+      const memberIds = members.map((member) => member.memberId);
+      const participantIds = Number.isFinite(currentMemberId) && currentMemberId > 0
+        ? Array.from(new Set([...memberIds, currentMemberId]))
+        : memberIds;
+
+      try {
+        const response = await updateSettlementDraft(settlementId, {
+          payerMemberId: currentMemberId > 0 ? currentMemberId : undefined,
+          participantIds,
+          items: nextItems.map((item) => {
+            const purchaseItemId = Number(item.id);
+            const itemPayerId = Number(item.payerMemberId ?? currentMemberId);
+            const itemParticipantIdsSource = item.payerIds ?? participantIds;
+            const itemParticipantIds = Number.isFinite(itemPayerId) && itemPayerId > 0
+              ? Array.from(new Set([...itemParticipantIdsSource, itemPayerId]))
+              : itemParticipantIdsSource;
+            return {
+              purchaseItemId: Number.isFinite(purchaseItemId) && purchaseItemId > 0 ? purchaseItemId : undefined,
+              itemName: item.name,
+              unitPrice: Number(item.price ?? 0),
+              quantity: Number(item.quantity ?? 1),
+              payerMemberId: Number.isFinite(itemPayerId) && itemPayerId > 0 ? itemPayerId : undefined,
+              payerBankName: item.payerBankName ?? '',
+              payerAccountNumber: item.payerAccountNumber ?? '',
+              participantIds: itemParticipantIds,
+            };
+          }),
+        });
+
+        setSettlementId(roomId, response.settlementId);
+        persistSettlementId(response.settlementId);
+        setSettlementItems(roomId, mapSettlementDraftResponseToStoreItems(response, nextItems));
+      } catch (error) {
+        console.error('Failed to update settlement draft:', error);
+      }
+    },
+    [
+      ensureSettlementId,
+      getPersistedSettlementId,
+      members,
+      persistSettlementId,
+      roomId,
+      settlementIdByRoom,
+      setSettlementId,
+      setSettlementItems,
+    ],
+  );
 
   const settlementSyncLockRef = useRef(false);
   const refreshSettlementFromServer = useCallback(
     async (overrideSettlementId?: number) => {
       if (!roomId || settlementSyncLockRef.current) return;
-      const targetSettlementId = overrideSettlementId ?? settlementIdByRoom[roomId];
+      const targetSettlementId =
+        overrideSettlementId ?? settlementIdByRoom[roomId] ?? getPersistedSettlementId();
       if (!targetSettlementId) return;
 
       settlementSyncLockRef.current = true;
@@ -79,7 +197,7 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
         settlementSyncLockRef.current = false;
       }
     },
-    [items, roomId, settlementIdByRoom, setSettlementItems],
+    [getPersistedSettlementId, items, roomId, settlementIdByRoom, setSettlementItems],
   );
 
   useSettlementRealtime({
@@ -89,11 +207,19 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
 
       const payload = (event.payload as Record<string, unknown> | undefined) ?? {};
       const payloadSettlementId = Number(
-        payload.settlementId ?? payload.purchaseId ?? event.settlementId ?? event.purchaseId,
+        payload.settlementId ??
+          payload.settlement_id ??
+          payload.purchaseId ??
+          payload.purchase_id ??
+          event.settlementId ??
+          event.settlement_id ??
+          event.purchaseId ??
+          event.purchase_id,
       );
 
       if (Number.isFinite(payloadSettlementId) && payloadSettlementId > 0) {
         setSettlementId(roomId, payloadSettlementId);
+        persistSettlementId(payloadSettlementId);
         void refreshSettlementFromServer(payloadSettlementId);
         return;
       }
@@ -101,6 +227,21 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
       void refreshSettlementFromServer();
     },
   });
+
+  const ensureReceiptVideoReady = async () => {
+    const video = receiptVideoRef.current;
+    if (!video) return false;
+    if (video.readyState >= 2 && video.videoWidth > 0) return true;
+
+    try {
+      await video.play();
+    } catch (error) {
+      console.warn('Receipt camera play blocked:', error);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    return video.readyState >= 2 && video.videoWidth > 0;
+  };
 
   const toCapturedFile = () => {
     const video = receiptVideoRef.current;
@@ -149,8 +290,16 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
   }, [roomId]);
 
   useEffect(() => {
+    if (!roomId) return;
+    const persisted = getPersistedSettlementId();
+    if (persisted && settlementIdByRoom[roomId] !== persisted) {
+      setSettlementId(roomId, persisted);
+    }
+  }, [getPersistedSettlementId, roomId, settlementIdByRoom, setSettlementId]);
+
+  useEffect(() => {
     if (!roomId || items.length > 0) return;
-    const settlementId = settlementIdByRoom[roomId];
+    const settlementId = settlementIdByRoom[roomId] ?? getPersistedSettlementId();
     if (!settlementId) return;
 
     const loadSettlement = async () => {
@@ -163,7 +312,7 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
     };
 
     void loadSettlement();
-  }, [items.length, roomId, settlementIdByRoom, setSettlementItems]);
+  }, [getPersistedSettlementId, items.length, roomId, settlementIdByRoom, setSettlementItems]);
 
   useEffect(() => {
     if (!showReceiptModal) {
@@ -282,20 +431,21 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
       return;
     }
 
-    appendSettlementItems(roomId, [
-      {
-        id: `manual-${Date.now()}`,
-        name,
-        quantity,
-        price,
-        payerIds: members.map((member) => member.memberId),
-        payerMemberId,
-        payerBankName: manualBankName.trim(),
-        payerAccountNumber: manualAccountNumber.trim(),
-        sourceType: 'manual',
-        sourceLabel: '수동입력',
-      },
-    ]);
+    const newItem: SettlementItem = {
+      id: `manual-${Date.now()}`,
+      name,
+      quantity,
+      price,
+      payerIds: members.map((member) => member.memberId),
+      payerMemberId,
+      payerBankName: manualBankName.trim(),
+      payerAccountNumber: manualAccountNumber.trim(),
+      sourceType: 'manual',
+      sourceLabel: '수동입력',
+    };
+    const nextItems = [...items, newItem];
+    appendSettlementItems(roomId, [newItem]);
+    void syncSettlementDraft(nextItems);
 
     setManualName('');
     setManualQty('1');
@@ -331,6 +481,12 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
       return;
     }
 
+    const isCameraReady = await ensureReceiptVideoReady();
+    if (!isCameraReady) {
+      setReceiptError('카메라 준비가 완료되지 않았습니다.');
+      return;
+    }
+
     const capturedFile = toCapturedFile();
     if (!capturedFile) {
       setReceiptError('카메라 준비가 완료되지 않았습니다.');
@@ -341,47 +497,29 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
       const uploaded = await uploadReceiptImage(roomId, capturedFile);
       if (uploaded.settlement_id) {
         setSettlementId(roomId, uploaded.settlement_id);
+        persistSettlementId(uploaded.settlement_id);
       }
 
       const parsedItems = uploaded.items ?? [];
       if (parsedItems.length > 0) {
-        appendSettlementItems(
-          roomId,
-          parsedItems.map((parsed, index) => ({
-            id: `receipt-${Date.now()}-${index}`,
-            name: parsed.item_name,
-            quantity: parsed.quantity,
-            price: Number(parsed.unit_price),
-            payerIds: members.map((member) => member.memberId),
-            payerMemberId,
-            payerBankName: bankName,
-            payerAccountNumber: accountNumber,
-            receiptTitle: title,
-            sourceType: 'receipt' as const,
-            sourceLabel: title,
-          })),
-        );
+        const newItems: SettlementItem[] = parsedItems.map((parsed, index) => ({
+          id: `receipt-${Date.now()}-${index}`,
+          name: parsed.item_name,
+          quantity: parsed.quantity,
+          price: Number(parsed.unit_price),
+          payerIds: members.map((member) => member.memberId),
+          payerMemberId,
+          payerBankName: bankName,
+          payerAccountNumber: accountNumber,
+          receiptTitle: title,
+          sourceType: 'receipt',
+          sourceLabel: title,
+        }));
+        const nextItems = [...items, ...newItems];
+        appendSettlementItems(roomId, newItems);
+        void syncSettlementDraft(nextItems);
       } else {
-        appendSettlementItems(roomId, [
-          {
-            id: `receipt-${Date.now()}`,
-            name: `${title} 항목`,
-            quantity: 1,
-            price: 0,
-            payerIds: members.map((member) => member.memberId),
-            payerMemberId,
-            payerBankName: bankName,
-            payerAccountNumber: accountNumber,
-            receiptTitle: title,
-            sourceType: 'receipt',
-            sourceLabel: title,
-          },
-        ]);
-      }
-    } catch (error) {
-      // API 실패 시 임시 fallback
-      appendSettlementItems(roomId, [
-        {
+        const newItem: SettlementItem = {
           id: `receipt-${Date.now()}`,
           name: `${title} 항목`,
           quantity: 1,
@@ -393,8 +531,29 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
           receiptTitle: title,
           sourceType: 'receipt',
           sourceLabel: title,
-        },
-      ]);
+        };
+        const nextItems = [...items, newItem];
+        appendSettlementItems(roomId, [newItem]);
+        void syncSettlementDraft(nextItems);
+      }
+    } catch (error) {
+      // API 실패 시 임시 fallback
+      const newItem: SettlementItem = {
+        id: `receipt-${Date.now()}`,
+        name: `${title} 항목`,
+        quantity: 1,
+        price: 0,
+        payerIds: members.map((member) => member.memberId),
+        payerMemberId,
+        payerBankName: bankName,
+        payerAccountNumber: accountNumber,
+        receiptTitle: title,
+        sourceType: 'receipt',
+        sourceLabel: title,
+      };
+      const nextItems = [...items, newItem];
+      appendSettlementItems(roomId, [newItem]);
+      void syncSettlementDraft(nextItems);
       console.warn('Receipt upload failed. Fallback item created.', error);
     }
 
@@ -419,6 +578,8 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
     const hasMember = current.includes(memberId);
     const nextPayerIds = hasMember ? current.filter((id) => id !== memberId) : [...current, memberId];
     updateSettlementItemPayers(roomId, itemId, nextPayerIds);
+    const nextItems = items.map((item) => (item.id === itemId ? { ...item, payerIds: nextPayerIds } : item));
+    void syncSettlementDraft(nextItems);
   };
 
   return (
@@ -495,9 +656,9 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
                     </div>
                     {!!item.payerMemberId && (
                       <div className="mobile-settlement-receiver-info">
-                        결제자: {members.find((m) => m.memberId === item.payerMemberId)?.nickname ?? item.payerMemberId} / {item.payerBankName} {item.payerAccountNumber}
-                      </div>
-                    )}
+                    결제자: {members.find((m) => m.memberId === item.payerMemberId)?.nickname ?? item.payerMemberId} / {item.payerBankName} {item.payerAccountNumber}
+                  </div>
+                )}
                     <div className="mobile-settlement-divider" />
                     <div className="mobile-settlement-members">
                       <div className="mobile-settlement-payer-header">
@@ -709,6 +870,7 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
 
                       const created = await createSettlement(roomId, payload);
                       setSettlementId(roomId, created.purchaseId);
+                      persistSettlementId(created.purchaseId);
                       setSettlementItems(roomId, mapSettlementResponseToStoreItems(created, items));
 
                       await Promise.all(

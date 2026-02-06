@@ -7,9 +7,14 @@ import { useSettlementStore } from '@/entities/settlement/model/useSettlementSto
 import {
   createSettlement,
   getSettlement,
+  updateSettlementDraft,
   updateSettlementItemSplits,
 } from '@/entities/settlement/api/settlementApi';
-import { mapSettlementResponseToStoreItems } from '@/entities/settlement/model/mapper';
+import {
+  mapSettlementDraftResponseToStoreItems,
+  mapSettlementResponseToStoreItems,
+} from '@/entities/settlement/model/mapper';
+import type { SettlementItem } from '@/entities/settlement/model/useSettlementStore';
 import { useSettlementRealtime } from '@/features/settlement/model/useSettlementRealtime';
 import './styles.css';
 
@@ -29,6 +34,7 @@ const DesktopSettlementPage: React.FC = () => {
   const [manualBankName, setManualBankName] = useState('');
   const [manualAccountNumber, setManualAccountNumber] = useState('');
   const [manualError, setManualError] = useState('');
+  const [openPayerByItem, setOpenPayerByItem] = useState<Record<string, boolean>>({});
 
   const settlementItemsByRoom = useSettlementStore((state) => state.settlementItemsByRoom);
   const settlementIdByRoom = useSettlementStore((state) => state.settlementIdByRoom);
@@ -37,12 +43,125 @@ const DesktopSettlementPage: React.FC = () => {
   const setSettlementId = useSettlementStore((state) => state.setSettlementId);
   const updateSettlementItemPayers = useSettlementStore((state) => state.updateSettlementItemPayers);
   const appendSettlementItems = useSettlementStore((state) => state.appendSettlementItems);
+  const settlementStorageKey = useMemo(
+    () => (roomId ? `settlement:id:${roomId}` : ''),
+    [roomId],
+  );
+  const getPersistedSettlementId = useCallback(() => {
+    if (!settlementStorageKey) return null;
+    const stored = Number(localStorage.getItem(settlementStorageKey) ?? '0');
+    return Number.isFinite(stored) && stored > 0 ? stored : null;
+  }, [settlementStorageKey]);
+  const persistSettlementId = useCallback(
+    (id: number) => {
+      if (!settlementStorageKey || !Number.isFinite(id) || id <= 0) return;
+      localStorage.setItem(settlementStorageKey, String(id));
+    },
+    [settlementStorageKey],
+  );
+
+  const ensureSettlementId = useCallback(
+    async (nextItems: SettlementItem[]) => {
+      if (!roomId) return null;
+
+      const existingSettlementId = settlementIdByRoom[roomId] ?? getPersistedSettlementId();
+      if (existingSettlementId) return existingSettlementId;
+      if (nextItems.length === 0) return null;
+
+      const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
+      if (!Number.isFinite(currentMemberId) || currentMemberId <= 0) return null;
+
+      try {
+        const created = await createSettlement(roomId, {
+          payerMemberId: currentMemberId,
+          totalAmount: nextItems.reduce(
+            (sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity ?? 1),
+            0,
+          ),
+          items: nextItems.map((item) => ({
+            itemName: item.name,
+            unitPrice: Number(item.price ?? 0),
+            quantity: Number(item.quantity ?? 1),
+            payerMemberId: Number(item.payerMemberId ?? currentMemberId),
+            payerBankName: item.payerBankName ?? '',
+            payerAccountNumber: item.payerAccountNumber ?? '',
+          })),
+        });
+
+        setSettlementId(roomId, created.purchaseId);
+        persistSettlementId(created.purchaseId);
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(created, nextItems));
+        return created.purchaseId;
+      } catch (error) {
+        console.error('Failed to ensure settlement id:', error);
+        return null;
+      }
+    },
+    [getPersistedSettlementId, persistSettlementId, roomId, settlementIdByRoom, setSettlementId, setSettlementItems],
+  );
+
+  const syncSettlementDraft = useCallback(
+    async (nextItems: SettlementItem[]) => {
+      if (!roomId) return;
+      const settlementId =
+        (await ensureSettlementId(nextItems)) ?? settlementIdByRoom[roomId] ?? getPersistedSettlementId();
+      if (!settlementId) return;
+
+      const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
+      const memberIds = members.map((member) => member.memberId);
+      const participantIds = Number.isFinite(currentMemberId) && currentMemberId > 0
+        ? Array.from(new Set([...memberIds, currentMemberId]))
+        : memberIds;
+
+      try {
+        const response = await updateSettlementDraft(settlementId, {
+          payerMemberId: currentMemberId > 0 ? currentMemberId : undefined,
+          participantIds,
+          items: nextItems.map((item) => {
+            const purchaseItemId = Number(item.id);
+            const itemPayerId = Number(item.payerMemberId ?? currentMemberId);
+            const itemParticipantIdsSource = item.payerIds ?? participantIds;
+            const itemParticipantIds = Number.isFinite(itemPayerId) && itemPayerId > 0
+              ? Array.from(new Set([...itemParticipantIdsSource, itemPayerId]))
+              : itemParticipantIdsSource;
+            return {
+              purchaseItemId: Number.isFinite(purchaseItemId) && purchaseItemId > 0 ? purchaseItemId : undefined,
+              itemName: item.name,
+              unitPrice: Number(item.price ?? 0),
+              quantity: Number(item.quantity ?? 1),
+              payerMemberId: Number.isFinite(itemPayerId) && itemPayerId > 0 ? itemPayerId : undefined,
+              payerBankName: item.payerBankName ?? '',
+              payerAccountNumber: item.payerAccountNumber ?? '',
+              participantIds: itemParticipantIds,
+            };
+          }),
+        });
+
+        setSettlementId(roomId, response.settlementId);
+        persistSettlementId(response.settlementId);
+        setSettlementItems(roomId, mapSettlementDraftResponseToStoreItems(response, nextItems));
+      } catch (error) {
+        console.error('Failed to update settlement draft:', error);
+      }
+    },
+    [
+      ensureSettlementId,
+      getPersistedSettlementId,
+      members,
+      persistSettlementId,
+      roomId,
+      settlementIdByRoom,
+      setSettlementId,
+      setSettlementItems,
+    ],
+  );
 
   const settlementSyncLockRef = useRef(false);
   const refreshSettlementFromServer = useCallback(
     async (overrideSettlementId?: number) => {
       if (!roomId || settlementSyncLockRef.current) return;
-      const targetSettlementId = overrideSettlementId ?? settlementIdByRoom[roomId];
+      const targetSettlementId =
+        overrideSettlementId ?? settlementIdByRoom[roomId] ?? getPersistedSettlementId();
       if (!targetSettlementId) return;
 
       settlementSyncLockRef.current = true;
@@ -55,7 +174,7 @@ const DesktopSettlementPage: React.FC = () => {
         settlementSyncLockRef.current = false;
       }
     },
-    [items, roomId, settlementIdByRoom, setSettlementItems],
+    [getPersistedSettlementId, items, roomId, settlementIdByRoom, setSettlementItems],
   );
 
   useSettlementRealtime({
@@ -65,11 +184,19 @@ const DesktopSettlementPage: React.FC = () => {
 
       const payload = (event.payload as Record<string, unknown> | undefined) ?? {};
       const payloadSettlementId = Number(
-        payload.settlementId ?? payload.purchaseId ?? event.settlementId ?? event.purchaseId,
+        payload.settlementId ??
+          payload.settlement_id ??
+          payload.purchaseId ??
+          payload.purchase_id ??
+          event.settlementId ??
+          event.settlement_id ??
+          event.purchaseId ??
+          event.purchase_id,
       );
 
       if (Number.isFinite(payloadSettlementId) && payloadSettlementId > 0) {
         setSettlementId(roomId, payloadSettlementId);
+        persistSettlementId(payloadSettlementId);
         void refreshSettlementFromServer(payloadSettlementId);
         return;
       }
@@ -92,8 +219,16 @@ const DesktopSettlementPage: React.FC = () => {
   }, [roomId]);
 
   useEffect(() => {
+    if (!roomId) return;
+    const persisted = getPersistedSettlementId();
+    if (persisted && settlementIdByRoom[roomId] !== persisted) {
+      setSettlementId(roomId, persisted);
+    }
+  }, [getPersistedSettlementId, roomId, settlementIdByRoom, setSettlementId]);
+
+  useEffect(() => {
     if (!roomId || items.length > 0) return;
-    const settlementId = settlementIdByRoom[roomId];
+    const settlementId = settlementIdByRoom[roomId] ?? getPersistedSettlementId();
     if (!settlementId) return;
 
     const loadSettlement = async () => {
@@ -106,7 +241,7 @@ const DesktopSettlementPage: React.FC = () => {
     };
 
     void loadSettlement();
-  }, [items.length, roomId, settlementIdByRoom, setSettlementItems]);
+  }, [getPersistedSettlementId, items.length, roomId, settlementIdByRoom, setSettlementItems]);
 
   const handleFinalize = async () => {
     if (!roomId) return;
@@ -132,6 +267,7 @@ const DesktopSettlementPage: React.FC = () => {
 
       const created = await createSettlement(roomId, payload);
       setSettlementId(roomId, created.purchaseId);
+      persistSettlementId(created.purchaseId);
       setSettlementItems(roomId, mapSettlementResponseToStoreItems(created, items));
 
       await Promise.all(
@@ -188,6 +324,22 @@ const DesktopSettlementPage: React.FC = () => {
     [filteredItems],
   );
 
+  const splitByMember = useMemo(() => {
+    const acc = new Map<number, number>();
+    items.forEach((item) => {
+      const quantity = item.quantity ?? 1;
+      const price = item.price ?? 0;
+      const total = quantity * price;
+      const payers = item.payerIds ?? [];
+      if (payers.length === 0) return;
+      const share = total / payers.length;
+      payers.forEach((memberId) => {
+        acc.set(memberId, (acc.get(memberId) ?? 0) + share);
+      });
+    });
+    return acc;
+  }, [items]);
+
   const togglePayer = (itemId: string, memberId: number) => {
     if (!roomId) return;
     const target = items.find((item) => item.id === itemId);
@@ -196,6 +348,12 @@ const DesktopSettlementPage: React.FC = () => {
     const current = target.payerIds ?? [];
     const next = current.includes(memberId) ? current.filter((id) => id !== memberId) : [...current, memberId];
     updateSettlementItemPayers(roomId, itemId, next);
+    const nextItems = items.map((item) => (item.id === itemId ? { ...item, payerIds: next } : item));
+    void syncSettlementDraft(nextItems);
+  };
+
+  const togglePayerPanel = (itemId: string) => {
+    setOpenPayerByItem((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
   };
 
   const handleManualSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -225,20 +383,21 @@ const DesktopSettlementPage: React.FC = () => {
       return;
     }
 
-    appendSettlementItems(roomId, [
-      {
-        id: `desktop-manual-${Date.now()}`,
-        name,
-        quantity,
-        price,
-        payerIds: members.map((member) => member.memberId),
-        payerMemberId,
-        payerBankName: bankName,
-        payerAccountNumber: accountNumber,
-        sourceType: 'manual',
-        sourceLabel: '수동입력',
-      },
-    ]);
+    const newItem: SettlementItem = {
+      id: `desktop-manual-${Date.now()}`,
+      name,
+      quantity,
+      price,
+      payerIds: members.map((member) => member.memberId),
+      payerMemberId,
+      payerBankName: bankName,
+      payerAccountNumber: accountNumber,
+      sourceType: 'manual',
+      sourceLabel: '수동입력',
+    };
+    const nextItems = [...items, newItem];
+    appendSettlementItems(roomId, [newItem]);
+    void syncSettlementDraft(nextItems);
 
     setManualName('');
     setManualQty('1');
@@ -296,39 +455,82 @@ const DesktopSettlementPage: React.FC = () => {
                   <strong>{item.name}</strong>
                   <span className={`desktop-settlement-source source-${item.sourceType}`}>{item.sourceLabel}</span>
                 </div>
-                <div className="desktop-settlement-meta">
-                  <span>가격 {Number(item.price ?? 0).toLocaleString()}원</span>
-                  <span>수량 {item.quantity ?? 1}개</span>
-                  <span>합계 {((item.price ?? 0) * (item.quantity ?? 1)).toLocaleString()}원</span>
+                <div className="desktop-settlement-inputs">
+                  <label className="desktop-settlement-field">
+                    <span>가격</span>
+                    <input type="number" value={Number(item.price ?? 0)} readOnly />
+                  </label>
+                  <label className="desktop-settlement-field">
+                    <span>수량</span>
+                    <input type="number" value={item.quantity ?? 1} readOnly />
+                  </label>
                 </div>
-                <div className="desktop-settlement-members-title">결제 인원 선택</div>
-                <div className="desktop-settlement-members">
-                  {members.map((member) => {
-                    const selected = (item.payerIds ?? []).includes(member.memberId);
-                    return (
-                      <button
-                        key={`${item.id}-${member.memberId}`}
-                        type="button"
-                        className={`desktop-settlement-member ${selected ? 'is-selected' : ''}`}
-                        onClick={() => togglePayer(item.id, member.memberId)}
-                      >
-                        <UserAvatar name={member.nickname} colorKey={member.memberId} size="md" />
-                        <span>{member.nickname}</span>
-                      </button>
-                    );
-                  })}
+                {!!item.payerMemberId && (
+                  <div className="desktop-settlement-receiver-info">
+                    결제자: {members.find((m) => m.memberId === item.payerMemberId)?.nickname ?? item.payerMemberId} / {item.payerBankName} {item.payerAccountNumber}
+                  </div>
+                )}
+                <div className="desktop-settlement-members-header">
+                  <div className="desktop-settlement-members-title">정산 참여자</div>
+                  <button
+                    type="button"
+                    className="desktop-settlement-members-toggle"
+                    onClick={() => togglePayerPanel(item.id)}
+                  >
+                    <i className="ri-user-line" />
+                    <span>{(item.payerIds ?? []).length}</span>
+                  </button>
                 </div>
+                {openPayerByItem[item.id] && (
+                  <div className="desktop-settlement-members-panel">
+                    <div className="desktop-settlement-members">
+                      {members.map((member) => {
+                        const selected = (item.payerIds ?? []).includes(member.memberId);
+                        return (
+                          <button
+                            key={`${item.id}-${member.memberId}`}
+                            type="button"
+                            className={`desktop-settlement-member ${selected ? 'is-selected' : ''}`}
+                            onClick={() => togglePayer(item.id, member.memberId)}
+                          >
+                            <UserAvatar name={member.nickname} colorKey={member.memberId} size="md" />
+                            <span>{member.nickname}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </article>
             ))}
           </div>
         )}
 
         <div className="desktop-settlement-summary">
-          <div>
-            <span>총 금액</span>
-            <p>선택된 필터 기준 합계</p>
+          <div className="desktop-settlement-summary-top">
+            <div>
+              <span>총 금액</span>
+            </div>
+            <strong className="desktop-settlement-total">{totalAmount.toLocaleString()}원</strong>
           </div>
-          <strong>{totalAmount.toLocaleString()}원</strong>
+          <div className="desktop-settlement-summary-divider" />
+          <div className="desktop-settlement-summary-bottom">
+            <div className="desktop-settlement-split-title">각자 결제 금액</div>
+            <div className="desktop-settlement-split-list">
+              {members.length === 0 || splitByMember.size === 0 ? (
+                <div className="desktop-settlement-split-empty">참여자 정산 내역이 없습니다.</div>
+              ) : (
+                members
+                  .filter((member) => (splitByMember.get(member.memberId) ?? 0) > 0)
+                  .map((member) => (
+                    <div key={member.memberId} className="desktop-settlement-split-row">
+                      <span className="desktop-settlement-split-name">{member.nickname}</span>
+                      <strong>{Math.round(splitByMember.get(member.memberId) ?? 0).toLocaleString()}원</strong>
+                    </div>
+                  ))
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="desktop-settlement-bottom-actions">

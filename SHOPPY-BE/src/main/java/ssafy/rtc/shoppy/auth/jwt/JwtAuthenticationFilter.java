@@ -11,6 +11,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import ssafy.rtc.shoppy.auth.service.TokenBlacklistService;
 
 import java.io.IOException;
 
@@ -23,6 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -31,12 +33,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = resolveToken(request);
 
         if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-            Authentication authentication = jwtTokenProvider.getAuthentication(token);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.info("✅ JWT Authentication Success - UserId: {}, Path: {}",
-                    authentication.getPrincipal(), request.getRequestURI());
+            if (tokenBlacklistService.isBlacklisted(token)) {
+                log.warn("Blacklisted JWT token used - Path: {}", request.getRequestURI());
+            } else {
+                Authentication authentication = jwtTokenProvider.getAuthentication(token);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                log.info("JWT Authentication Success - UserId: {}, Path: {}",
+                        authentication.getPrincipal(), request.getRequestURI());
+            }
         } else if (StringUtils.hasText(token)) {
-            log.warn("❌ JWT Token Invalid - Path: {}", request.getRequestURI());
+            log.warn("JWT Token Invalid - Path: {}", request.getRequestURI());
         }
 
         filterChain.doFilter(request, response);

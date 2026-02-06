@@ -46,11 +46,13 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @Operation(summary = "로그아웃", description = "현재 사용자를 로그아웃 처리합니다. Refresh Token이 무효화됩니다.")
+    @Operation(summary = "로그아웃", description = "현재 사용자를 로그아웃 처리합니다. Refresh Token이 무효화되고 Access Token이 블랙리스트에 등록됩니다.")
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
-            @AuthenticationPrincipal Long memberId) {
-        authService.logout(memberId);
+            @AuthenticationPrincipal Long memberId,
+            @RequestHeader("Authorization") String authorization) {
+        String accessToken = authorization.substring("Bearer ".length());
+        authService.logout(memberId, accessToken);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }
