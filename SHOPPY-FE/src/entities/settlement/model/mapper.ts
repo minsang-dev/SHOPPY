@@ -3,7 +3,7 @@ import type { SettlementDraftResponse, SettlementResponse } from '../api/settlem
 
 const mapItems = (
   items: SettlementResponse['items'] | SettlementDraftResponse['items'],
-  fallback: SettlementItem[] = [],
+  fallback: Array<SettlementItem | undefined> = [],
   fallbackPayerMemberId?: number,
 ): SettlementItem[] => {
   return items.map((item, index) => {
@@ -35,10 +35,10 @@ const mapItems = (
 
 export const mapSettlementResponseToStoreItems = (
   response: SettlementResponse,
-  fallback: SettlementItem[] = [],
+  fallback: Array<SettlementItem | undefined> = [],
 ): SettlementItem[] => mapItems(response.items, fallback, response.payerMemberId);
 
 export const mapSettlementDraftResponseToStoreItems = (
   response: SettlementDraftResponse,
-  fallback: SettlementItem[] = [],
+  fallback: Array<SettlementItem | undefined> = [],
 ): SettlementItem[] => mapItems(response.items, fallback);

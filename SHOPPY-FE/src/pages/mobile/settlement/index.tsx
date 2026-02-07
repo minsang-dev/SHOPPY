@@ -15,6 +15,8 @@ import {
   mapSettlementDraftResponseToStoreItems,
   mapSettlementResponseToStoreItems,
 } from '@/entities/settlement/model/mapper';
+import { getShoppingList } from '@/entities/shopping/api/shopping';
+import type { ShoppingItem } from '@/entities/shopping/types/shopping.types';
 import type { SettlementItem } from '@/entities/settlement/model/useSettlementStore';
 import { useSettlementRealtime } from '@/features/settlement/model/useSettlementRealtime';
 import './styles.css';
@@ -42,6 +44,10 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
   const [openPayerByItem, setOpenPayerByItem] = useState<Record<string, boolean>>({});
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string>('all');
+  const onlineFallbackRef = useRef<{ key: string; items: Array<SettlementItem | undefined> } | null>(null);
+  const onlineFallbackLoadingRef = useRef<{ key: string; promise: Promise<Array<SettlementItem | undefined>> } | null>(
+    null,
+  );
 
   const [receiptTitle, setReceiptTitle] = useState('');
   const [receiptPayerId, setReceiptPayerId] = useState('');
@@ -179,6 +185,84 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
     ],
   );
 
+  const buildOnlineFallback = useCallback(
+    async (responseItems: Array<{ itemName: string; quantity: number; unitPrice: number }>) => {
+      if (!roomId || responseItems.length === 0) return [];
+
+      const normalizeName = (value: string) => value.replace(/\s+/g, '').toLowerCase();
+      const resolveShoppingName = (item: ShoppingItem) => item.displayName ?? '';
+      const toNumber = (value: unknown) => Number(value ?? 0);
+      const key = responseItems
+        .map((item) => `${roomId}:${normalizeName(item.itemName)}:${item.quantity}:${item.unitPrice}`)
+        .join('|');
+
+      if (onlineFallbackRef.current?.key === key) {
+        return onlineFallbackRef.current.items;
+      }
+      if (onlineFallbackLoadingRef.current?.key === key) {
+        return onlineFallbackLoadingRef.current.promise;
+      }
+
+      onlineFallbackLoadingRef.current = {
+        key,
+        promise: (async () => {
+          try {
+            const { items: shoppingItems } = await getShoppingList(roomId);
+            const onlineItems = shoppingItems.filter((item) => {
+              const purchaseType =
+                typeof item.purchaseType === 'string' ? item.purchaseType.toLowerCase() : item.purchaseType;
+              if (purchaseType === 'online') return true;
+              if (purchaseType == null && item.productId != null) return true;
+              return false;
+            });
+
+            if (onlineItems.length === 0) return [];
+
+            let hasMatch = false;
+            const mapped = responseItems.map((responseItem) => {
+              const responseName = normalizeName(responseItem.itemName);
+              const responseQuantity = toNumber(responseItem.quantity);
+              const matched = onlineItems.find((candidate) => {
+                const candidateName = normalizeName(resolveShoppingName(candidate));
+                if (!candidateName || !responseName) return false;
+                const candidateQuantity = toNumber(candidate.quantity);
+                const nameMatches =
+                  candidateName === responseName ||
+                  candidateName.includes(responseName) ||
+                  responseName.includes(candidateName);
+                if (!nameMatches) return false;
+                if (candidateQuantity <= 0 || responseQuantity <= 0) return true;
+                return candidateQuantity === responseQuantity;
+              });
+
+              if (!matched) return undefined;
+              hasMatch = true;
+              return {
+                id: `online-${roomId}-${matched.shoppingItemId}`,
+                name: responseItem.itemName,
+                quantity: responseItem.quantity,
+                price: Number(responseItem.unitPrice),
+                sourceType: 'online',
+                sourceLabel: '온라인 품목',
+              } as SettlementItem;
+            });
+
+            return hasMatch ? mapped : [];
+          } catch (error) {
+            console.warn('Failed to build online fallback:', error);
+            return [];
+          }
+        })(),
+      };
+
+      const resolved = await onlineFallbackLoadingRef.current.promise;
+      onlineFallbackLoadingRef.current = null;
+      onlineFallbackRef.current = resolved.length > 0 ? { key, items: resolved } : null;
+      return resolved;
+    },
+    [roomId],
+  );
+
   const settlementSyncLockRef = useRef(false);
   const refreshSettlementFromServer = useCallback(
     async (overrideSettlementId?: number) => {
@@ -190,14 +274,19 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
       settlementSyncLockRef.current = true;
       try {
         const response = await getSettlement(targetSettlementId);
-        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response, items));
+        const onlineFallback = await buildOnlineFallback(response.items);
+        const fallbackItems =
+          onlineFallback.length > 0
+            ? response.items.map((_, index) => onlineFallback[index] ?? items[index])
+            : items;
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response, fallbackItems));
       } catch (error) {
         console.error('Failed to sync settlement from realtime event:', error);
       } finally {
         settlementSyncLockRef.current = false;
       }
     },
-    [getPersistedSettlementId, items, roomId, settlementIdByRoom, setSettlementItems],
+    [buildOnlineFallback, getPersistedSettlementId, items, roomId, settlementIdByRoom, setSettlementItems],
   );
 
   useSettlementRealtime({
@@ -305,14 +394,17 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
     const loadSettlement = async () => {
       try {
         const response = await getSettlement(settlementId);
-        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response));
+        const onlineFallback = await buildOnlineFallback(response.items);
+        const fallbackItems =
+          onlineFallback.length > 0 ? response.items.map((_, index) => onlineFallback[index]) : [];
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response, fallbackItems));
       } catch (error) {
         console.error('Failed to load settlement:', error);
       }
     };
 
     void loadSettlement();
-  }, [getPersistedSettlementId, items.length, roomId, settlementIdByRoom, setSettlementItems]);
+  }, [buildOnlineFallback, getPersistedSettlementId, items.length, roomId, settlementIdByRoom, setSettlementItems]);
 
   useEffect(() => {
     if (!showReceiptModal) {
