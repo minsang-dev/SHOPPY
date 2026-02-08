@@ -19,6 +19,11 @@ type TransferRow = {
 };
 
 const EMPTY_ITEMS: ReturnType<typeof useSettlementStore.getState>['settlementItemsByRoom'][string] = [];
+const toCeilWon = (amount: number) => {
+  const normalized = Number(amount);
+  if (!Number.isFinite(normalized) || normalized <= 0) return 0;
+  return Math.ceil(normalized - 0.000001);
+};
 
 const DesktopSettlementResultPage: React.FC = () => {
   const navigate = useNavigate();
@@ -128,7 +133,7 @@ const DesktopSettlementResultPage: React.FC = () => {
     void loadSettlement();
   }, [getPersistedSettlementId, items.length, roomId, setSettlementId, settlementIdByRoom, setSettlementItems]);
 
-  const transferRows = useMemo(() => {
+  const allTransferRows = useMemo(() => {
     const EPSILON = 0.000001;
     const balanceByMember = new Map<number, number>();
     const accountByReceiver = new Map<number, { bankName?: string; accountNumber?: string }>();
@@ -175,7 +180,7 @@ const DesktopSettlementResultPage: React.FC = () => {
         rows.push({
           fromMemberId: debtor.memberId,
           toMemberId: creditor.memberId,
-          amount,
+          amount: toCeilWon(amount),
           bankName: receiverAccount?.bankName,
           accountNumber: receiverAccount?.accountNumber,
         });
@@ -187,11 +192,13 @@ const DesktopSettlementResultPage: React.FC = () => {
       if (debtor.value <= EPSILON) debtorIndex += 1;
     }
 
-    if (Number.isFinite(currentMemberId) && currentMemberId > 0) {
-      return rows.filter((row) => row.fromMemberId === currentMemberId || row.toMemberId === currentMemberId);
-    }
     return rows;
-  }, [currentMemberId, items]);
+  }, [items]);
+
+  const outgoingTransferRows = useMemo(() => {
+    if (!Number.isFinite(currentMemberId) || currentMemberId <= 0) return allTransferRows;
+    return allTransferRows.filter((row) => row.fromMemberId === currentMemberId);
+  }, [allTransferRows, currentMemberId]);
 
   const getMemberName = (memberId: number) =>
     members.find((member) => member.memberId === memberId)?.nickname ?? `멤버 ${memberId}`;
@@ -211,21 +218,21 @@ const DesktopSettlementResultPage: React.FC = () => {
 
         <div className="desktop-settlement-result-grid">
           <section className="desktop-settlement-result-section">
-            <h2>정산 결과</h2>
+            <h2>내가 누구에게 얼마를 보내야 하는지</h2>
             <div className="desktop-settlement-result-list">
-              {transferRows.length === 0 ? (
-                <div className="desktop-settlement-result-empty">송금 내역이 없습니다.</div>
+              {outgoingTransferRows.length === 0 ? (
+                <div className="desktop-settlement-result-empty">보낼 금액이 없습니다.</div>
               ) : (
-                transferRows.map((row) => {
+                outgoingTransferRows.map((row) => {
                   const done = getTransferDone(row);
                   return (
                     <div key={`all-${row.fromMemberId}-${row.toMemberId}`} className={`desktop-settlement-transfer-card ${done ? 'is-done' : ''}`}>
                       <div className="desktop-settlement-transfer-left">
-                        <UserAvatar name={getMemberName(row.fromMemberId)} colorKey={row.fromMemberId} size="md" />
-                        <strong>{getMemberName(row.fromMemberId)}</strong>
+                        <UserAvatar name={getMemberName(row.toMemberId)} colorKey={row.toMemberId} size="md" />
+                        <strong>{getMemberName(row.toMemberId)}에게</strong>
                       </div>
                       <div className="desktop-settlement-transfer-right">
-                        <span>{Math.round(row.amount).toLocaleString()}원</span>
+                        <span>{row.amount.toLocaleString()}원</span>
                         {done ? <em>완료</em> : <button type="button" onClick={() => setSelectedTransfer(row)}>송금</button>}
                       </div>
                     </div>
@@ -254,7 +261,7 @@ const DesktopSettlementResultPage: React.FC = () => {
             <p>수신자: {getMemberName(selectedTransfer.toMemberId)}</p>
             <p>은행: {selectedTransfer.bankName || '-'}</p>
             <p>계좌: {selectedTransfer.accountNumber || '-'}</p>
-            <p>금액: {Math.round(selectedTransfer.amount).toLocaleString()}원</p>
+            <p>금액: {selectedTransfer.amount.toLocaleString()}원</p>
 
             <div className="desktop-settlement-transfer-actions">
               <button type="button" className="ghost" onClick={() => setSelectedTransfer(null)}>닫기</button>
