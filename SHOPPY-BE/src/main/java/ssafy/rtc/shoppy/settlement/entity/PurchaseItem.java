@@ -42,6 +42,15 @@ public class PurchaseItem {
     @Column(name = "payer_account_number", length = 50)
     private String payerAccountNumber;
 
+    @Column(name = "source_type", length = 20)
+    private String sourceType;
+
+    @Column(name = "source_label", length = 100)
+    private String sourceLabel;
+
+    @Column(name = "receipt_title", length = 100)
+    private String receiptTitle;
+
     @Builder.Default
     @OneToMany(mappedBy = "purchaseItem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemAllocation> itemAllocations = new ArrayList<>();
@@ -61,5 +70,11 @@ public class PurchaseItem {
         this.payerMemberId = payerMemberId;
         this.payerBankName = bankName;
         this.payerAccountNumber = accountNumber;
+    }
+
+    public void updateSource(String sourceType, String sourceLabel, String receiptTitle) {
+        this.sourceType = sourceType;
+        this.sourceLabel = sourceLabel;
+        this.receiptTitle = receiptTitle;
     }
 }

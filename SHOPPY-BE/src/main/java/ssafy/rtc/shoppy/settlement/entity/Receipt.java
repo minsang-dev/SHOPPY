@@ -35,6 +35,9 @@ public class Receipt {
     @Column(name = "original_filename")
     private String originalFilename;
 
+    @Column(name = "receipt_title", length = 100)
+    private String receiptTitle;
+
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

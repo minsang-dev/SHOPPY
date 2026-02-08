@@ -26,4 +26,7 @@ public class SettlementDraftItemRequest {
     private String payerBankName;
     private String payerAccountNumber;
     private List<Long> participantIds;
+    private String sourceType;
+    private String sourceLabel;
+    private String receiptTitle;
 }

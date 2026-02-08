@@ -78,11 +78,17 @@ public class SettlementService {
             throw new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND); 
         }
 
+        String receiptTitle = receipt.getReceiptTitle();
+        String receiptLabel = receiptTitle != null && !receiptTitle.isBlank() ? receiptTitle : "영수증";
+
         PurchaseItem purchaseItem = PurchaseItem.builder()
                 .purchase(purchase)
                 .itemName(request.getItemName())
                 .unitPrice(request.getUnitPrice())
                 .quantity(request.getQuantity())
+                .sourceType("receipt")
+                .sourceLabel(receiptLabel)
+                .receiptTitle(receiptTitle)
                 .build();
         purchaseItemRepository.save(purchaseItem);
 
@@ -104,7 +110,7 @@ public class SettlementService {
     /**
      * ??? ??? ??? ? Purchase ??
      */
-    public ReceiptUploadResponse uploadReceipt(Long roomId, Long memberId, MultipartFile file) {
+    public ReceiptUploadResponse uploadReceipt(Long roomId, Long memberId, MultipartFile file, String receiptTitle) {
         // 1. ?? ?? (S3)
         String imageUrl = fileStorageService.storeFile(file);
 
@@ -155,12 +161,18 @@ public class SettlementService {
         List<ReceiptUploadResponse.ItemDto> itemDtos = new ArrayList<>();
         List<RoomMemberEntity> activeMembers = roomMemberRepository.findByRoom_RoomIdAndStatus(roomId, MemberStatus.ACTIVE);
 
+        String resolvedReceiptTitle = receiptTitle != null && !receiptTitle.isBlank() ? receiptTitle.trim() : null;
+        String receiptLabel = resolvedReceiptTitle != null ? resolvedReceiptTitle : "영수증";
+
         for (ReceiptItemDto item : parsedItems) {
             PurchaseItem purchaseItem = PurchaseItem.builder()
                     .purchase(purchase)
                     .itemName(item.getName())
                     .unitPrice(toBigDecimal(item.getUnitPrice()))
                     .quantity(item.getQuantity() == null ? 1 : item.getQuantity())
+                    .sourceType("receipt")
+                    .sourceLabel(receiptLabel)
+                    .receiptTitle(resolvedReceiptTitle)
                     .build();
             purchaseItemRepository.save(purchaseItem);
 
@@ -181,6 +193,7 @@ public class SettlementService {
                 .imageUrl(imageUrl)
                 .originalFilename(file.getOriginalFilename())
                 .recognizedTotal(recognizedTotal)
+                .receiptTitle(resolvedReceiptTitle)
                 .build();
         receiptRepository.save(receipt);
 
@@ -310,6 +323,32 @@ public class SettlementService {
                 item.updatePayer(payerMemberId, payerBankName, payerAccountNumber);
             }
 
+            String resolvedSourceType = itemRequest.getSourceType();
+            String resolvedSourceLabel = itemRequest.getSourceLabel();
+            String resolvedReceiptTitle = itemRequest.getReceiptTitle();
+
+            if (resolvedSourceType == null) {
+                resolvedSourceType = isNewItem ? "manual" : item.getSourceType();
+            }
+            if (resolvedReceiptTitle == null) {
+                resolvedReceiptTitle = item.getReceiptTitle();
+            }
+            if (resolvedSourceLabel == null) {
+                if ("online".equalsIgnoreCase(resolvedSourceType)) {
+                    resolvedSourceLabel = "online";
+                } else if ("manual".equalsIgnoreCase(resolvedSourceType)) {
+                    resolvedSourceLabel = "manual";
+                } else if ("receipt".equalsIgnoreCase(resolvedSourceType)) {
+                    resolvedSourceLabel = resolvedReceiptTitle != null ? resolvedReceiptTitle : item.getSourceLabel();
+                } else {
+                    resolvedSourceLabel = item.getSourceLabel();
+                }
+            }
+
+            if (resolvedSourceType != null || resolvedSourceLabel != null || resolvedReceiptTitle != null) {
+                item.updateSource(resolvedSourceType, resolvedSourceLabel, resolvedReceiptTitle);
+            }
+
             List<Long> participantIds = resolveParticipantIds(itemRequest, request, activeMemberIdList, activeMemberIdSet);
             rebuildAllocations(item, participantIds);
 
@@ -360,11 +399,27 @@ public class SettlementService {
     }
 
     private void createPurchaseItemWithAllocations(Purchase purchase, PurchaseItemDto itemDto, List<RoomMemberEntity> members) {
+        String sourceType = itemDto.getSourceType() != null ? itemDto.getSourceType() : "manual";
+        String receiptTitle = itemDto.getReceiptTitle();
+        String sourceLabel = itemDto.getSourceLabel();
+        if (sourceLabel == null) {
+            if ("online".equalsIgnoreCase(sourceType)) {
+                sourceLabel = "online";
+            } else if ("manual".equalsIgnoreCase(sourceType)) {
+                sourceLabel = "manual";
+            } else if ("receipt".equalsIgnoreCase(sourceType)) {
+                sourceLabel = receiptTitle;
+            }
+        }
+
         PurchaseItem purchaseItem = PurchaseItem.builder()
                 .purchase(purchase)
                 .itemName(itemDto.getItemName())
                 .unitPrice(itemDto.getUnitPrice())
                 .quantity(itemDto.getQuantity())
+                .sourceType(sourceType)
+                .sourceLabel(sourceLabel)
+                .receiptTitle(receiptTitle)
                 .build();
         purchase.addPurchaseItem(purchaseItem);
         purchaseItemRepository.save(purchaseItem);
@@ -661,5 +716,8 @@ public class SettlementService {
         private Long payerMemberId;
         private String payerBankName;
         private String payerAccountNumber;
+        private String sourceType;
+        private String sourceLabel;
+        private String receiptTitle;
     }
 }

@@ -94,6 +94,9 @@ const DesktopCheckoutPage: React.FC = () => {
             payerMemberId: currentMemberId,
             payerBankName: bankName.trim(),
             payerAccountNumber: accountNumber.trim(),
+            sourceType: item.sourceType,
+            sourceLabel: item.sourceLabel,
+            receiptTitle: item.receiptTitle,
           })),
         });
 
@@ -116,7 +119,7 @@ const DesktopCheckoutPage: React.FC = () => {
         await updateSettlementDraft(created.purchaseId, {
           payerMemberId: currentMemberId,
           participantIds,
-          items: created.items.map((serverItem) => ({
+          items: created.items.map((serverItem, index) => ({
             purchaseItemId: serverItem.purchaseItemId,
             itemName: serverItem.itemName,
             unitPrice: serverItem.unitPrice,
@@ -125,6 +128,9 @@ const DesktopCheckoutPage: React.FC = () => {
             payerBankName: bankName.trim(),
             payerAccountNumber: accountNumber.trim(),
             participantIds,
+            sourceType: paidItems[index]?.sourceType,
+            sourceLabel: paidItems[index]?.sourceLabel,
+            receiptTitle: paidItems[index]?.receiptTitle,
           })),
         });
       } catch (error) {

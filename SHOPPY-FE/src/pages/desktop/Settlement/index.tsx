@@ -85,6 +85,9 @@ const DesktopSettlementPage: React.FC = () => {
             payerMemberId: Number(item.payerMemberId ?? currentMemberId),
             payerBankName: item.payerBankName ?? '',
             payerAccountNumber: item.payerAccountNumber ?? '',
+            sourceType: item.sourceType,
+            sourceLabel: item.sourceLabel,
+            receiptTitle: item.receiptTitle,
           })),
         });
 
@@ -133,6 +136,9 @@ const DesktopSettlementPage: React.FC = () => {
               payerBankName: item.payerBankName ?? '',
               payerAccountNumber: item.payerAccountNumber ?? '',
               participantIds: itemParticipantIds,
+              sourceType: item.sourceType,
+              sourceLabel: item.sourceLabel,
+              receiptTitle: item.receiptTitle,
             };
           }),
         });

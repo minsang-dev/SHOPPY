@@ -114,6 +114,9 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
             payerMemberId: Number(item.payerMemberId ?? currentMemberId),
             payerBankName: item.payerBankName ?? '',
             payerAccountNumber: item.payerAccountNumber ?? '',
+            sourceType: item.sourceType,
+            sourceLabel: item.sourceLabel,
+            receiptTitle: item.receiptTitle,
           })),
         });
 
@@ -162,6 +165,9 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
               payerBankName: item.payerBankName ?? '',
               payerAccountNumber: item.payerAccountNumber ?? '',
               participantIds: itemParticipantIds,
+              sourceType: item.sourceType,
+              sourceLabel: item.sourceLabel,
+              receiptTitle: item.receiptTitle,
             };
           }),
         });
@@ -586,7 +592,7 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
     }
 
     try {
-      const uploaded = await uploadReceiptImage(roomId, capturedFile);
+      const uploaded = await uploadReceiptImage(roomId, capturedFile, title);
       if (uploaded.settlement_id) {
         setSettlementId(roomId, uploaded.settlement_id);
         persistSettlementId(uploaded.settlement_id);

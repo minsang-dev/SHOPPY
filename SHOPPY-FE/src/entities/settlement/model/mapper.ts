@@ -16,6 +16,23 @@ const mapItems = (
       item.payerAccountNumber != null && item.payerAccountNumber !== ''
         ? item.payerAccountNumber
         : source?.payerAccountNumber;
+    const resolvedReceiptTitle = item.receiptTitle ?? source?.receiptTitle;
+    const resolvedSourceType = (item.sourceType as SettlementSourceType | undefined) ?? source?.sourceType ?? 'manual';
+    let resolvedSourceLabel = item.sourceLabel ?? source?.sourceLabel;
+    if (!resolvedSourceLabel) {
+      if (resolvedSourceType === 'online') {
+        resolvedSourceLabel = '온라인 품목';
+      } else if (resolvedSourceType === 'manual') {
+        resolvedSourceLabel = '수동입력';
+      } else if (resolvedSourceType === 'receipt') {
+        resolvedSourceLabel = resolvedReceiptTitle ?? '영수증';
+      } else {
+        resolvedSourceLabel = '정산품목';
+      }
+    }
+    if (resolvedSourceLabel === 'online') resolvedSourceLabel = '온라인 품목';
+    if (resolvedSourceLabel === 'manual') resolvedSourceLabel = '수동입력';
+    if (resolvedSourceLabel === 'receipt') resolvedSourceLabel = resolvedReceiptTitle ?? '영수증';
 
     return {
       id: String(item.purchaseItemId),
@@ -26,9 +43,9 @@ const mapItems = (
       payerMemberId: resolvedPayerMemberId,
       payerBankName: resolvedPayerBankName,
       payerAccountNumber: resolvedPayerAccountNumber,
-      sourceType: source?.sourceType ?? 'manual',
-      sourceLabel: source?.sourceLabel ?? '정산품목',
-      receiptTitle: source?.receiptTitle,
+      sourceType: resolvedSourceType,
+      sourceLabel: resolvedSourceLabel,
+      receiptTitle: resolvedReceiptTitle,
     };
   });
 };

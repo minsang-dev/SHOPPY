@@ -20,6 +20,9 @@ export interface SettlementCreateItemRequest {
   payerMemberId: number;
   payerBankName: string;
   payerAccountNumber: string;
+  sourceType?: string;
+  sourceLabel?: string;
+  receiptTitle?: string;
 }
 
 export interface SettlementCreateRequest {
@@ -44,6 +47,9 @@ export interface SettlementItemResponse {
   payerMemberId?: number;
   payerBankName?: string;
   payerAccountNumber?: string;
+  sourceType?: string;
+  sourceLabel?: string;
+  receiptTitle?: string;
   allocations: SettlementAllocationResponse[];
 }
 
@@ -65,6 +71,9 @@ export interface SettlementDraftItemRequest {
   payerBankName?: string;
   payerAccountNumber?: string;
   participantIds?: number[];
+  sourceType?: string;
+  sourceLabel?: string;
+  receiptTitle?: string;
 }
 
 export interface SettlementDraftUpdateRequest {
@@ -85,9 +94,13 @@ export interface SettlementDraftResponse {
 export const uploadReceiptImage = async (
   roomId: string,
   file: File,
+  title?: string,
 ): Promise<ReceiptUploadResponse> => {
   const formData = new FormData();
   formData.append('file', file);
+  if (title) {
+    formData.append('title', title);
+  }
 
   return apiRequest<ReceiptUploadResponse>({
     method: 'POST',

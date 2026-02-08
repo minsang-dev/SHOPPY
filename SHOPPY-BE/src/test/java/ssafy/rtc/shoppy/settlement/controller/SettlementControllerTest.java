@@ -89,7 +89,7 @@ class SettlementControllerTest {
                     .items(Collections.emptyList())
                     .build();
 
-            when(settlementService.uploadReceipt(eq(roomId), eq(memberId), any()))
+            when(settlementService.uploadReceipt(eq(roomId), eq(memberId), any(), any()))
                     .thenReturn(mockResponse);
 
             // when & then

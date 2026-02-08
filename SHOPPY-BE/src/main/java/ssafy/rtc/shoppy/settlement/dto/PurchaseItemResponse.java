@@ -17,6 +17,9 @@ public class PurchaseItemResponse {
     private Long payerMemberId;
     private String payerBankName;
     private String payerAccountNumber;
+    private String sourceType;
+    private String sourceLabel;
+    private String receiptTitle;
     private List<ItemAllocationResponse> allocations;
 
     public static PurchaseItemResponse from(PurchaseItem entity) {
@@ -28,6 +31,9 @@ public class PurchaseItemResponse {
                 .payerMemberId(entity.getPayerMemberId())
                 .payerBankName(entity.getPayerBankName())
                 .payerAccountNumber(entity.getPayerAccountNumber())
+                .sourceType(entity.getSourceType())
+                .sourceLabel(entity.getSourceLabel())
+                .receiptTitle(entity.getReceiptTitle())
                 .allocations(entity.getItemAllocations().stream()
                         .map(ItemAllocationResponse::from)
                         .toList())

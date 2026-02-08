@@ -30,13 +30,14 @@ public class SettlementController {
     public ResponseEntity<SuccessResponse<ReceiptUploadResponse>> uploadReceipt(
             @PathVariable Long roomId,
             @RequestPart("file") MultipartFile file,
+            @RequestParam(value = "title", required = false) String title,
             @AuthenticationPrincipal Long userId) {
 
         RoomMemberEntity roomMember = roomMemberRepository
                 .findByRoom_RoomIdAndUserIdAndStatus(roomId, userId, MemberStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_ROOM_MEMBER));
 
-        ReceiptUploadResponse response = settlementService.uploadReceipt(roomId, roomMember.getMemberId(), file);
+        ReceiptUploadResponse response = settlementService.uploadReceipt(roomId, roomMember.getMemberId(), file, title);
 
         return ResponseEntity.ok(SuccessResponse.of(response));
     }
