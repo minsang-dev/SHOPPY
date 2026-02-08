@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getShoppingList, deleteShoppingItem } from '@/entities/shopping/api/shopping';
+import { getShoppingList } from '@/entities/shopping/api/shopping';
 import { getProductList } from '@/entities/product/api/productListApi';
 import { calcOnlineCartTotal } from '@/features/cart/calculate-online-total/model/calcOnlineCartTotal';
 import type { ShoppingItem } from '@/entities/shopping/types/shopping.types';
@@ -133,7 +133,7 @@ const DesktopCheckoutPage: React.FC = () => {
     }
 
     try {
-      await Promise.all(onlineItems.map((item) => deleteShoppingItem(roomId, item.shoppingItemId)));
+      // keep shopping items for mobile online matching
     } catch (err) {
       console.error('장바구니 정리 실패:', err);
     }
