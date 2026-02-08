@@ -1,4 +1,4 @@
-ï»¿import type { SettlementItem } from './useSettlementStore';
+import type { SettlementItem, SettlementSourceType } from './useSettlementStore';
 import type { SettlementDraftResponse, SettlementResponse } from '../api/settlementApi';
 
 const mapItems = (
@@ -21,18 +21,18 @@ const mapItems = (
     let resolvedSourceLabel = item.sourceLabel ?? source?.sourceLabel;
     if (!resolvedSourceLabel) {
       if (resolvedSourceType === 'online') {
-        resolvedSourceLabel = 'ì˜¨ë¼ì¸ í’ˆëª©';
+        resolvedSourceLabel = '¿Â¶óÀÎ Ç°¸ñ';
       } else if (resolvedSourceType === 'manual') {
-        resolvedSourceLabel = 'ìˆ˜ë™ì…ë ¥';
+        resolvedSourceLabel = '¼öµ¿ÀÔ·Â';
       } else if (resolvedSourceType === 'receipt') {
-        resolvedSourceLabel = resolvedReceiptTitle ?? 'ì˜ìˆ˜ì¦';
+        resolvedSourceLabel = resolvedReceiptTitle ?? '¿µ¼öÁõ';
       } else {
-        resolvedSourceLabel = 'ì •ì‚°í’ˆëª©';
+        resolvedSourceLabel = 'Á¤»êÇ°¸ñ';
       }
     }
-    if (resolvedSourceLabel === 'online') resolvedSourceLabel = 'ì˜¨ë¼ì¸ í’ˆëª©';
-    if (resolvedSourceLabel === 'manual') resolvedSourceLabel = 'ìˆ˜ë™ì…ë ¥';
-    if (resolvedSourceLabel === 'receipt') resolvedSourceLabel = resolvedReceiptTitle ?? 'ì˜ìˆ˜ì¦';
+    if (resolvedSourceLabel === 'online') resolvedSourceLabel = '¿Â¶óÀÎ Ç°¸ñ';
+    if (resolvedSourceLabel === 'manual') resolvedSourceLabel = '¼öµ¿ÀÔ·Â';
+    if (resolvedSourceLabel === 'receipt') resolvedSourceLabel = resolvedReceiptTitle ?? '¿µ¼öÁõ';
 
     return {
       id: String(item.purchaseItemId),
@@ -59,3 +59,4 @@ export const mapSettlementDraftResponseToStoreItems = (
   response: SettlementDraftResponse,
   fallback: Array<SettlementItem | undefined> = [],
 ): SettlementItem[] => mapItems(response.items, fallback);
+

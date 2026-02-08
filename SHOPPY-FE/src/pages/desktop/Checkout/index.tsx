@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getShoppingList } from '@/entities/shopping/api/shopping';
 import { getProductList } from '@/entities/product/api/productListApi';
 import { calcOnlineCartTotal } from '@/features/cart/calculate-online-total/model/calcOnlineCartTotal';
 import type { ShoppingItem } from '@/entities/shopping/types/shopping.types';
 import type { ProductMetaMap } from '@/features/cart/calculate-online-total/model/calcOnlineCartTotal';
-import { useSettlementStore } from '@/entities/settlement/model/useSettlementStore';
+import { useSettlementStore, type SettlementItem } from '@/entities/settlement/model/useSettlementStore';
 import { getRoomMembers } from '@/entities/room/api/room';
 import { createSettlement, updateSettlementDraft } from '@/entities/settlement/api/settlementApi';
 import { mapSettlementResponseToStoreItems } from '@/entities/settlement/model/mapper';
@@ -62,7 +62,7 @@ const DesktopCheckoutPage: React.FC = () => {
 
     setIsProcessing(true);
 
-    const paidItems = onlineItems.map((item) => {
+    const paidItems: SettlementItem[] = onlineItems.map((item) => {
       const price = item.productId != null ? (productMetaMap[item.productId]?.price ?? 0) : 0;
       return {
         id: `online-${roomId}-${item.shoppingItemId}-${Date.now()}`,
@@ -72,6 +72,7 @@ const DesktopCheckoutPage: React.FC = () => {
         payerIds: [],
         payerBankName: '',
         payerAccountNumber: '',
+        receiptTitle: undefined,
         sourceType: 'online' as const,
         sourceLabel: '온라인 품목',
       };
@@ -152,7 +153,7 @@ const DesktopCheckoutPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    const message = `작성 중인 결제 정보가 초기화됩니다. \n정말 이전 페이지로 돌아가시겠습니까?`;
+    const message = `작성 중인 결제 정보가 초기화됩니다.\n정말 이전 페이지로 돌아가시겠습니까?`;
     if (window.confirm(message) && roomId) {
       navigate(`/rooms/${roomId}`);
     }
@@ -225,7 +226,12 @@ const DesktopCheckoutPage: React.FC = () => {
             <div className="checkout-form-row">
               <label className="checkout-label">배송 주소</label>
               <div className="checkout-address-row">
-                <input type="text" className="checkout-input checkout-input--postcode" placeholder="우편번호" readOnly />
+                <input
+                  type="text"
+                  className="checkout-input checkout-input--postcode"
+                  placeholder="우편번호"
+                  readOnly
+                />
                 <button type="button" className="checkout-address-search">
                   주소 검색
                 </button>
@@ -329,7 +335,8 @@ const DesktopCheckoutPage: React.FC = () => {
           >
             {paymentMethod === 'kakao' && '카카오페이로 결제하기'}
             {paymentMethod === 'naver' && '네이버페이로 결제하기'}
-            {(paymentMethod === 'card' || paymentMethod === 'transfer') && `${totalAmount.toLocaleString()}원 결제하기`}
+            {(paymentMethod === 'card' || paymentMethod === 'transfer') &&
+              `${totalAmount.toLocaleString()}원 결제하기`}
           </button>
         </div>
       </div>
