@@ -16,6 +16,7 @@ import {
   mapSettlementResponseToStoreItems,
 } from '@/entities/settlement/model/mapper';
 import { getShoppingList } from '@/entities/shopping/api/shopping';
+import { getProductList } from '@/entities/product/api/productListApi';
 import type { ShoppingItem } from '@/entities/shopping/types/shopping.types';
 import type { SettlementItem } from '@/entities/settlement/model/useSettlementStore';
 import { useSettlementRealtime } from '@/features/settlement/model/useSettlementRealtime';
@@ -211,7 +212,13 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
   const loadOnlineItemsFromShopping = useCallback(async (): Promise<SettlementItem[]> => {
     if (!roomId) return [];
     try {
-      const { items: shoppingItems } = await getShoppingList(roomId);
+      const [{ items: shoppingItems }, productResult] = await Promise.all([
+        getShoppingList(roomId),
+        getProductList(),
+      ]);
+      const productPriceMap = new Map<number, number>(
+        productResult.products.map((product) => [Number(product.product_id), Number(product.price ?? 0)]),
+      );
       return shoppingItems
         .filter((item) => {
           const purchaseType = typeof item.purchaseType === 'string' ? item.purchaseType.toLowerCase() : item.purchaseType;
@@ -221,7 +228,7 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
           id: `online-${roomId}-${item.shoppingItemId}`,
           name: item.displayName,
           quantity: Number(item.quantity ?? 1),
-          price: 0,
+          price: item.productId != null ? Number(productPriceMap.get(item.productId) ?? 0) : 0,
           payerIds: members.map((member) => member.memberId),
           sourceType: 'online',
           sourceLabel: '온라인 품목',
@@ -476,6 +483,30 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
     settlementIdByRoom,
     setSettlementItems,
   ]);
+
+  useEffect(() => {
+    if (!roomId || items.length === 0 || members.length === 0) return;
+    const allMemberIds = members.map((member) => member.memberId);
+    const zeroParticipantItemIds = zeroParticipantItemIdsRef.current;
+    const shouldHydrateParticipants = items.some((item) => {
+      if (item.sourceType !== 'online') return false;
+      if (zeroParticipantItemIds.has(item.id)) return false;
+      return (item.payerIds?.length ?? 0) === 0;
+    });
+    if (!shouldHydrateParticipants) return;
+
+    const hydratedItems = items.map((item) => {
+      if (item.sourceType !== 'online') return item;
+      if (zeroParticipantItemIds.has(item.id)) return item;
+      if ((item.payerIds?.length ?? 0) > 0) return item;
+      return { ...item, payerIds: allMemberIds };
+    });
+
+    setSettlementItems(roomId, hydratedItems);
+    if (canMutateSettlementDraft) {
+      void syncSettlementDraft(hydratedItems);
+    }
+  }, [canMutateSettlementDraft, items, members, roomId, setSettlementItems, syncSettlementDraft]);
 
   useEffect(() => {
     if (!showReceiptModal) {
@@ -750,7 +781,7 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
     }
     updateSettlementItemPayers(roomId, itemId, nextPayerIds);
     const nextItems = items.map((item) => (item.id === itemId ? { ...item, payerIds: nextPayerIds } : item));
-    if (canMutateSettlementDraft && nextPayerIds.length > 0) {
+    if (canMutateSettlementDraft) {
       void syncSettlementDraft(nextItems);
     }
   };
@@ -1050,9 +1081,7 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
                         created.items.map((serverItem, index) =>
                           updateSettlementItemSplits(
                             serverItem.purchaseItemId,
-                            items[index]?.payerIds?.length
-                              ? (items[index].payerIds as number[])
-                              : serverItem.allocations.map((allocation) => allocation.memberId),
+                            items[index]?.payerIds ?? serverItem.allocations.map((allocation) => allocation.memberId),
                           ),
                         ),
                       );

@@ -15,6 +15,7 @@ import {
   mapSettlementResponseToStoreItems,
 } from '@/entities/settlement/model/mapper';
 import { getShoppingList } from '@/entities/shopping/api/shopping';
+import { getProductList } from '@/entities/product/api/productListApi';
 import type { SettlementItem } from '@/entities/settlement/model/useSettlementStore';
 import { useSettlementRealtime } from '@/features/settlement/model/useSettlementRealtime';
 import './styles.css';
@@ -183,7 +184,13 @@ const DesktopSettlementPage: React.FC = () => {
   const loadOnlineItemsFromShopping = useCallback(async (): Promise<SettlementItem[]> => {
     if (!roomId) return [];
     try {
-      const { items: shoppingItems } = await getShoppingList(roomId);
+      const [{ items: shoppingItems }, productResult] = await Promise.all([
+        getShoppingList(roomId),
+        getProductList(),
+      ]);
+      const productPriceMap = new Map<number, number>(
+        productResult.products.map((product) => [Number(product.product_id), Number(product.price ?? 0)]),
+      );
       return shoppingItems
         .filter((item) => {
           const purchaseType = typeof item.purchaseType === 'string' ? item.purchaseType.toLowerCase() : item.purchaseType;
@@ -193,7 +200,7 @@ const DesktopSettlementPage: React.FC = () => {
           id: `online-${roomId}-${item.shoppingItemId}`,
           name: item.displayName,
           quantity: Number(item.quantity ?? 1),
-          price: 0,
+          price: item.productId != null ? Number(productPriceMap.get(item.productId) ?? 0) : 0,
           payerIds: members.map((member) => member.memberId),
           sourceType: 'online',
           sourceLabel: '온라인 품목',
@@ -315,6 +322,30 @@ const DesktopSettlementPage: React.FC = () => {
     setSettlementItems,
   ]);
 
+  useEffect(() => {
+    if (!roomId || items.length === 0 || members.length === 0) return;
+    const allMemberIds = members.map((member) => member.memberId);
+    const zeroParticipantItemIds = zeroParticipantItemIdsRef.current;
+    const shouldHydrateParticipants = items.some((item) => {
+      if (item.sourceType !== 'online') return false;
+      if (zeroParticipantItemIds.has(item.id)) return false;
+      return (item.payerIds?.length ?? 0) === 0;
+    });
+    if (!shouldHydrateParticipants) return;
+
+    const hydratedItems = items.map((item) => {
+      if (item.sourceType !== 'online') return item;
+      if (zeroParticipantItemIds.has(item.id)) return item;
+      if ((item.payerIds?.length ?? 0) > 0) return item;
+      return { ...item, payerIds: allMemberIds };
+    });
+
+    setSettlementItems(roomId, hydratedItems);
+    if (canMutateSettlementDraft) {
+      void syncSettlementDraft(hydratedItems);
+    }
+  }, [canMutateSettlementDraft, items, members, roomId, setSettlementItems, syncSettlementDraft]);
+
   const handleFinalize = async () => {
     if (!roomId) return;
     const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
@@ -346,9 +377,7 @@ const DesktopSettlementPage: React.FC = () => {
         created.items.map((serverItem, index) =>
           updateSettlementItemSplits(
             serverItem.purchaseItemId,
-            items[index]?.payerIds?.length
-              ? (items[index].payerIds as number[])
-              : serverItem.allocations.map((allocation) => allocation.memberId),
+            items[index]?.payerIds ?? serverItem.allocations.map((allocation) => allocation.memberId),
           ),
         ),
       );
@@ -426,7 +455,7 @@ const DesktopSettlementPage: React.FC = () => {
     }
     updateSettlementItemPayers(roomId, itemId, next);
     const nextItems = items.map((item) => (item.id === itemId ? { ...item, payerIds: next } : item));
-    if (canMutateSettlementDraft && next.length > 0) {
+    if (canMutateSettlementDraft) {
       void syncSettlementDraft(nextItems);
     }
   };

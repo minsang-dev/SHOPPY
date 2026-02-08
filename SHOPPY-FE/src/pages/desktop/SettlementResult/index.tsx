@@ -188,7 +188,7 @@ const DesktopSettlementResultPage: React.FC = () => {
     }
 
     if (Number.isFinite(currentMemberId) && currentMemberId > 0) {
-      return rows.filter((row) => row.fromMemberId === currentMemberId);
+      return rows.filter((row) => row.fromMemberId === currentMemberId || row.toMemberId === currentMemberId);
     }
     return rows;
   }, [currentMemberId, items]);
@@ -211,7 +211,7 @@ const DesktopSettlementResultPage: React.FC = () => {
 
         <div className="desktop-settlement-result-grid">
           <section className="desktop-settlement-result-section">
-            <h2>내가 보낼 금액</h2>
+            <h2>정산 결과</h2>
             <div className="desktop-settlement-result-list">
               {transferRows.length === 0 ? (
                 <div className="desktop-settlement-result-empty">송금 내역이 없습니다.</div>
