@@ -68,7 +68,16 @@ const DesktopSettlementPage: React.FC = () => {
   );
   const isCurrentMemberHost = currentMember?.role === 'HOST';
   const hasKnownSettlementId = Boolean(roomId && ((settlementIdByRoom[roomId] ?? getPersistedSettlementId()) ?? 0) > 0);
-  const canMutateSettlementDraft = isCurrentMemberHost || hasKnownSettlementId;
+  const hasOnlineItemsInDraft = items.some((item) => item.sourceType === 'online');
+  const canMutateSettlementDraft = isCurrentMemberHost || hasKnownSettlementId || !hasOnlineItemsInDraft;
+  const applyZeroParticipantOverrides = useCallback(
+    (sourceItems: SettlementItem[]) => {
+      const zeroIds = zeroParticipantItemIdsRef.current;
+      if (zeroIds.size === 0) return sourceItems;
+      return sourceItems.map((item) => (zeroIds.has(item.id) ? { ...item, payerIds: [] } : item));
+    },
+    [],
+  );
 
   const ensureSettlementId = useCallback(
     async (nextItems: SettlementItem[]) => {
@@ -151,7 +160,8 @@ const DesktopSettlementPage: React.FC = () => {
 
         setSettlementId(roomId, response.settlementId);
         persistSettlementId(response.settlementId);
-        setSettlementItems(roomId, mapSettlementDraftResponseToStoreItems(response, nextItems));
+        const mappedDraftItems = mapSettlementDraftResponseToStoreItems(response, nextItems);
+        setSettlementItems(roomId, applyZeroParticipantOverrides(mappedDraftItems));
       } catch (error) {
         console.error('Failed to update settlement draft:', error);
       }
@@ -164,6 +174,7 @@ const DesktopSettlementPage: React.FC = () => {
       roomId,
       settlementIdByRoom,
       isCurrentMemberHost,
+      applyZeroParticipantOverrides,
       setSettlementId,
       setSettlementItems,
     ],
@@ -205,22 +216,14 @@ const DesktopSettlementPage: React.FC = () => {
       try {
         const response = await getSettlement(targetSettlementId);
         const mappedItems = mapSettlementResponseToStoreItems(response, items);
-        const zeroIds = zeroParticipantItemIdsRef.current;
-        if (zeroIds.size > 0) {
-          setSettlementItems(
-            roomId,
-            mappedItems.map((item) => (zeroIds.has(item.id) ? { ...item, payerIds: [] } : item)),
-          );
-        } else {
-          setSettlementItems(roomId, mappedItems);
-        }
+        setSettlementItems(roomId, applyZeroParticipantOverrides(mappedItems));
       } catch (error) {
         console.error('Failed to sync settlement from realtime event:', error);
       } finally {
         settlementSyncLockRef.current = false;
       }
     },
-    [getPersistedSettlementId, items, roomId, settlementIdByRoom, setSettlementItems],
+    [applyZeroParticipantOverrides, getPersistedSettlementId, items, roomId, settlementIdByRoom, setSettlementItems],
   );
 
   useSettlementRealtime({
@@ -280,14 +283,15 @@ const DesktopSettlementPage: React.FC = () => {
     const loadSettlement = async () => {
       try {
         const response = await getSettlement(settlementId);
-        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response));
+        const mappedItems = mapSettlementResponseToStoreItems(response);
+        setSettlementItems(roomId, applyZeroParticipantOverrides(mappedItems));
       } catch (error) {
         console.error('Failed to load settlement:', error);
       }
     };
 
     void loadSettlement();
-  }, [getPersistedSettlementId, items.length, roomId, settlementIdByRoom, setSettlementItems]);
+  }, [applyZeroParticipantOverrides, getPersistedSettlementId, items.length, roomId, settlementIdByRoom, setSettlementItems]);
 
   useEffect(() => {
     if (!roomId || items.length > 0) return;
