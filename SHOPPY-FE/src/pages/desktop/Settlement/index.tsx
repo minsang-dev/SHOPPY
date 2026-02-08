@@ -122,9 +122,7 @@ const DesktopSettlementPage: React.FC = () => {
 
       const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
       const memberIds = members.map((member) => member.memberId);
-      const participantIds = Number.isFinite(currentMemberId) && currentMemberId > 0
-        ? Array.from(new Set([...memberIds, currentMemberId]))
-        : memberIds;
+      const participantIds = memberIds;
 
       try {
         const response = await updateSettlementDraft(settlementId, {
@@ -133,10 +131,7 @@ const DesktopSettlementPage: React.FC = () => {
           items: nextItems.map((item) => {
             const purchaseItemId = Number(item.id);
             const itemPayerId = Number(item.payerMemberId ?? currentMemberId);
-            const itemParticipantIdsSource = item.payerIds ?? participantIds;
-            const itemParticipantIds = Number.isFinite(itemPayerId) && itemPayerId > 0
-              ? Array.from(new Set([...itemParticipantIdsSource, itemPayerId]))
-              : itemParticipantIdsSource;
+            const itemParticipantIds = item.payerIds ?? participantIds;
             return {
               purchaseItemId: Number.isFinite(purchaseItemId) && purchaseItemId > 0 ? purchaseItemId : undefined,
               itemName: item.name,

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import UserAvatar from '@/shared/ui/UserAvatar';
 import { getRoomMembers } from '@/entities/room/api/room';
@@ -94,6 +94,7 @@ const DesktopSettlementResultPage: React.FC = () => {
 
   const items = roomId ? settlementItemsByRoom[roomId] ?? EMPTY_ITEMS : EMPTY_ITEMS;
   const transferStatus = roomId ? transferStatusByRoom[roomId] ?? {} : {};
+  const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
 
   useEffect(() => {
     if (!roomId) return;
@@ -128,38 +129,69 @@ const DesktopSettlementResultPage: React.FC = () => {
   }, [getPersistedSettlementId, items.length, roomId, setSettlementId, settlementIdByRoom, setSettlementItems]);
 
   const transferRows = useMemo(() => {
-    const map = new Map<string, TransferRow>();
+    const EPSILON = 0.000001;
+    const balanceByMember = new Map<number, number>();
+    const accountByReceiver = new Map<number, { bankName?: string; accountNumber?: string }>();
+
+    const addBalance = (memberId: number, delta: number) => {
+      balanceByMember.set(memberId, (balanceByMember.get(memberId) ?? 0) + delta);
+    };
 
     items.forEach((item) => {
-      const payer = item.payerMemberId;
-      const participants = item.payerIds ?? [];
-      const total = (item.price ?? 0) * (item.quantity ?? 1);
-      if (!payer || participants.length === 0 || total <= 0) return;
+      const payer = Number(item.payerMemberId ?? 0);
+      const participants = Array.from(new Set(item.payerIds ?? [])).filter((memberId) => Number.isFinite(memberId) && memberId > 0);
+      const total = Number(item.price ?? 0) * Number(item.quantity ?? 1);
+      if (!Number.isFinite(payer) || payer <= 0 || participants.length === 0 || total <= 0) return;
 
       const share = total / participants.length;
-      participants.forEach((participantId) => {
-        if (participantId === payer) return;
-        const key = `${participantId}->${payer}`;
-        const current = map.get(key);
-        if (!current) {
-          map.set(key, {
-            fromMemberId: participantId,
-            toMemberId: payer,
-            amount: share,
-            bankName: item.payerBankName,
-            accountNumber: item.payerAccountNumber,
-          });
-          return;
-        }
+      participants.forEach((participantId) => addBalance(participantId, -share));
+      addBalance(payer, total);
 
-        current.amount += share;
-        if (!current.bankName && item.payerBankName) current.bankName = item.payerBankName;
-        if (!current.accountNumber && item.payerAccountNumber) current.accountNumber = item.payerAccountNumber;
-      });
+      if ((item.payerBankName || item.payerAccountNumber) && !accountByReceiver.has(payer)) {
+        accountByReceiver.set(payer, {
+          bankName: item.payerBankName,
+          accountNumber: item.payerAccountNumber,
+        });
+      }
     });
 
-    return Array.from(map.values());
-  }, [items]);
+    const creditors = Array.from(balanceByMember.entries())
+      .filter(([, value]) => value > EPSILON)
+      .map(([memberId, value]) => ({ memberId, value }));
+    const debtors = Array.from(balanceByMember.entries())
+      .filter(([, value]) => value < -EPSILON)
+      .map(([memberId, value]) => ({ memberId, value: -value }));
+
+    const rows: TransferRow[] = [];
+    let creditorIndex = 0;
+    let debtorIndex = 0;
+    while (creditorIndex < creditors.length && debtorIndex < debtors.length) {
+      const creditor = creditors[creditorIndex];
+      const debtor = debtors[debtorIndex];
+      const amount = Math.min(creditor.value, debtor.value);
+
+      if (amount > EPSILON) {
+        const receiverAccount = accountByReceiver.get(creditor.memberId);
+        rows.push({
+          fromMemberId: debtor.memberId,
+          toMemberId: creditor.memberId,
+          amount,
+          bankName: receiverAccount?.bankName,
+          accountNumber: receiverAccount?.accountNumber,
+        });
+      }
+
+      creditor.value -= amount;
+      debtor.value -= amount;
+      if (creditor.value <= EPSILON) creditorIndex += 1;
+      if (debtor.value <= EPSILON) debtorIndex += 1;
+    }
+
+    if (Number.isFinite(currentMemberId) && currentMemberId > 0) {
+      return rows.filter((row) => row.fromMemberId === currentMemberId);
+    }
+    return rows;
+  }, [currentMemberId, items]);
 
   const getMemberName = (memberId: number) =>
     members.find((member) => member.memberId === memberId)?.nickname ?? `멤버 ${memberId}`;
@@ -248,14 +280,14 @@ const DesktopSettlementResultPage: React.FC = () => {
           <div className="desktop-settlement-transfer-sheet">
             <h3>정산 완료</h3>
             <p>
-              완료 시 공유 쇼핑이 종료됩니다.
+              완료 후 공유 채팅방이 종료됩니다.
               <br />
               종료하시겠습니까?
             </p>
 
             <div className="desktop-settlement-transfer-actions">
               <button type="button" className="ghost" onClick={() => setShowFinishConfirm(false)}>
-                아니오
+                아니요
               </button>
               <button
                 type="button"

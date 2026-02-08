@@ -423,7 +423,7 @@ const CartPanel: React.FC = () => {
       setIsListening(true);
       speechStopTimerRef.current = window.setTimeout(() => {
         recognition.stop();
-      }, 3000);
+      }, 5000);
     } catch {
       setIsListening(false);
       showVoiceToast('마이크를 시작하지 못했습니다.');

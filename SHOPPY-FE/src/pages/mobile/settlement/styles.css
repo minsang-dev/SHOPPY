@@ -527,7 +527,7 @@
 .receipt-camera-frame {
   position: relative;
   flex: 1 1 auto;
-  min-height: 320px;
+  min-height: clamp(200px, 36vh, 320px);
   border-radius: 18px;
   background: #1e293b;
   display: grid;
@@ -697,4 +697,75 @@
 .receipt-action.primary {
   background: #22c55e;
   color: #0f172a;
+}
+
+.receipt-modal .mobile-settlement-manual-input {
+  background: #111827;
+  color: #f8fafc;
+  border-color: #374151;
+}
+
+.receipt-modal .mobile-settlement-manual-input::placeholder {
+  color: #9ca3af;
+}
+
+.receipt-modal .mobile-settlement-manual-input option {
+  color: #111827;
+}
+
+@media (max-width: 430px) {
+  .receipt-modal {
+    padding: calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .receipt-modal-sheet {
+    width: 100%;
+    max-width: 100%;
+    height: min(
+      calc(var(--app-height, 100dvh) - 12px - env(safe-area-inset-top) - env(safe-area-inset-bottom)),
+      100dvh
+    );
+    max-height: min(
+      calc(var(--app-height, 100dvh) - 12px - env(safe-area-inset-top) - env(safe-area-inset-bottom)),
+      100dvh
+    );
+    border-radius: 16px;
+  }
+
+  .receipt-modal-header {
+    padding: 12px 12px 10px;
+  }
+
+  .receipt-modal-body {
+    gap: 10px;
+    padding: 0 12px 12px;
+  }
+
+  .receipt-modal .mobile-settlement-manual-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .receipt-camera-frame {
+    min-height: clamp(180px, 32vh, 260px);
+    border-radius: 14px;
+  }
+
+  .receipt-frame-guide {
+    inset: 8% 6%;
+  }
+
+  .receipt-guide-text {
+    font-size: 0.8rem;
+  }
+
+  .receipt-modal-actions {
+    gap: 8px;
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .receipt-action {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
 }

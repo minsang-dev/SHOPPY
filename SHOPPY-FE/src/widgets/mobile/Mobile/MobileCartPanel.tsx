@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useShoppingItems } from '../../../features/shopping/cart/model/useShoppingItems';
 import './MobilePanels.css';
 
@@ -8,14 +8,14 @@ interface MobileCartPanelProps {
 }
 
 const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping }) => {
-  const { items, loading, error, addItem, toggleChecked, removeItem } =
-    useShoppingItems(roomId);
+  const { items, loading, error, addItem, toggleChecked, removeItem } = useShoppingItems(roomId);
   const [showManualInput, setShowManualInput] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [manualName, setManualName] = useState('');
   const [manualError, setManualError] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [voiceToast, setVoiceToast] = useState<string | null>(null);
+
   const speechRecognitionRef = useRef<any>(null);
   const speechStopTimerRef = useRef<number | null>(null);
   const voiceToastTimerRef = useRef<number | null>(null);
@@ -33,12 +33,14 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
       setManualError('상품명을 입력해주세요.');
       return;
     }
+
     const normalizedName = trimmedName.toLowerCase();
     const exists = items.some((item) => item.name.toLowerCase() === normalizedName);
     if (exists) {
       setManualError('이미 추가된 상품입니다.');
       return;
     }
+
     setManualError('');
     await addItem(trimmedName, 1);
     handleCloseManual();
@@ -46,9 +48,7 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
 
   const handleToggleChecked = async (id: number) => {
     const current = items.find((item) => item.id === id);
-    if (!current) {
-      return;
-    }
+    if (!current) return;
     await toggleChecked(id, !current.checked);
   };
 
@@ -56,7 +56,6 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
     await removeItem(id);
   };
 
-  // 오프라인 아이템만 표시 (null 또는 'offline')
   const visibleItems = items.filter((item) => item.purchaseType !== 'online');
 
   const handleEndShopping = () => {
@@ -99,7 +98,19 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
     return { name: text, quantity: 1 };
   }, []);
 
-  const handleVoiceToggle = useCallback(() => {
+  const ensureAudioPermission = useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia) return true;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+      return true;
+    } catch {
+      showVoiceToast('마이크 권한을 허용해주세요.');
+      return false;
+    }
+  }, [showVoiceToast]);
+
+  const handleVoiceToggle = useCallback(async () => {
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
@@ -112,6 +123,9 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
       speechRecognitionRef.current.stop();
       return;
     }
+
+    const hasPermission = await ensureAudioPermission();
+    if (!hasPermission) return;
 
     const recognition = new SpeechRecognition();
     speechRecognitionRef.current = recognition;
@@ -126,15 +140,29 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
         showVoiceToast('음성을 인식하지 못했습니다.');
         return;
       }
+
       const { name, quantity } = parseVoiceItem(transcript);
       if (!name) {
         showVoiceToast('상품명을 인식하지 못했습니다.');
         return;
       }
+
       void addItem(name, quantity);
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (event: { error?: string }) => {
+      if (event?.error === 'not-allowed' || event?.error === 'service-not-allowed') {
+        showVoiceToast('마이크 권한이 필요합니다.');
+        return;
+      }
+      if (event?.error === 'audio-capture') {
+        showVoiceToast('마이크를 찾을 수 없습니다.');
+        return;
+      }
+      if (event?.error === 'no-speech') {
+        showVoiceToast('음성이 감지되지 않았습니다.');
+        return;
+      }
       showVoiceToast('음성 인식에 실패했습니다.');
     };
 
@@ -152,12 +180,12 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
       setIsRecording(true);
       speechStopTimerRef.current = window.setTimeout(() => {
         recognition.stop();
-      }, 3000);
+      }, 5000);
     } catch {
       setIsRecording(false);
       showVoiceToast('마이크를 시작하지 못했습니다.');
     }
-  }, [addItem, isRecording, parseVoiceItem, showVoiceToast]);
+  }, [addItem, ensureAudioPermission, isRecording, parseVoiceItem, showVoiceToast]);
 
   useEffect(() => {
     return () => {
@@ -195,7 +223,9 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
             <button
               type="button"
               className={`mobile-panel-header-button ${isRecording ? 'is-recording' : ''}`}
-              onClick={handleVoiceToggle}
+              onClick={() => {
+                void handleVoiceToggle();
+              }}
               aria-pressed={isRecording}
             >
               <i className="ri-mic-line" aria-hidden="true" />
@@ -203,6 +233,7 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
             </button>
           </div>
         </div>
+
         <div className="mobile-cart-list">
           {voiceToast && <div className="mobile-panel-voice-toast">{voiceToast}</div>}
           {loading ? (
@@ -234,11 +265,13 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
           )}
         </div>
       </div>
+
       <div className="mobile-panel-actions single">
         <button type="button" className="mobile-panel-action is-danger" onClick={handleEndShopping}>
           쇼핑 종료
         </button>
       </div>
+
       {showManualInput && (
         <div className="mobile-manual-modal">
           <div className="mobile-manual-backdrop" onClick={handleCloseManual} />
@@ -272,28 +305,25 @@ const MobileCartPanel: React.FC<MobileCartPanelProps> = ({ roomId, onEndShopping
                   취소
                 </button>
                 <button type="submit" className="mobile-manual-submit">
-                  저장
+                  추가
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
       {showConfirm && (
         <div className="mobile-confirm-modal">
           <div className="mobile-confirm-backdrop" onClick={handleConfirmClose} />
           <div className="mobile-confirm-card">
-            <div className="mobile-confirm-title">체크되지 않은 항목이 있어요.</div>
+            <div className="mobile-confirm-title">체크하지 않은 항목이 있어요</div>
             <div className="mobile-confirm-desc">정말로 쇼핑을 종료할까요?</div>
             <div className="mobile-confirm-actions">
               <button type="button" className="mobile-confirm-cancel" onClick={handleConfirmClose}>
                 취소
               </button>
-              <button
-                type="button"
-                className="mobile-confirm-submit"
-                onClick={handleConfirmProceed}
-              >
+              <button type="button" className="mobile-confirm-submit" onClick={handleConfirmProceed}>
                 확인
               </button>
             </div>
