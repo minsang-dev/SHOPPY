@@ -14,6 +14,7 @@ import {
   mapSettlementDraftResponseToStoreItems,
   mapSettlementResponseToStoreItems,
 } from '@/entities/settlement/model/mapper';
+import { getShoppingList } from '@/entities/shopping/api/shopping';
 import type { SettlementItem } from '@/entities/settlement/model/useSettlementStore';
 import { useSettlementRealtime } from '@/features/settlement/model/useSettlementRealtime';
 import './styles.css';
@@ -59,6 +60,14 @@ const DesktopSettlementPage: React.FC = () => {
     },
     [settlementStorageKey],
   );
+  const sessionMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
+  const currentMember = useMemo(
+    () => members.find((member) => member.memberId === sessionMemberId),
+    [members, sessionMemberId],
+  );
+  const isCurrentMemberHost = currentMember?.role === 'HOST';
+  const hasKnownSettlementId = Boolean(roomId && ((settlementIdByRoom[roomId] ?? getPersistedSettlementId()) ?? 0) > 0);
+  const canMutateSettlementDraft = isCurrentMemberHost || hasKnownSettlementId;
 
   const ensureSettlementId = useCallback(
     async (nextItems: SettlementItem[]) => {
@@ -106,8 +115,9 @@ const DesktopSettlementPage: React.FC = () => {
   const syncSettlementDraft = useCallback(
     async (nextItems: SettlementItem[]) => {
       if (!roomId) return;
+      const knownSettlementId = settlementIdByRoom[roomId] ?? getPersistedSettlementId();
       const settlementId =
-        (await ensureSettlementId(nextItems)) ?? settlementIdByRoom[roomId] ?? getPersistedSettlementId();
+        knownSettlementId ?? (isCurrentMemberHost ? await ensureSettlementId(nextItems) : null);
       if (!settlementId) return;
 
       const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
@@ -157,10 +167,35 @@ const DesktopSettlementPage: React.FC = () => {
       persistSettlementId,
       roomId,
       settlementIdByRoom,
+      isCurrentMemberHost,
       setSettlementId,
       setSettlementItems,
     ],
   );
+
+  const loadOnlineItemsFromShopping = useCallback(async (): Promise<SettlementItem[]> => {
+    if (!roomId) return [];
+    try {
+      const { items: shoppingItems } = await getShoppingList(roomId);
+      return shoppingItems
+        .filter((item) => {
+          const purchaseType = typeof item.purchaseType === 'string' ? item.purchaseType.toLowerCase() : item.purchaseType;
+          return purchaseType === 'online' || (purchaseType == null && item.productId != null);
+        })
+        .map((item) => ({
+          id: `online-${roomId}-${item.shoppingItemId}`,
+          name: item.displayName,
+          quantity: Number(item.quantity ?? 1),
+          price: 0,
+          payerIds: members.map((member) => member.memberId),
+          sourceType: 'online',
+          sourceLabel: '온라인 품목',
+        }));
+    } catch (error) {
+      console.warn('Failed to load online shopping fallback:', error);
+      return [];
+    }
+  }, [members, roomId]);
 
   const settlementSyncLockRef = useRef(false);
   const refreshSettlementFromServer = useCallback(
@@ -248,6 +283,28 @@ const DesktopSettlementPage: React.FC = () => {
 
     void loadSettlement();
   }, [getPersistedSettlementId, items.length, roomId, settlementIdByRoom, setSettlementItems]);
+
+  useEffect(() => {
+    if (!roomId || items.length > 0) return;
+    const settlementId = settlementIdByRoom[roomId] ?? getPersistedSettlementId();
+    if (settlementId) return;
+
+    const loadOnlineFallbackOnly = async () => {
+      const onlineItems = await loadOnlineItemsFromShopping();
+      if (onlineItems.length > 0) {
+        setSettlementItems(roomId, onlineItems);
+      }
+    };
+
+    void loadOnlineFallbackOnly();
+  }, [
+    getPersistedSettlementId,
+    items.length,
+    loadOnlineItemsFromShopping,
+    roomId,
+    settlementIdByRoom,
+    setSettlementItems,
+  ]);
 
   const handleFinalize = async () => {
     if (!roomId) return;
@@ -348,6 +405,7 @@ const DesktopSettlementPage: React.FC = () => {
 
   const togglePayer = (itemId: string, memberId: number) => {
     if (!roomId) return;
+    if (!canMutateSettlementDraft) return;
     const target = items.find((item) => item.id === itemId);
     if (!target) return;
 
@@ -386,6 +444,10 @@ const DesktopSettlementPage: React.FC = () => {
     }
     if (!bankName || !accountNumber) {
       setManualError('은행명과 계좌번호를 입력해주세요.');
+      return;
+    }
+    if (!canMutateSettlementDraft) {
+      setManualError('호스트 결제로 생성된 정산을 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
       return;
     }
 

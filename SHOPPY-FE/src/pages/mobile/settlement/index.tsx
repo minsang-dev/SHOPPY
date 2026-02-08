@@ -88,6 +88,14 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
     },
     [settlementStorageKey],
   );
+  const sessionMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
+  const currentMember = useMemo(
+    () => members.find((member) => member.memberId === sessionMemberId),
+    [members, sessionMemberId],
+  );
+  const isCurrentMemberHost = currentMember?.role === 'HOST';
+  const hasKnownSettlementId = Boolean(roomId && ((settlementIdByRoom[roomId] ?? getPersistedSettlementId()) ?? 0) > 0);
+  const canMutateSettlementDraft = isCurrentMemberHost || hasKnownSettlementId;
 
   const ensureSettlementId = useCallback(
     async (nextItems: SettlementItem[]) => {
@@ -135,8 +143,9 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
   const syncSettlementDraft = useCallback(
     async (nextItems: SettlementItem[]) => {
       if (!roomId) return;
+      const knownSettlementId = settlementIdByRoom[roomId] ?? getPersistedSettlementId();
       const settlementId =
-        (await ensureSettlementId(nextItems)) ?? settlementIdByRoom[roomId] ?? getPersistedSettlementId();
+        knownSettlementId ?? (isCurrentMemberHost ? await ensureSettlementId(nextItems) : null);
       if (!settlementId) return;
 
       const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
@@ -186,10 +195,35 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
       persistSettlementId,
       roomId,
       settlementIdByRoom,
+      isCurrentMemberHost,
       setSettlementId,
       setSettlementItems,
     ],
   );
+
+  const loadOnlineItemsFromShopping = useCallback(async (): Promise<SettlementItem[]> => {
+    if (!roomId) return [];
+    try {
+      const { items: shoppingItems } = await getShoppingList(roomId);
+      return shoppingItems
+        .filter((item) => {
+          const purchaseType = typeof item.purchaseType === 'string' ? item.purchaseType.toLowerCase() : item.purchaseType;
+          return purchaseType === 'online' || (purchaseType == null && item.productId != null);
+        })
+        .map((item) => ({
+          id: `online-${roomId}-${item.shoppingItemId}`,
+          name: item.displayName,
+          quantity: Number(item.quantity ?? 1),
+          price: 0,
+          payerIds: members.map((member) => member.memberId),
+          sourceType: 'online',
+          sourceLabel: '온라인 품목',
+        }));
+    } catch (error) {
+      console.warn('Failed to load online shopping fallback:', error);
+      return [];
+    }
+  }, [members, roomId]);
 
   const buildOnlineFallback = useCallback(
     async (responseItems: Array<{ itemName: string; quantity: number; unitPrice: number }>) => {
@@ -413,6 +447,28 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
   }, [buildOnlineFallback, getPersistedSettlementId, items.length, roomId, settlementIdByRoom, setSettlementItems]);
 
   useEffect(() => {
+    if (!roomId || items.length > 0) return;
+    const settlementId = settlementIdByRoom[roomId] ?? getPersistedSettlementId();
+    if (settlementId) return;
+
+    const loadOnlineFallbackOnly = async () => {
+      const onlineItems = await loadOnlineItemsFromShopping();
+      if (onlineItems.length > 0) {
+        setSettlementItems(roomId, onlineItems);
+      }
+    };
+
+    void loadOnlineFallbackOnly();
+  }, [
+    getPersistedSettlementId,
+    items.length,
+    loadOnlineItemsFromShopping,
+    roomId,
+    settlementIdByRoom,
+    setSettlementItems,
+  ]);
+
+  useEffect(() => {
     if (!showReceiptModal) {
       if (receiptStreamRef.current) {
         receiptStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -528,6 +584,10 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
       setManualError('결제자를 선택해주세요.');
       return;
     }
+    if (!canMutateSettlementDraft) {
+      setManualError('호스트 결제로 생성된 정산을 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
 
     const newItem: SettlementItem = {
       id: `manual-${Date.now()}`,
@@ -576,6 +636,10 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
     }
     if (!bankName || !accountNumber) {
       setReceiptError('은행명과 계좌번호를 입력해주세요.');
+      return;
+    }
+    if (!canMutateSettlementDraft) {
+      setReceiptError('호스트 결제로 생성된 정산을 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
       return;
     }
 
@@ -669,6 +733,7 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
   };
 
   const handleTogglePayer = (itemId: string, memberId: number) => {
+    if (!canMutateSettlementDraft) return;
     const target = items.find((item) => item.id === itemId);
     if (!target) return;
 
