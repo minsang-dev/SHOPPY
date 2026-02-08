@@ -9,7 +9,7 @@ const mapItems = (
   return items.map((item, index) => {
     const source = fallback[index];
     const payerIds = item.allocations.map((allocation) => allocation.memberId);
-    const resolvedPayerMemberId = item.payerMemberId ?? fallbackPayerMemberId ?? source?.payerMemberId;
+    const resolvedPayerMemberId = item.payerMemberId ?? source?.payerMemberId ?? fallbackPayerMemberId;
     const resolvedPayerBankName =
       item.payerBankName != null && item.payerBankName !== '' ? item.payerBankName : source?.payerBankName;
     const resolvedPayerAccountNumber =

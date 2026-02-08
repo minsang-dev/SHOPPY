@@ -50,6 +50,9 @@ const MobileSettlementResultPage: React.FC<MobileSettlementResultPageProps> = ({
   const transferStatusByRoom = useSettlementStore((state) => state.transferStatusByRoom);
   const markTransferDone = useSettlementStore((state) => state.markTransferDone);
   const syncLockRef = useRef(false);
+  const items = roomId ? settlementItemsByRoom[roomId] ?? EMPTY_ITEMS : EMPTY_ITEMS;
+  const transferStatus = roomId ? transferStatusByRoom[roomId] ?? {} : {};
+  const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
 
   const getPersistedSettlementId = useCallback(() => {
     if (!roomId) return null;
@@ -69,14 +72,14 @@ const MobileSettlementResultPage: React.FC<MobileSettlementResultPageProps> = ({
         const response = await getSettlement(targetSettlementId);
         setSettlementId(roomId, targetSettlementId);
         localStorage.setItem(`settlement:id:${roomId}`, String(targetSettlementId));
-        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response));
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response, items));
       } catch (error) {
         console.error('Failed to sync settlement result from realtime event:', error);
       } finally {
         syncLockRef.current = false;
       }
     },
-    [getPersistedSettlementId, roomId, setSettlementId, setSettlementItems, settlementIdByRoom],
+    [getPersistedSettlementId, items, roomId, setSettlementId, setSettlementItems, settlementIdByRoom],
   );
 
   useSettlementRealtime({
@@ -103,10 +106,6 @@ const MobileSettlementResultPage: React.FC<MobileSettlementResultPageProps> = ({
     },
   });
 
-  const items = roomId ? settlementItemsByRoom[roomId] ?? EMPTY_ITEMS : EMPTY_ITEMS;
-  const transferStatus = roomId ? transferStatusByRoom[roomId] ?? {} : {};
-  const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
-
   useEffect(() => {
     if (!roomId) return;
     const loadMembers = async () => {
@@ -130,7 +129,7 @@ const MobileSettlementResultPage: React.FC<MobileSettlementResultPageProps> = ({
         const response = await getSettlement(settlementId);
         setSettlementId(roomId, settlementId);
         localStorage.setItem(`settlement:id:${roomId}`, String(settlementId));
-        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response));
+        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response, items));
       } catch (error) {
         console.error('Failed to load settlement result:', error);
       }
