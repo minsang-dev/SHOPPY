@@ -769,3 +769,13 @@
     font-size: 0.9rem;
   }
 }
+
+@media (max-width: 640px) {
+  .receipt-modal .mobile-settlement-manual-row {
+    grid-template-columns: 1fr;
+  }
+
+  .receipt-camera-frame {
+    min-height: clamp(160px, 30vh, 240px);
+  }
+}

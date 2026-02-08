@@ -36,6 +36,7 @@ const DesktopSettlementPage: React.FC = () => {
   const [manualAccountNumber, setManualAccountNumber] = useState('');
   const [manualError, setManualError] = useState('');
   const [openPayerByItem, setOpenPayerByItem] = useState<Record<string, boolean>>({});
+  const zeroParticipantItemIdsRef = useRef<Set<string>>(new Set());
 
   const settlementItemsByRoom = useSettlementStore((state) => state.settlementItemsByRoom);
   const settlementIdByRoom = useSettlementStore((state) => state.settlementIdByRoom);
@@ -203,7 +204,16 @@ const DesktopSettlementPage: React.FC = () => {
       settlementSyncLockRef.current = true;
       try {
         const response = await getSettlement(targetSettlementId);
-        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response, items));
+        const mappedItems = mapSettlementResponseToStoreItems(response, items);
+        const zeroIds = zeroParticipantItemIdsRef.current;
+        if (zeroIds.size > 0) {
+          setSettlementItems(
+            roomId,
+            mappedItems.map((item) => (zeroIds.has(item.id) ? { ...item, payerIds: [] } : item)),
+          );
+        } else {
+          setSettlementItems(roomId, mappedItems);
+        }
       } catch (error) {
         console.error('Failed to sync settlement from realtime event:', error);
       } finally {
@@ -400,15 +410,21 @@ const DesktopSettlementPage: React.FC = () => {
 
   const togglePayer = (itemId: string, memberId: number) => {
     if (!roomId) return;
-    if (!canMutateSettlementDraft) return;
     const target = items.find((item) => item.id === itemId);
     if (!target) return;
 
     const current = target.payerIds ?? [];
     const next = current.includes(memberId) ? current.filter((id) => id !== memberId) : [...current, memberId];
+    if (next.length === 0) {
+      zeroParticipantItemIdsRef.current.add(itemId);
+    } else {
+      zeroParticipantItemIdsRef.current.delete(itemId);
+    }
     updateSettlementItemPayers(roomId, itemId, next);
     const nextItems = items.map((item) => (item.id === itemId ? { ...item, payerIds: next } : item));
-    void syncSettlementDraft(nextItems);
+    if (canMutateSettlementDraft && next.length > 0) {
+      void syncSettlementDraft(nextItems);
+    }
   };
 
   const togglePayerPanel = (itemId: string) => {

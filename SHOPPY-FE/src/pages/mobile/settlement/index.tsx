@@ -48,6 +48,7 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
   const onlineFallbackLoadingRef = useRef<{ key: string; promise: Promise<Array<SettlementItem | undefined>> } | null>(
     null,
   );
+  const zeroParticipantItemIdsRef = useRef<Set<string>>(new Set());
 
   const [receiptTitle, setReceiptTitle] = useState('');
   const [receiptPayerId, setReceiptPayerId] = useState('');
@@ -314,7 +315,16 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
           onlineFallback.length > 0
             ? response.items.map((_, index) => onlineFallback[index] ?? items[index])
             : items;
-        setSettlementItems(roomId, mapSettlementResponseToStoreItems(response, fallbackItems));
+        const mappedItems = mapSettlementResponseToStoreItems(response, fallbackItems);
+        const zeroIds = zeroParticipantItemIdsRef.current;
+        if (zeroIds.size > 0) {
+          setSettlementItems(
+            roomId,
+            mappedItems.map((item) => (zeroIds.has(item.id) ? { ...item, payerIds: [] } : item)),
+          );
+        } else {
+          setSettlementItems(roomId, mappedItems);
+        }
       } catch (error) {
         console.error('Failed to sync settlement from realtime event:', error);
       } finally {
@@ -633,11 +643,6 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
       setReceiptError('은행명과 계좌번호를 입력해주세요.');
       return;
     }
-    if (!canMutateSettlementDraft) {
-      setReceiptError('호스트 결제로 생성된 정산을 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
-      return;
-    }
-
     const isCameraReady = await ensureReceiptVideoReady();
     if (!isCameraReady) {
       setReceiptError('카메라 준비가 완료되지 않았습니다.');
@@ -728,16 +733,22 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
   };
 
   const handleTogglePayer = (itemId: string, memberId: number) => {
-    if (!canMutateSettlementDraft) return;
     const target = items.find((item) => item.id === itemId);
     if (!target) return;
 
     const current = target.payerIds ?? [];
     const hasMember = current.includes(memberId);
     const nextPayerIds = hasMember ? current.filter((id) => id !== memberId) : [...current, memberId];
+    if (nextPayerIds.length === 0) {
+      zeroParticipantItemIdsRef.current.add(itemId);
+    } else {
+      zeroParticipantItemIdsRef.current.delete(itemId);
+    }
     updateSettlementItemPayers(roomId, itemId, nextPayerIds);
     const nextItems = items.map((item) => (item.id === itemId ? { ...item, payerIds: nextPayerIds } : item));
-    void syncSettlementDraft(nextItems);
+    if (canMutateSettlementDraft && nextPayerIds.length > 0) {
+      void syncSettlementDraft(nextItems);
+    }
   };
 
   return (
