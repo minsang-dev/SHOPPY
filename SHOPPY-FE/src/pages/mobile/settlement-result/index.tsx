@@ -234,14 +234,14 @@ const MobileSettlementResultPage: React.FC<MobileSettlementResultPageProps> = ({
               <div className="mobile-settlement-result-empty">보낼 금액이 없습니다.</div>
             ) : (
               <>
-                <div className="mobile-settlement-result-subtitle">내가 누구에게 얼마를 보내야 하는지</div>
+                <div className="mobile-settlement-result-subtitle">정산결과</div>
                 {outgoingTransferRows.map((row) => {
                   const done = getTransferDone(row);
                   return (
                     <div key={`out-${row.fromMemberId}-${row.toMemberId}`} className={`mobile-settlement-transfer-card ${done ? 'is-done' : ''}`}>
                       <div className="mobile-settlement-transfer-left">
                         <UserAvatar name={getMemberName(row.toMemberId)} colorKey={row.toMemberId} size="md" />
-                        <strong>{getMemberName(row.toMemberId)}에게</strong>
+                        <strong>{getMemberName(row.toMemberId)}</strong>
                       </div>
                       <div className="mobile-settlement-transfer-right">
                         <span>{row.amount.toLocaleString()}원</span>

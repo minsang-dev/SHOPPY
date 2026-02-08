@@ -217,7 +217,7 @@ const DesktopSettlementResultPage: React.FC = () => {
 
         <div className="desktop-settlement-result-grid">
           <section className="desktop-settlement-result-section">
-            <h2>내가 누구에게 얼마를 보내야 하는지</h2>
+            <h2>정산결과</h2>
             <div className="desktop-settlement-result-list">
               {outgoingTransferRows.length === 0 ? (
                 <div className="desktop-settlement-result-empty">보낼 금액이 없습니다.</div>
@@ -228,7 +228,7 @@ const DesktopSettlementResultPage: React.FC = () => {
                     <div key={`all-${row.fromMemberId}-${row.toMemberId}`} className={`desktop-settlement-transfer-card ${done ? 'is-done' : ''}`}>
                       <div className="desktop-settlement-transfer-left">
                         <UserAvatar name={getMemberName(row.toMemberId)} colorKey={row.toMemberId} size="md" />
-                        <strong>{getMemberName(row.toMemberId)}에게</strong>
+                        <strong>{getMemberName(row.toMemberId)}</strong>
                       </div>
                       <div className="desktop-settlement-transfer-right">
                         <span>{row.amount.toLocaleString()}원</span>
