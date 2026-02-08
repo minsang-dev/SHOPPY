@@ -159,17 +159,15 @@ const MobileSettlementPage: React.FC<MobileSettlementPageProps> = ({ embedded = 
         knownSettlementId ?? (isCurrentMemberHost ? await ensureSettlementId(nextItems) : null);
       if (!settlementId) return;
 
-      const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
       const memberIds = members.map((member) => member.memberId);
       const participantIds = memberIds;
 
       try {
         const response = await updateSettlementDraft(settlementId, {
-          payerMemberId: currentMemberId > 0 ? currentMemberId : undefined,
           participantIds,
           items: nextItems.map((item) => {
             const purchaseItemId = Number(item.id);
-            const itemPayerId = Number(item.payerMemberId ?? currentMemberId);
+            const itemPayerId = Number(item.payerMemberId);
             const itemParticipantIds = item.payerIds ?? participantIds;
             return {
               purchaseItemId: Number.isFinite(purchaseItemId) && purchaseItemId > 0 ? purchaseItemId : undefined,
