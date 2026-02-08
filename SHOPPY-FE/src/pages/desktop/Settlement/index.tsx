@@ -413,7 +413,7 @@ const DesktopSettlementPage: React.FC = () => {
     setManualAccountNumber('');
     setManualError('');
     setShowManualInput(false);
-    setActiveFilter('manual');
+    setActiveFilter('all');
   };
 
   return (

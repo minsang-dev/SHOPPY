@@ -28,6 +28,45 @@ const DesktopCheckoutPage: React.FC = () => {
   const [bankName, setBankName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
 
+  const resolveMemberId = useCallback(async () => {
+    const storedMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
+    if (Number.isFinite(storedMemberId) && storedMemberId > 0) {
+      return storedMemberId;
+    }
+    if (!roomId) return null;
+
+    try {
+      const members = await getRoomMembers(roomId);
+      const token =
+        sessionStorage.getItem('accessToken') ?? sessionStorage.getItem('access_token');
+      let userId: number | null = null;
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          userId = Number(payload.sub);
+        } catch {
+          userId = null;
+        }
+      }
+
+      const nicknameHint = sessionStorage.getItem('memberNickname')?.trim();
+      const self =
+        (Number.isFinite(userId ?? NaN) ? members.find((member) => member.userId === userId) : null) ??
+        (nicknameHint ? members.find((member) => member.nickname === nicknameHint) : null);
+
+      if (!self) return null;
+
+      sessionStorage.setItem('memberId', String(self.memberId));
+      if (self.nickname) {
+        sessionStorage.setItem('memberNickname', self.nickname);
+      }
+      return self.memberId;
+    } catch (error) {
+      console.error('Failed to resolve memberId for checkout:', error);
+      return null;
+    }
+  }, [roomId]);
+
   const loadCartData = useCallback(async () => {
     if (!roomId) return;
     try {
@@ -60,6 +99,12 @@ const DesktopCheckoutPage: React.FC = () => {
     if (!roomId) return;
     if (loading || onlineItems.length === 0) return;
 
+    const currentMemberId = await resolveMemberId();
+    if (!currentMemberId) {
+      alert('멤버 정보를 확인할 수 없습니다. 새로고침 후 다시 시도해주세요.');
+      return;
+    }
+
     setIsProcessing(true);
 
     const paidItems: SettlementItem[] = onlineItems.map((item) => {
@@ -82,7 +127,6 @@ const DesktopCheckoutPage: React.FC = () => {
     localStorage.removeItem(`settlement:id:${roomId}`);
     appendSettlementItems(roomId, paidItems);
 
-    const currentMemberId = Number(sessionStorage.getItem('memberId') ?? '0');
     if (Number.isFinite(currentMemberId) && currentMemberId > 0) {
       try {
         const created = await createSettlement(roomId, {
