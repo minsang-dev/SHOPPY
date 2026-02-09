@@ -32,7 +32,7 @@ pipeline {
         stage('Backend - Dockerize') {
             when {
                 anyOf {
-                    branch 'develop'; branch 'buildtest'; branch 'release'
+                    branch 'master'; branch 'release'
                 }
             }
             steps {
@@ -45,7 +45,7 @@ pipeline {
         stage('Frontend - Dockerize') {
             when {
                 anyOf {
-                    branch 'develop'; branch 'buildtest'; branch 'release'
+                    branch 'master'; branch 'release'
                 }
             }
             steps {
@@ -67,7 +67,7 @@ pipeline {
 stage('Deploy') {
     steps {
         script {
-            if (env.BRANCH_NAME == 'release') {
+            if (env.BRANCH_NAME == 'master' ||env.BRANCH_NAME == 'release') {
 
                 echo 'Deploying Frontend...'
                 sh 'docker stop shoppy-fe || true'
