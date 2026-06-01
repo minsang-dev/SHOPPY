@@ -3,7 +3,7 @@
 <!-- ============================================ -->
 
 <p align="center">
-  <img src="img/Architecture.png" alt="Shoppy Banner" width="100%" />
+  <img src="img/intro.png" alt="Shoppy Banner" width="100%" />
 </p>
 
 <h1 align="center">🛒 Shoppy — 쇼피</h1>
@@ -65,7 +65,7 @@
   <img src="img/intro.png" alt="Shoppy 서비스 소개" width="300" />
 </p>
 
-**Shoppy(쇼피)**는 온라인 쇼핑의 편의성과 오프라인 쇼핑의 즐거움을 결합한 **실시간 화상 채팅 기반 플랫폼**입니다.
+<b>Shoppy(쇼피)</b>는 온라인 쇼핑의 편의성과 오프라인 쇼핑의 즐거움을 결합한 <b>실시간 화상 채팅 기반 플랫폼</b>입니다.
 
 기존의 온라인 쇼핑에서는 링크를 공유하고, 의견을 물어보고, 답변을 기다리는 단절된 경험이 불가피했습니다. 
 Shoppy는 웹 브라우저 상의 실시간 화면 동기화와 화상 통화를 결합하여, **친구와 오프라인에서 나란히 화면을 보며 장바구니를 함께 채우는 경험**을 온라인에 완벽히 구현했습니다.
@@ -80,7 +80,7 @@ Shoppy는 웹 브라우저 상의 실시간 화면 동기화와 화상 통화를
 
 ### "쇼핑은 원래 친구랑 수다 떨면서 하는 게 제맛인데..."
 
-코로나19 이후 온라인 커머스는 급격히 성장했지만, **"쇼핑의 본질적인 즐거움"**인 소통과 공유의 과정은 오히려 축소되었습니다.
+코로나19 이후 온라인 커머스는 급격히 성장했지만, <b>"쇼핑의 본질적인 즐거움"</b>인 소통과 공유의 과정은 오히려 축소되었습니다.
 
 메신저를 통해 사고 싶은 물건의 링크를 끊임없이 주고받으며 피로감을 느끼는 사용자들, 여러 명과 함께 여행이나 파티 물품을 공동 구매할 때 번거로운 정산 과정에 불편함을 호소하는 사람들을 위해 Shoppy는 시작되었습니다.
 
@@ -430,23 +430,20 @@ SHOPPY-FE/src/
 <details align="left">
   <summary><strong>웹 (Web) 화면 설계</strong></summary>
   <div align="center">
-  <img src="img/figma_web.png" alt="Figma Web" width="100%" />
+  <img src="img/web_figma.png" alt="Figma Web" width="100%" />
   </div>
 </details>
 <details align="left">
   <summary><strong>모바일 (App) 화면 설계</strong></summary>
   <div align="center">
-  <img src="img/figma_app.png" alt="Figma App" width="100%" />
+  <img src="img/app_figma.png" alt="Figma App" width="100%" />
   </div>
 </details>
 
 <h3>🗄️ ERD</h3>
-<details align="left">
-  <summary><strong>자세히</strong></summary>
-  <div align="center">
+<div align="center">
   <img src="img/ERD.png" alt="ERD" width="100%" />
-  </div>
-</details>
+</div>
 
 <h3>✅ 관련 문서</h3>
 <p>
